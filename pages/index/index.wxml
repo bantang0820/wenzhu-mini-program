@@ -1,0 +1,34 @@
+<!--pages/index/index.wxml - 原研哉式极简主义-->
+<view class="container">
+  <!-- 顶部标题区 -->
+  <view class="header">
+    <text class="title title-serif">稳住</text>
+    <text class="subtitle">此刻，你遇到了什么？</text>
+  </view>
+
+  <!-- 2x3 场景网格 -->
+  <view class="scenarios-grid">
+    <view
+      class="scenario-card neumorphism-convex"
+      wx:for="{{scenarios}}"
+      wx:key="id"
+      bindtap="onScenarioTap"
+      data-id="{{item.id}}"
+      data-is-free="{{item.is_free || unlockedScenarios.includes(item.id)}}"
+      hover-class="neumorphism-pressed"
+    >
+      <!-- 几何符号 -->
+      <view class="scenario-icon">{{item.icon}}</view>
+
+      <!-- 场景标题 -->
+      <view class="scenario-title">
+        <text>{{item.title}}</text>
+      </view>
+
+      <!-- 锁定标记 -->
+      <view class="lock-badge" wx:if="{{!item.is_free && !isPro && !unlockedScenarios.includes(item.id)}}">
+        <text>🔒</text>
+      </view>
+    </view>
+  </view>
+</view>

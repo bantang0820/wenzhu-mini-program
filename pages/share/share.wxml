@@ -1,0 +1,80 @@
+<!--pages/share/share.wxml-->
+<view class="container">
+  <!-- 顶部返回 -->
+  <view class="back-btn" bindtap="onBack">
+    <text class="back-icon">←</text>
+  </view>
+
+  <!-- 标题 -->
+  <view class="header">
+    <text class="title">分享给朋友</text>
+    <text class="subtitle">让更多家长找到内心的平静</text>
+  </view>
+
+  <!-- 卡片预览 -->
+  <view class="card-preview">
+    <view class="share-card" style="background-color: {{cardConfig.bgColor}}">
+      <!-- 插画区域 -->
+      <view class="illustration-area">
+        <text class="illustration-emoji">{{cardConfig.emoji}}</text>
+
+        <!-- 临时CSS图形（替代插画） -->
+        <view class="illustration-graphic">
+          <view class="graphic-shape shape-1"></view>
+          <view class="graphic-shape shape-2"></view>
+          <view class="graphic-shape shape-3"></view>
+        </view>
+
+        <!-- 图片版本（后期替换） -->
+        <image
+          class="illustration-image"
+          src="/images/share-cards/{{cardId}}.png"
+          mode="aspectFit"
+          wx:if="{{hasIllustration}}"
+        ></image>
+
+        <!-- 占位提示（没有图片时显示） -->
+        <view class="illustration-placeholder" wx:if="{{!hasIllustration}}">
+          <text class="placeholder-text">莫兰迪插画</text>
+          <text class="placeholder-sub">（参考《插画获取指南》获取）</text>
+        </view>
+      </view>
+
+      <!-- 文案区域 -->
+      <view class="content-area">
+        <text class="card-title">{{cardConfig.title}}</text>
+        <text class="card-content">{{cardConfig.content}}</text>
+
+        <!-- 小程序码 -->
+        <view class="qrcode-area">
+          <image class="qrcode" src="/images/qrcode.png" mode="aspectFit"></image>
+          <text class="qrcode-text">扫码试试正念家长 SOS</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 奖励提示 -->
+  <view class="reward-tip">
+    <view class="tip-icon">🎁</view>
+    <text class="tip-text">分享成功后解锁"吃饭慢"场景</text>
+  </view>
+
+  <!-- 分享按钮 -->
+  <view class="share-buttons">
+    <view class="share-btn primary" bindtap="onShareToWechat">
+      <text class="btn-icon">💬</text>
+      <text class="btn-text">分享给朋友</text>
+    </view>
+
+    <view class="share-btn secondary" bindtap="onShareToMoments">
+      <text class="btn-icon">📱</text>
+      <text class="btn-text">分享到朋友圈</text>
+    </view>
+  </view>
+
+  <!-- 说明文字 -->
+  <view class="footer-note">
+    <text class="note-text">分享给需要的家长，一起做正念父母</text>
+  </view>
+</view>

@@ -1,0 +1,35 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/index/index",
+    "pages/detail/detail",
+    "pages/journal/journal",
+    "pages/share/share"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#F5F3EF",
+    "navigationBarTitleText": "正念家长",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F5F3EF"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#8B7E74",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "急救"
+      },
+      {
+        "pagePath": "pages/journal/journal",
+        "text": "觉察"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "cloud": true
+}

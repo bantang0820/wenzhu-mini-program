@@ -1,0 +1,14 @@
+[
+  {
+    "_id": "example_user_id",
+    "openid": "example_openid",
+    "is_pro": false,
+    "partner_name": "",
+    "created_at": {
+      "$date": "2025-01-01T00:00:00.000Z"
+    },
+    "updated_at": {
+      "$date": "2025-01-01T00:00:00.000Z"
+    }
+  }
+]

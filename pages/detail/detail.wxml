@@ -1,0 +1,318 @@
+<!--pages/detail/detail.wxml - 原研哉式极简主义完整版-->
+<view class="container {{isDarkMode ? 'dark-mode' : ''}}" style="background-color: rgba(235, 234, 230, {{backgroundBrightness / 100}})">
+  <!-- 返回按钮 -->
+  <view class="back-btn neumorphism-convex" bindtap="onBack" wx:if="{{!isCompleted}}">
+    <text class="back-icon">✕</text>
+  </view>
+
+  <!-- 场景标题 -->
+  <view class="scenario-header" wx:if="{{!isCompleted}}">
+    <text class="scenario-tag">稳住</text>
+  </view>
+
+  <!-- 第一阶段：长按止颤 -->
+  <view class="phase-hold" wx:if="{{currentPhase === 'holding'}}">
+    <!-- 金句展示区（颤抖中） -->
+    <view class="quote-container {{isStabilized ? 'stabilized' : 'shake-animation'}} {{isStabilizing && !isStabilized ? 'stabilizing' : ''}}">
+      <text class="quote-text-base title-serif">{{currentText}}</text>
+      <text class="quote-text-black title-serif">{{currentText}}</text>
+      <text class="quote-text-gold title-serif">{{currentText}}</text>
+    </view>
+
+    <!-- 长按按钮 -->
+    <view class="hold-button-wrapper">
+      <!-- 进度提示（按钮正上方） -->
+      <view class="progress-hint">
+        <text>按住下方按钮，稳住</text>
+      </view>
+
+      <view
+        class="hold-button accent-button {{isHolding ? 'holding' : ''}} {{isStabilized ? 'stabilized-btn' : ''}}"
+        bindtouchstart="onHoldStart"
+        bindtouchend="onHoldEnd"
+        bindtap="{{isStabilized ? 'onStabilizedClick' : ''}}"
+      >
+        <text class="hold-text">{{isStabilized ? '已稳住' : '按住'}}</text>
+        <text class="hold-sub" wx:if="{{!isStabilized}}">{{holdProgress}}%</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 第二阶段：三轮朗读 -->
+  <view class="phase-reveal {{showGuide ? 'show' : ''}}" wx:if="{{currentPhase === 'reading'}}">
+    <!-- 轮次进度环 -->
+    <view class="round-progress">
+      <view class="progress-ring">
+        <view class="progress-dot" wx:for="{{[1,2,3]}}" wx:key="index" style="opacity: {{index <= readingRound ? 1 : 0.3}}"></view>
+      </view>
+      <text class="round-label">0{{readingRound}}</text>
+    </view>
+
+    <!-- 金句容器 -->
+    <view class="quote-reveal-container">
+      <text class="quote-reveal-text title-serif typewriter shimmer">{{displayText}}</text>
+    </view>
+
+    <!-- 录音按钮（延迟显示） -->
+    <view class="stamp-section" wx:if="{{showStamp}}">
+      <!-- 录音按钮 -->
+      <view class="stamp-wrapper">
+        <!-- 未录音状态：显示录音按钮 -->
+        <view
+          wx:if="{{!hasRecorded}}"
+          class="record-button {{isRecording ? 'recording' : ''}}"
+          bindtouchstart="onRecordStart"
+          bindtouchend="onRecordEnd"
+        >
+          <text class="record-icon">{{isRecording ? '🔴' : '🎤'}}</text>
+          <text class="record-label">{{isRecording ? '录音中...' : '按住朗读'}}</text>
+        </view>
+
+        <!-- 已录音状态：显示回放按钮和确认按钮 -->
+        <view wx:else class="playback-buttons">
+          <!-- 回放按钮 -->
+          <view
+            class="play-button {{isPlaying ? 'playing' : ''}}"
+            bindtap="onPlayRecord"
+          >
+            <text class="play-icon">{{isPlaying ? '⏸️' : '▶️'}}</text>
+            <text class="play-label">{{isPlaying ? '播放中' : '回听'}}</text>
+          </view>
+
+          <!-- 确认按钮 -->
+          <view class="confirm-button" bindtap="onConfirmRecord">
+            <text class="confirm-icon">✓</text>
+            <text class="confirm-label">完成</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 引导语（录音按钮下方） -->
+      <view class="guide-text-container" wx:if="{{showGuide && !hasRecorded}}">
+        <text class="guide-text">{{guideText}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 第三阶段：状态询问卡片 -->
+  <view class="status-check-modal {{showStatusCheck ? 'show' : ''}}" wx:if="{{showStatusCheck}}">
+    <view class="modal-content">
+      <view class="modal-title">
+        <text class="title-serif">现在，感觉好些了吗？</text>
+      </view>
+
+      <view class="modal-buttons">
+        <!-- 稳住了 -->
+        <view class="modal-btn btn-steady" bindtap="onSteady">
+          <text class="btn-icon">✨</text>
+          <text class="btn-label">稳住了</text>
+        </view>
+
+        <!-- 仍有风暴 -->
+        <view class="modal-btn btn-stormy" bindtap="onStillStormy">
+          <text class="btn-icon">🌊</text>
+          <text class="btn-label">仍有风暴</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 关系修复急救包（付费墙） -->
+  <view class="repair-guide-modal {{showRepairGuide ? 'show' : ''}}" wx:if="{{showRepairGuide}}">
+    <view class="repair-content">
+      <!-- 顶部图标 - 简约金色心形 -->
+      <view class="repair-icon-container">
+        <text class="repair-icon-gold">✦</text>
+      </view>
+
+      <!-- 标题 -->
+      <view class="repair-title">
+        <text class="title-serif">别让此刻，成为心里的结</text>
+      </view>
+
+      <!-- 副标题 -->
+      <view class="repair-subtitle">
+        <text>10分钟黄金修复期，把伤害变成更深的连接</text>
+      </view>
+
+      <!-- 话术预览卡片（磨砂玻璃质感） -->
+      <view class="script-preview-card glass-card">
+        <!-- 清晰的开头 -->
+        <view class="script-intro">
+          <text class="script-label">此时，你可以试着这样说：</text>
+        </view>
+
+        <!-- 清晰的第一句话 -->
+        <view class="script-first-line">
+          <text class="script-text">"宝贝，妈妈刚才声音太大了..."</text>
+        </view>
+
+        <!-- 渐变模糊的核心话术 -->
+        <view class="script-blur-section">
+          <text class="script-blur-text">既保护你的尊严，又让孩子感到被爱的完整道歉话术，以及引导孩子表达感受的魔法句式。</text>
+        </view>
+
+        <!-- 独立的锁图标 -->
+        <view class="lock-icon-container">
+          <text class="lock-icon">🔒</text>
+          <text class="lock-text">解锁完整话术</text>
+        </view>
+      </view>
+
+      <!-- 权益清单（双板块：修复+觉察） -->
+      <view class="repair-features">
+        <!-- 板块一：当下·关系急救 -->
+        <view class="feature-group">
+          <view class="feature-group-title">
+            <text class="group-icon">🩹</text>
+            <text class="group-title">当下 · 关系急救</text>
+          </view>
+
+          <view class="feature-item">
+            <text class="feature-check">✓</text>
+            <view class="feature-content">
+              <text class="feature-text">不含羞耻的道歉信</text>
+              <text class="feature-sub">保全父母尊严，疗愈孩子创伤</text>
+            </view>
+          </view>
+
+          <view class="feature-item">
+            <text class="feature-check">✓</text>
+            <view class="feature-content">
+              <text class="feature-text">融化冷战的魔法句</text>
+              <text class="feature-sub">一句话打破僵局，让孩子主动靠近</text>
+            </view>
+          </view>
+
+          <view class="feature-item">
+            <text class="feature-check">✓</text>
+            <view class="feature-content">
+              <text class="feature-text">听懂哭声的翻译机</text>
+              <text class="feature-sub">一句话读懂情绪，做懂他的妈妈</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 板块二：每周·深度觉察 -->
+        <view class="feature-group">
+          <view class="feature-group-title">
+            <text class="group-icon">🕯️</text>
+            <text class="group-title">每周 · 深度觉察</text>
+          </view>
+
+          <view class="feature-item">
+            <text class="feature-check">✓</text>
+            <view class="feature-content">
+              <text class="feature-text">情绪周期热力图</text>
+              <text class="feature-sub">看见你的"易燃时刻"，提前避坑</text>
+            </view>
+          </view>
+
+          <view class="feature-item">
+            <text class="feature-check">✓</text>
+            <view class="feature-content">
+              <text class="feature-text">潜意识阴影分析</text>
+              <text class="feature-sub">挖掘情绪根源，打破代际轮回</text>
+            </view>
+          </view>
+
+          <view class="feature-item">
+            <text class="feature-check">✓</text>
+            <view class="feature-content">
+              <text class="feature-text">内在成长树</text>
+              <text class="feature-sub">记录每一次"稳住"，看见心力的生长</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 解锁按钮 -->
+      <view class="repair-buttons">
+        <view class="repair-btn repair-unlock" bindtap="onUnlockRepair">
+          <text class="repair-btn-label">解锁稳住会员</text>
+          <text class="repair-btn-price">￥9.9/月</text>
+        </view>
+
+        <view class="repair-btn repair-close" bindtap="onCloseRepairGuide">
+          <text class="repair-btn-label">稍后再说</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 治愈分享卡片 -->
+  <view class="healing-card-modal {{showHealingCard ? 'show' : ''}}" wx:if="{{showHealingCard}}">
+    <view class="healing-content">
+      <!-- 顶部图标 -->
+      <view class="healing-icon">
+        <text>✨</text>
+      </view>
+
+      <!-- 治愈的话 -->
+      <view class="healing-quote">
+        <text class="healing-text title-serif">{{healingQuote}}</text>
+      </view>
+
+      <!-- 温暖的提示 -->
+      <view class="healing-hint">
+        <text>把这份温暖，分享给需要的人</text>
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="healing-buttons">
+        <!-- 分享按钮 -->
+        <view class="healing-btn healing-share" bindtap="onShareFromHealing">
+          <text class="healing-btn-icon">✈️</text>
+          <text class="healing-btn-label">分享给朋友或队友</text>
+        </view>
+
+        <!-- 返回首页按钮 -->
+        <view class="healing-btn healing-home" bindtap="onBackHomeFromHealing">
+          <text class="healing-btn-icon">🏠</text>
+          <text class="healing-btn-label">返回首页</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 第四阶段：涟漪（完成卡片） -->
+  <view class="phase-completed {{showCompleted ? 'show' : ''}}" wx:if="{{currentPhase === 'completed'}}">
+    <!-- 卡片容器 -->
+    <view class="completed-card">
+      <!-- 场景标签 -->
+      <view class="card-tag">
+        <text>{{scenario.category}}</text>
+      </view>
+
+      <!-- 金句 -->
+      <view class="card-quote">
+        <text class="card-quote-text title-serif">{{currentText}}</text>
+      </view>
+
+      <!-- 日期印章 -->
+      <view class="date-stamp">
+        <text class="date-text">{{currentDate}}</text>
+      </view>
+    </view>
+
+    <!-- 操作按钮组 -->
+    <view class="action-buttons">
+      <!-- 分享按钮（纸飞机） -->
+      <view class="action-btn neumorphism-convex" bindtap="onShare">
+        <text class="action-icon">✈️</text>
+        <text class="action-label">分享给队友</text>
+      </view>
+
+      <!-- 返回按钮（房子） -->
+      <view class="action-btn neumorphism-convex" bindtap="onBackHome">
+        <text class="action-icon">🏠</text>
+        <text class="action-label">返回首页</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 涟漪效果 -->
+  <view class="ripple-container" wx:if="{{showRipple}}">
+    <view class="ripple"></view>
+  </view>
+</view>

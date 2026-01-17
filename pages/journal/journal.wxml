@@ -1,0 +1,166 @@
+<!--pages/journal/journal.wxml - 心力觉察周报-->
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">心力觉察周报</text>
+    <text class="page-subtitle">看见情绪的规律，就是改变的开始</text>
+  </view>
+
+  <!-- 未付费用户 -->
+  <view class="locked-view" wx:if="{{!isPro}}">
+    <!-- 页面标题 + 简短模糊预览 -->
+    <view class="blur-preview-compact">
+      <!-- 只显示一行模糊的热力图 -->
+      <view class="heatmap-blur-compact">
+        <view class="blur-bar" wx:for="{{[1,2,3,4,5,6]}}" wx:key="index"></view>
+      </view>
+    </view>
+
+    <!-- 解锁提示（紧跟着模糊预览） -->
+    <view class="unlock-cta">
+      <view class="lock-icon">🔒</view>
+      <text class="unlock-title">订阅解锁你的心灵地图</text>
+      <text class="unlock-desc">情绪热力图 + 阴影原型分析 + 成长追踪</text>
+
+      <view class="features">
+        <view class="feature-item">
+          <text class="feature-icon">📊</text>
+          <text class="feature-text">看见情绪规律</text>
+        </view>
+        <view class="feature-item">
+          <text class="feature-icon">🎭</text>
+          <text class="feature-text">识别阴影原型</text>
+        </view>
+        <view class="feature-item">
+          <text class="feature-icon">🌳</text>
+          <text class="feature-text">追踪成长轨迹</text>
+        </view>
+      </view>
+
+      <view class="subscribe-btn" bindtap="onSubscribe">
+        <text class="subscribe-label">立即订阅 ￥9.9/月</text>
+        <text class="subscribe-note">随时可取消</text>
+      </view>
+    </view>
+
+    <!-- 完整的模糊预览（放在后面，可选滚动查看） -->
+    <view class="blur-preview-full">
+      <view class="blur-module">
+        <view class="blur-title"></view>
+        <view class="heatmap-blur">
+          <view class="blur-bar" wx:for="{{[1,2,3,4,5,6]}}" wx:key="index"></view>
+        </view>
+      </view>
+
+      <view class="blur-module">
+        <view class="blur-title"></view>
+        <view class="blur-card"></view>
+      </view>
+
+      <view class="blur-module">
+        <view class="blur-title"></view>
+        <view class="blur-tree">🌲</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 付费用户 -->
+  <view class="pro-view" wx:if="{{isPro}}">
+    <!-- ========== 模块A: 情绪热力图 ========== -->
+    <view class="module">
+      <view class="module-header">
+        <text class="module-icon">🌡️</text>
+        <text class="module-title">情绪热力图</text>
+        <text class="module-subtitle">过去7天</text>
+      </view>
+
+      <!-- 热力图可视化 -->
+      <view class="heatmap-container">
+        <view class="heatmap-row" wx:for="{{heatmapData}}" wx:key="time">
+          <view class="time-label">{{item.time}}</view>
+          <view class="heatmap-bar-wrapper">
+            <view class="heatmap-bar" style="width: {{item.count * 10}}%; background: {{item.count >= 6 ? '#C43C3C' : item.count >= 4 ? '#D4AF37' : '#8C8C88'}};"></view>
+            <text class="count-label">{{item.count}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 洞察文案 -->
+      <view class="insight-box">
+        <text class="insight-icon">💡</text>
+        <text class="insight-text">{{peakTimeInsight}}</text>
+      </view>
+    </view>
+
+    <!-- ========== 模块B: 阴影原型分析 ========== -->
+    <view class="module">
+      <view class="module-header">
+        <text class="module-icon">🎭</text>
+        <text class="module-title">阴影原型分析</text>
+        <text class="module-subtitle">Top 1触发：{{topTag}}</text>
+      </view>
+
+      <!-- 可翻转卡片 -->
+      <view class="flip-card-container" bindtap="onFlipCard">
+        <view class="flip-card {{isFlipped ? 'flipped' : ''}}">
+          <!-- 正面 -->
+          <view class="flip-front">
+            <text class="flip-emoji">🎭</text>
+            <text class="flip-title">{{shadowArchetype}}</text>
+            <text class="flip-hint">点击翻看心理学解析</text>
+          </view>
+
+          <!-- 背面 -->
+          <view class="flip-back">
+            <text class="flip-analysis">{{shadowAnalysis}}</text>
+            <text class="flip-hint-back">点击返回</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== 模块C: 能量生长树 ========== -->
+    <view class="module">
+      <view class="module-header">
+        <text class="module-icon">🌳</text>
+        <text class="module-title">能量生长树</text>
+        <text class="module-subtitle">Level {{treeLevel}}</text>
+      </view>
+
+      <!-- 树的展示 -->
+      <view class="tree-container">
+        <text class="tree-emoji">{{treeImage}}</text>
+        <view class="tree-level-bar">
+          <view class="level-fill" style="width: {{treeLevel * 20}}%;"></view>
+        </view>
+        <text class="tree-text">你已经为家种下了 {{totalCount}} 次平静</text>
+      </view>
+
+      <!-- 成长里程碑 -->
+      <view class="milestones">
+        <view class="milestone-item {{treeLevel >= 2 ? 'reached' : ''}}">
+          <text class="milestone-dot">•</text>
+          <text class="milestone-label">10次：破土而出</text>
+        </view>
+        <view class="milestone-item {{treeLevel >= 3 ? 'reached' : ''}}">
+          <text class="milestone-dot">•</text>
+          <text class="milestone-label">20次：枝繁叶茂</text>
+        </view>
+        <view class="milestone-item {{treeLevel >= 4 ? 'reached' : ''}}">
+          <text class="milestone-dot">•</text>
+          <text class="milestone-label">30次：根深蒂固</text>
+        </view>
+        <view class="milestone-item {{treeLevel >= 5 ? 'reached' : ''}}">
+          <text class="milestone-dot">•</text>
+          <text class="milestone-label">50次：参天大树</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部提示 -->
+    <view class="footer-note">
+      <text>数据来源于你的情绪记录</text>
+      <text>每周一更新</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,70 @@
+/* pages/index/index.wxss - 原研哉式极简主义 */
+
+/* 顶部标题区 */
+.header {
+  text-align: center;
+  padding: 80rpx 40rpx 60rpx;
+}
+
+.title {
+  display: block;
+  font-size: 96rpx;
+  margin-bottom: 24rpx;
+  line-height: 1.2;
+}
+
+.subtitle {
+  display: block;
+  font-size: 28rpx;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+/* 2x3 场景网格 */
+.scenarios-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32rpx;
+  padding: 0 20rpx 80rpx;
+}
+
+/* 场景卡片 - 新拟态凸起 */
+.scenario-card {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+  box-sizing: border-box;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 几何符号 */
+.scenario-icon {
+  font-size: 64rpx;
+  margin-bottom: 24rpx;
+  opacity: 0.3;
+  font-family: 'Courier New', monospace;
+}
+
+/* 场景标题 */
+.scenario-title text {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  letter-spacing: 0.05em;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* 锁定标记 */
+.lock-badge {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  font-size: 24rpx;
+  opacity: 0.4;
+}
