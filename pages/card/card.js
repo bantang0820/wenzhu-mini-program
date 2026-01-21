@@ -192,12 +192,45 @@ Page({
     // 添加细腻纸张纹理效果
     this.addFinePaperTexture(ctx, width, height);
 
-    // 添加光影效果（左上角暖光晕，模拟台灯）
-    const lightGradient = ctx.createRadialGradient(100, 100, 0, 150, 150, 400);
-    lightGradient.addColorStop(0, 'rgba(255, 248, 220, 0.15)');
-    lightGradient.addColorStop(1, 'rgba(255, 248, 220, 0)');
-    ctx.fillStyle = lightGradient;
+    // 添加多层次光影效果(营造"灯光下"的温馨氛围)
+
+    // 第一层:左上角主光晕(模拟台灯或暖灯光源)
+    const mainLightGradient = ctx.createRadialGradient(120, 80, 0, 120, 80, 500);
+    mainLightGradient.addColorStop(0, 'rgba(255, 248, 220, 0.25)'); // 增加不透明度
+    mainLightGradient.addColorStop(0.3, 'rgba(255, 248, 220, 0.12)');
+    mainLightGradient.addColorStop(0.6, 'rgba(255, 243, 205, 0.05)');
+    mainLightGradient.addColorStop(1, 'rgba(255, 248, 220, 0)');
+    ctx.fillStyle = mainLightGradient;
     ctx.fillRect(0, 0, width, height);
+
+    // 第二层:右上角次光晕(增加层次感)
+    const secondaryLightGradient = ctx.createRadialGradient(width - 150, 120, 0, width - 150, 120, 350);
+    secondaryLightGradient.addColorStop(0, 'rgba(255, 250, 230, 0.15)');
+    secondaryLightGradient.addColorStop(0.5, 'rgba(255, 250, 230, 0.06)');
+    secondaryLightGradient.addColorStop(1, 'rgba(255, 250, 230, 0)');
+    ctx.fillStyle = secondaryLightGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // 第三层:底部微弱反光(模拟桌面反光)
+    const bottomLightGradient = ctx.createLinearGradient(0, height - 200, 0, height);
+    bottomLightGradient.addColorStop(0, 'rgba(255, 248, 220, 0)');
+    bottomLightGradient.addColorStop(1, 'rgba(255, 248, 220, 0.08)');
+    ctx.fillStyle = bottomLightGradient;
+    ctx.fillRect(0, height - 200, width, 200);
+
+    // 第四层:添加局部光斑(更真实的光照效果)
+    ctx.save();
+    for (let i = 0; i < 8; i++) {
+      const spotX = Math.random() * width * 0.6 + width * 0.1;
+      const spotY = Math.random() * height * 0.4;
+      const spotRadius = Math.random() * 80 + 40;
+      const spotGradient = ctx.createRadialGradient(spotX, spotY, 0, spotX, spotY, spotRadius);
+      spotGradient.addColorStop(0, 'rgba(255, 252, 235, 0.04)');
+      spotGradient.addColorStop(1, 'rgba(255, 252, 235, 0)');
+      ctx.fillStyle = spotGradient;
+      ctx.fillRect(spotX - spotRadius, spotY - spotRadius, spotRadius * 2, spotRadius * 2);
+    }
+    ctx.restore();
 
     // ============ 2. 装饰元素 ============
     // 左上角装饰（极简色块）
@@ -267,63 +300,74 @@ Page({
     ctx.fill();
 
     // ============ 5. 内容区 ============
-    const contentMargin = 70;
+    const contentMargin = 85; // 增加页边距，让内容更透气
     const maxWidth = width - contentMargin * 2;
     const startX = contentMargin;
     const startY = 310; // 增加间距，让内容与标题分离更清晰
 
     this.drawDiaryContent(ctx, diaryContent, startX, startY, maxWidth);
 
-    // ============ 6. 底部：简化版 ============
-    const footerY = height - 110; // 稍微减小底部区域高度
+    // ============ 6. 底部：优化版 ============
+    const footerY = height - 120; // 增加底部区域高度
 
-    // 分隔线
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+    // 分隔线（更精致）
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(contentMargin, footerY);
     ctx.lineTo(width - contentMargin, footerY);
     ctx.stroke();
 
-    // 小程序码（居中）
-    const qrSize = 70;
-    const qrY = footerY + 20;
+    // 小程序码区域（居中布局）
+    const qrSize = 75; // 稍微加大二维码
+    const qrY = footerY + 25;
 
     // 计算整个组合的宽度，使其居中
-    // 假设文字宽度约为80px，总宽度约为 qrSize + 20 + 80 = 170px
-    const totalWidth = qrSize + 100; // 二维码 + 间距 + 文字
-    const startX = width / 2 - totalWidth / 2;
+    const totalWidth = qrSize + 110;
+    const footerStartX = width / 2 - totalWidth / 2;
 
-    // 小程序码背景（圆形白色）
+    // 小程序码背景（圆形白色 + 阴影效果）
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
-    ctx.arc(startX + qrSize/2, qrY + qrSize/2, qrSize/2, 0, Math.PI * 2);
+    ctx.arc(footerStartX + qrSize/2, qrY + qrSize/2, qrSize/2, 0, Math.PI * 2);
     ctx.fill();
 
-    // 小程序码边框
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-    ctx.lineWidth = 1;
+    // 小程序码边框（双层，更精致）
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(startX + qrSize/2, qrY + qrSize/2, qrSize/2, 0, Math.PI * 2);
+    ctx.arc(footerStartX + qrSize/2, qrY + qrSize/2, qrSize/2, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 右侧两行文字
-    const textX = startX + qrSize + 25;
-    const textY1 = qrY + 22;
-    const textY2 = qrY + 52;
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.15)'; // 淡金色边框
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(footerStartX + qrSize/2, qrY + qrSize/2, qrSize/2 + 2, 0, Math.PI * 2);
+    ctx.stroke();
 
-    // 统一字体大小
-    ctx.font = '400 15px "Songti SC", serif';
+    // 右侧文字区域（优化排版和字体）
+    const textX = footerStartX + qrSize + 28;
+
+    // 第一行：扫码加入（手写风格）
+    ctx.font = '400 20px "STKaiti", "KaiTi", "cursive", serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillText('扫码加入', textX, qrY + 8);
 
-    // 第一行：扫码加入
+    // 第二行：稳住· 正念育儿（英文副标题 + 中文）
+    ctx.font = 'italic 400 13px "Songti SC", serif';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.fillText('Mindful Parenting', textX, qrY + 35);
+
+    ctx.font = '400 18px "STKaiti", "KaiTi", "cursive", serif';
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillText('扫码加入', textX, textY1);
+    ctx.fillText('稳住· 正念育儿', textX, qrY + 55);
 
-    // 第二行：稳住· 正念育儿
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.fillText('稳住· 正念育儿', textX, textY2);
+    // 添加小装饰图标（叶子或星星）
+    ctx.font = '16px sans-serif';
+    ctx.fillStyle = 'rgba(212, 175, 55, 0.4)';
+    ctx.fillText('🌿', textX - 8, qrY + 38);
 
     // ============ 生成图片 ============
     wx.canvasToTempFilePath({
@@ -354,11 +398,11 @@ Page({
 
     const paragraphs = content.split('\n\n');
     let currentY = startY;
-    const lineHeight = 40; // 增加行高,模拟信纸的呼吸感(从36增加到40)
-    const paragraphSpacing = 18; // 进一步减小段落间距
+    const lineHeight = 46; // 进一步增加行高,营造信纸的呼吸感
+    const paragraphSpacing = 24; // 增加段落间距,让内容更透气
 
-    // 固定最大行数为20行
-    const maxLines = 20;
+    // 固定最大行数为18行（减少行数避免溢出）
+    const maxLines = 18;
 
     console.log('内容区参数:', { startY, maxLines });
 
@@ -404,7 +448,7 @@ Page({
           } else {
             // 普通文字 - 使用手写字体
             ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-            ctx.font = '400 22px "STKaiti", "KaiTi", "cursive", serif';
+            ctx.font = '400 24px "STKaiti", "KaiTi", "cursive", serif';
             ctx.textAlign = 'left';
             ctx.textBaseline = 'alphabetic';
 
@@ -469,111 +513,178 @@ Page({
 
   // 绘制涂改文字（潦草的多道笔触）
   drawStrikethroughText(ctx, text, x, y, maxWidth) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    ctx.font = '400 22px "STKaiti", "KaiTi", "cursive", serif';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.font = '400 24px "STKaiti", "KaiTi", "cursive", serif';
     ctx.textAlign = 'left';
 
     const lines = this.wrapTextToLines(ctx, text, maxWidth);
     lines.forEach((line, lineIndex) => {
-      const lineY = y + lineIndex * 40;
+      const lineY = y + lineIndex * 46;
 
-      // 绘制潦草的涂改痕迹(2-3道不规则笔触)
+      // 绘制潦草的涂改痕迹(3-4道不规则笔触,更真实的纠结感)
       const metrics = ctx.measureText(line);
       const lineWidth = metrics.width;
 
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
-      ctx.lineWidth = 1.2;
-
-      // 第一道笔触(稍微弯曲)
+      // 第一道笔触(粗且弯曲,模拟用力涂改)
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.moveTo(x, lineY - 7);
+      ctx.moveTo(x - 2, lineY - 8);
       const midX = x + lineWidth / 2;
-      const curveOffset = Math.random() * 4 - 2; // 随机弯曲
-      ctx.quadraticCurveTo(midX, lineY - 7 + curveOffset, x + lineWidth, lineY - 7);
+      const curveOffset = Math.random() * 6 - 3; // 更大的随机弯曲
+      ctx.quadraticCurveTo(midX, lineY - 8 + curveOffset, x + lineWidth + 2, lineY - 8 + curveOffset * 0.5);
       ctx.stroke();
 
-      // 第二道笔触(稍微偏移,模拟纠结感)
-      if (lineWidth > 30) {
+      // 第二道笔触(偏移较大,模拟反复涂改的纠结)
+      if (lineWidth > 20) {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.lineWidth = 1.4;
         ctx.beginPath();
-        const yOffset2 = Math.random() * 3 - 1;
-        ctx.moveTo(x + 5, lineY - 7 + yOffset2);
-        ctx.quadraticCurveTo(midX, lineY - 7 + curveOffset + yOffset2, x + lineWidth - 5, lineY - 7 + yOffset2);
+        const yOffset2 = Math.random() * 5 - 2;
+        const startX2 = x + Math.random() * 8 - 4;
+        ctx.moveTo(startX2, lineY - 8 + yOffset2);
+        const midY2 = lineY - 8 + curveOffset * 0.7 + yOffset2;
+        const endX2 = x + lineWidth + Math.random() * 8 - 4;
+        ctx.quadraticCurveTo(midX, midY2, endX2, lineY - 8 + yOffset2 + curveOffset * 0.3);
         ctx.stroke();
       }
 
-      // 第三道笔触(部分区域,更随意)
-      if (lineWidth > 50) {
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
+      // 第三道笔触(快速划过的感觉)
+      if (lineWidth > 40) {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.20)';
+        ctx.lineWidth = 1.1;
         ctx.beginPath();
-        const startPct = Math.random() * 0.2;
-        const endPct = 1 - Math.random() * 0.2;
-        const yOffset3 = Math.random() * 4 - 2;
-        ctx.moveTo(x + lineWidth * startPct, lineY - 7 + yOffset3);
-        ctx.lineTo(x + lineWidth * endPct, lineY - 7 + yOffset3);
+        const startPct = Math.random() * 0.15;
+        const endPct = 1 - Math.random() * 0.15;
+        const yOffset3 = Math.random() * 6 - 3;
+        ctx.moveTo(x + lineWidth * startPct, lineY - 8 + yOffset3);
+        ctx.lineTo(x + lineWidth * endPct, lineY - 8 + yOffset3 + Math.random() * 4 - 2);
         ctx.stroke();
       }
 
-      // 绘制文字
+      // 第四道笔触(局部加重涂改,更纠结)
+      if (lineWidth > 60) {
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        const heavyStart = Math.random() * 0.3 + 0.2;
+        const heavyEnd = Math.random() * 0.3 + 0.5;
+        const yOffset4 = Math.random() * 5 - 2;
+        ctx.moveTo(x + lineWidth * heavyStart, lineY - 8 + yOffset4);
+        ctx.lineTo(x + lineWidth * heavyEnd, lineY - 8 + yOffset4 + Math.random() * 3 - 1);
+        ctx.stroke();
+      }
+
+      // 绘制文字(在涂改线之下)
       ctx.fillText(line, x, lineY);
     });
   },
 
   // 绘制荧光笔高亮文字(不规则边缘效果)
   drawHighlightedText(ctx, text, x, y, maxWidth) {
-    ctx.font = '400 22px "STKaiti", "KaiTi", "cursive", serif';
+    ctx.font = '400 24px "STKaiti", "KaiTi", "cursive", serif';
     ctx.textAlign = 'left';
 
     const lines = this.wrapTextToLines(ctx, text, maxWidth);
     lines.forEach((line, lineIndex) => {
-      const lineY = y + lineIndex * 40;
+      const lineY = y + lineIndex * 46;
 
-      // 绘制不规则荧光笔效果(多层叠加,边缘不规则)
+      // 绘制不规则荧光笔效果(多层叠加,边缘更不规则,模拟真实荧光笔)
       const metrics = ctx.measureText(line);
       const textWidth = metrics.width;
-      const highlightHeight = 26;
-      const baseY = lineY - 20;
+      const highlightHeight = 28;
+      const baseY = lineY - 22;
 
-      // 第一层:主荧光笔效果
+      // 第一层:主荧光笔效果(更透明,更自然)
       ctx.save();
       ctx.translate(x + textWidth / 2, baseY + highlightHeight / 2);
-      ctx.rotate(-0.015 + Math.random() * 0.01); // 轻微随机旋转
+      const rotation1 = -0.02 + Math.random() * 0.012; // 轻微随机旋转
+      ctx.rotate(rotation1);
 
-      const alpha1 = 0.12 + Math.random() * 0.06;
-      ctx.fillStyle = `rgba(255, 235, 59, ${alpha1})`;
+      const alpha1 = 0.15 + Math.random() * 0.08;
+      ctx.fillStyle = `rgba(255, 230, 59, ${alpha1})`; // 稍暖的黄色
 
-      // 绘制不规则矩形(使用贝塞尔曲线模拟手绘边缘)
+      // 绘制不规则矩形(使用更多贝塞尔曲线点模拟手绘边缘)
       ctx.beginPath();
-      const halfW = textWidth / 2 + 4;
+      const halfW = textWidth / 2 + 5;
       const halfH = highlightHeight / 2;
-      const roughness = 2; // 边缘粗糙度
+      const roughness = 3.5; // 增加边缘粗糙度
 
+      // 上边缘(不规则波浪)
       ctx.moveTo(-halfW + Math.random() * roughness, -halfH);
-      ctx.quadraticCurveTo(-halfW, -halfH + Math.random() * roughness, -halfW + Math.random() * roughness, 0);
-      ctx.quadraticCurveTo(-halfW, halfH - Math.random() * roughness, -halfW + Math.random() * roughness, halfH);
-      ctx.lineTo(halfW - Math.random() * roughness, halfH);
-      ctx.quadraticCurveTo(halfW, halfH - Math.random() * roughness, halfW - Math.random() * roughness, 0);
-      ctx.quadraticCurveTo(halfW, -halfH + Math.random() * roughness, halfW - Math.random() * roughness, -halfH);
+      ctx.quadraticCurveTo(-halfW + Math.random() * roughness, -halfH + Math.random() * roughness,
+                          0 + Math.random() * roughness - roughness/2, -halfH + Math.random() * roughness);
+      ctx.quadraticCurveTo(halfW - Math.random() * roughness, -halfH + Math.random() * roughness,
+                          halfW - Math.random() * roughness, -halfH);
+
+      // 右边缘(稍微内收)
+      ctx.quadraticCurveTo(halfW, -halfH + Math.random() * roughness,
+                          halfW + Math.random() * 2 - 1, 0 + Math.random() * roughness - roughness/2);
+      ctx.quadraticCurveTo(halfW, halfH - Math.random() * roughness,
+                          halfW - Math.random() * roughness, halfH);
+
+      // 下边缘(更明显的不规则)
+      ctx.quadraticCurveTo(halfW - Math.random() * roughness, halfH + Math.random() * 2,
+                          0 + Math.random() * roughness - roughness/2, halfH + Math.random() * 2);
+      ctx.quadraticCurveTo(-halfW + Math.random() * roughness, halfH + Math.random() * 2,
+                          -halfW + Math.random() * roughness, halfH);
+
+      // 左边缘
+      ctx.quadraticCurveTo(-halfW, halfH - Math.random() * roughness,
+                          -halfW + Math.random() * 2 - 1, 0 + Math.random() * roughness - roughness/2);
+      ctx.quadraticCurveTo(-halfW, -halfH + Math.random() * roughness,
+                          -halfW + Math.random() * roughness, -halfH);
+
       ctx.closePath();
       ctx.fill();
 
       ctx.restore();
 
-      // 第二层:叠加层,模拟笔触深浅变化
+      // 第二层:叠加层,模拟笔触深浅变化(更明显的不规则)
       ctx.save();
       ctx.translate(x + textWidth / 2, baseY + highlightHeight / 2);
-      ctx.rotate(-0.02 + Math.random() * 0.015);
+      const rotation2 = -0.025 + Math.random() * 0.018;
+      ctx.rotate(rotation2);
 
-      const alpha2 = 0.08 + Math.random() * 0.05;
+      const alpha2 = 0.10 + Math.random() * 0.07;
       ctx.fillStyle = `rgba(255, 235, 59, ${alpha2})`;
 
       ctx.beginPath();
-      const offsetX = Math.random() * 3 - 1.5;
-      const offsetY = Math.random() * 2 - 1;
+      const offsetX = Math.random() * 4 - 2;
+      const offsetY = Math.random() * 3 - 1.5;
 
-      ctx.moveTo(-halfW + 2 + offsetX, -halfH + offsetY);
-      ctx.lineTo(halfW - 2 + offsetX, -halfH + offsetY);
-      ctx.lineTo(halfW - 2 + offsetX, halfH + offsetY);
-      ctx.lineTo(-halfW + 2 + offsetX, halfH + offsetY);
+      const halfW2 = textWidth / 2 + 3;
+      const halfH2 = highlightHeight / 2 - 1;
+      const rough2 = 2.5;
+
+      ctx.moveTo(-halfW2 + offsetX + Math.random() * rough2, -halfH2 + offsetY);
+      ctx.lineTo(halfW2 + offsetX + Math.random() * rough2, -halfH2 + offsetY + Math.random() * rough2);
+      ctx.lineTo(halfW2 + offsetX + Math.random() * rough2, halfH2 + offsetY + Math.random() * rough2);
+      ctx.lineTo(-halfW2 + offsetX + Math.random() * rough2, halfH2 + offsetY);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+
+      // 第三层:局部加深效果,模拟荧光笔起笔收笔的深浅
+      ctx.save();
+      ctx.translate(x + textWidth / 2, baseY + highlightHeight / 2);
+      const rotation3 = -0.015 + Math.random() * 0.01;
+      ctx.rotate(rotation3);
+
+      const alpha3 = 0.06 + Math.random() * 0.05;
+      ctx.fillStyle = `rgba(255, 220, 59, ${alpha3})`;
+
+      ctx.beginPath();
+      const gradientWidth = textWidth * 0.7;
+      const gradientX = (Math.random() - 0.5) * textWidth * 0.3;
+      const halfW3 = gradientWidth / 2;
+      const halfH3 = highlightHeight / 2 - 2;
+
+      ctx.moveTo(-halfW3 + gradientX, -halfH3);
+      ctx.lineTo(halfW3 + gradientX, -halfH3);
+      ctx.lineTo(halfW3 + gradientX, halfH3);
+      ctx.lineTo(-halfW3 + gradientX, halfH3);
       ctx.closePath();
       ctx.fill();
 
@@ -674,14 +785,44 @@ Page({
   // 添加细腻纸张纹理效果
   addFinePaperTexture(ctx, width, height) {
     ctx.save();
-    // 更多但更细腻的噪点
-    for (let i = 0; i < 2000; i++) {
+
+    // 第一层:细腻的纸纹噪点(增加数量和变化)
+    for (let i = 0; i < 3500; i++) {
       const x = Math.random() * width;
       const y = Math.random() * height;
-      const size = Math.random() * 0.8;
-      ctx.fillStyle = `rgba(139, 126, 116, ${Math.random() * 0.015})`;
+      const size = Math.random() * 1.2;
+      const alpha = Math.random() * 0.018; // 略微增加不透明度
+      // 使用暖灰色,模拟纸张纤维
+      ctx.fillStyle = `rgba(139, 126, 116, ${alpha})`;
       ctx.fillRect(x, y, size, size);
     }
+
+    // 第二层:添加横向的纤维纹理,模拟纸张条纹
+    ctx.strokeStyle = 'rgba(139, 126, 116, 0.008)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < height; i += 8) {
+      if (Math.random() > 0.3) { // 不是每条都画,增加随机性
+        ctx.beginPath();
+        const y = i + Math.random() * 2;
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+    }
+
+    // 第三层:偶尔的纤维团块,增加自然感
+    for (let i = 0; i < 150; i++) {
+      const centerX = Math.random() * width;
+      const centerY = Math.random() * height;
+      const size = Math.random() * 2.5 + 0.5;
+      const alpha = Math.random() * 0.012;
+
+      ctx.fillStyle = `rgba(139, 126, 116, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     ctx.restore();
   },
 

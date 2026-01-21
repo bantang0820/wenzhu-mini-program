@@ -1,53 +1,45 @@
-<!--pages/chapter/chapter.wxml - 章节详情页-->
+<!--pages/chapter/chapter.wxml - 章节详情页（微课模式）-->
 <view class="container">
-  <!-- ========== 章节头部 ========== -->
+  <!-- ========== �oidagem头部 ========== -->
   <view class="chapter-header">
     <view class="chapter-meta">
       <text class="chapter-number">第 {{chapter.id}} 章</text>
       <view class="chapter-divider">|</view>
-      <text class="chapter-progress">{{completedCount}}/10 句</text>
+      <text class="chapter-progress">{{completedCount}}/10 小节</text>
     </view>
     <text class="chapter-title">{{chapter.title}}</text>
     <text class="chapter-subtitle">{{chapter.subtitle}}</text>
   </view>
 
-  <!-- ========== 练习句子列表 ========== -->
-  <view class="sentences-section">
-    <view class="sentence-card" wx:for="{{sentences}}" wx:key="id">
-      <!-- 句子序号 -->
-      <view class="sentence-number {{item.completed ? 'completed' : ''}}">
-        {{item.id}}
+  <!-- ========== 每日微课列表 ========== -->
+  <view class="lessons-section">
+    <view class="lesson-card" wx:for="{{lessons}}" wx:key="id" bindtap="onLessonTap" data-id="{{item.id}}">
+      <!-- 微课序号 -->
+      <view class="lesson-number {{item.completed ? 'completed' : ''}}">
+        <text class="number-text">{{item.id}}</text>
       </view>
 
-      <!-- 句子内容 -->
-      <view class="sentence-content">
-        <text class="sentence-text">{{item.content}}</text>
-
-        <!-- 场景标签 -->
-        <view class="scenario-tag" wx:if="{{item.scenario}}">
-          <text class="scenario-icon">💡</text>
-          <text class="scenario-text">{{item.scenario}}</text>
-        </view>
-      </view>
-
-      <!-- 操作按钮 -->
-      <view class="sentence-actions">
-        <view
-          class="action-btn practice-btn"
-          bindtap="onPracticeTap"
-          data-id="{{item.id}}"
-          data-content="{{item.content}}"
-        >
-          <text class="btn-icon">{{item.completed ? '🔁' : '🎯'}}</text>
-          <text class="btn-text">{{item.completed ? '再练一次' : '开始练习'}}</text>
+      <!-- 微课内容 -->
+      <view class="lesson-content">
+        <!-- 破：金句标题 -->
+        <view class="lesson-breakthrough">
+          <text class="breakthrough-icon">💡</text>
+          <text class="breakthrough-text">{{item.breakthrough}}</text>
         </view>
 
-        <view
-          class="action-btn complete-btn {{item.completed ? 'completed' : ''}}"
-          bindtap="onCompleteTap"
-          data-id="{{item.id}}"
-        >
-          <text class="btn-icon">{{item.completed ? '✓' : '○'}}</text>
+        <!-- 立：解读（第一段）-->
+        <text class="lesson-insight">{{item.insight}}</text>
+
+        <!-- 行：行动建议 -->
+        <view class="lesson-action" wx:if="{{item.action}}">
+          <text class="action-icon">🎯</text>
+          <text class="action-text">{{item.action}}</text>
+        </view>
+
+        <!-- 完成状态 -->
+        <view class="lesson-status">
+          <text class="status-text">{{item.completed ? '已完成' : '待完成'}}</text>
+          <text class="status-icon">{{item.completed ? '✓' : '○'}}</text>
         </view>
       </view>
     </view>
@@ -58,6 +50,49 @@
     <view class="complete-chapter-btn" bindtap="onCompleteChapter">
       <text class="btn-main-text">完成本章节</text>
       <text class="btn-sub-text">解锁下一章</text>
+    </view>
+  </view>
+</view>
+
+<!-- ========== 自定义微课详情弹窗 ========== -->
+<view class="lesson-modal" wx:if="{{showLessonModal}}" catchtap="onCloseModal">
+  <view class="modal-content" catchtap="stopPropagation">
+    <!-- 关闭按钮 -->
+    <view class="modal-close" bindtap="onCloseModal">
+      <text class="close-icon">×</text>
+    </view>
+
+    <!-- 弹窗内容 -->
+    <scroll-view class="modal-scroll" scroll-y>
+      <!-- 破：金句 -->
+      <view class="modal-section breakthrough-section">
+        <view class="section-label">💡 觉醒</view>
+        <text class="breakthrough-title">{{currentLesson.breakthrough}}</text>
+      </view>
+
+      <!-- 立：解读 -->
+      <view class="modal-section insight-section">
+        <view class="section-label">📖 领悟</view>
+        <text class="insight-text">{{currentLesson.insight}}</text>
+      </view>
+
+      <!-- 行：行动 -->
+      <view class="modal-section action-section">
+        <view class="section-label">🎯 实践</view>
+        <text class="action-text-full">{{currentLesson.action}}</text>
+      </view>
+    </scroll-view>
+
+    <!-- 底部操作按钮 -->
+    <view class="modal-actions">
+      <view class="action-btn practice-btn-full" bindtap="onPracticeLesson">
+        <text class="btn-icon">🎙️</text>
+        <text class="btn-label">朗读</text>
+      </view>
+      <view class="action-btn complete-btn-full {{currentLesson.completed ? 'completed' : ''}}" bindtap="onToggleComplete">
+        <text class="btn-icon">{{currentLesson.completed ? '✓' : '○'}}</text>
+        <text class="btn-label">{{currentLesson.completed ? '已完成' : '标记完成'}}</text>
+      </view>
     </view>
   </view>
 </view>

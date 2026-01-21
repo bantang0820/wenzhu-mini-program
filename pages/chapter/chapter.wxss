@@ -1,4 +1,4 @@
-/* pages/chapter/chapter.wxss - 章节详情页 */
+/* pages/chapter/chapter.wxss - 章节详情页（微课模式）*/
 
 .container {
   min-height: 100vh;
@@ -59,23 +59,32 @@
   font-family: "Songti SC", serif;
 }
 
-/* ========== 练习句子列表 ========== */
-.sentences-section {
+/* ========== 微课列表 ========== */
+.lessons-section {
   padding: 24rpx;
 }
 
-.sentence-card {
+/* 微课卡片 */
+.lesson-card {
   background: #FFFFFF;
   border-radius: 20rpx;
   padding: 28rpx;
   margin-bottom: 20rpx;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  display: flex;
+  gap: 20rpx;
   position: relative;
   overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.lesson-card:active {
+  transform: scale(0.99);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 
 /* 完成状态标记 */
-.sentence-card::before {
+.lesson-card::before {
   content: '';
   position: absolute;
   left: 0;
@@ -86,134 +95,130 @@
   transition: background 0.3s ease;
 }
 
-.sentence-card.completed::before {
+.lesson-card.completed::before {
   background: linear-gradient(180deg, #D4AF37 0%, #F0D060 100%);
 }
 
-/* 句子序号 */
-.sentence-number {
-  position: absolute;
-  top: 24rpx;
-  right: 24rpx;
-  width: 48rpx;
-  height: 48rpx;
+/* 微课序号 */
+.lesson-number {
+  width: 56rpx;
+  height: 56rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(140, 134, 128, 0.08);
-  border-radius: 50%;
-  font-size: 20rpx;
-  font-weight: 600;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.lesson-number.completed {
+  background: rgba(212, 175, 55, 0.15);
+}
+
+.lesson-number .number-text {
+  font-size: 24rpx;
+  font-weight: 700;
   color: rgba(140, 134, 128, 0.5);
   font-family: "DIN Alternate", sans-serif;
 }
 
-.sentence-number.completed {
-  background: rgba(212, 175, 55, 0.15);
+.lesson-number.completed .number-text {
   color: #D4AF37;
 }
 
-/* 句子内容 */
-.sentence-content {
-  padding-right: 60rpx;
-  margin-bottom: 20rpx;
-}
-
-.sentence-text {
-  display: block;
-  font-size: 28rpx;
-  line-height: 1.8;
-  color: #2B303A;
-  font-family: "KaiTi", "STKaiti", "Songti SC", serif;
-  letter-spacing: 0.5rpx;
-  margin-bottom: 12rpx;
-}
-
-/* 场景标签 */
-.scenario-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 8rpx;
-  padding: 6rpx 12rpx;
-  background: rgba(93, 64, 55, 0.05);
-  border-radius: 8rpx;
-}
-
-.scenario-icon {
-  font-size: 20rpx;
-}
-
-.scenario-text {
-  font-size: 20rpx;
-  color: rgba(93, 64, 55, 0.7);
-}
-
-/* 操作按钮 */
-.sentence-actions {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  padding-top: 16rpx;
-  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  padding: 12rpx 20rpx;
-  border-radius: 12rpx;
-  font-size: 22rpx;
-  transition: all 0.2s ease;
-}
-
-.practice-btn {
+/* 微课内容区 */
+.lesson-content {
   flex: 1;
-  justify-content: center;
-  background: rgba(212, 175, 55, 0.1);
-  border: 1rpx solid rgba(212, 175, 55, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
 }
 
-.practice-btn:active {
-  background: rgba(212, 175, 55, 0.15);
-  transform: scale(0.98);
-}
-
-.practice-btn .btn-icon {
-  font-size: 24rpx;
-}
-
-.practice-btn .btn-text {
-  color: #D4AF37;
-  font-weight: 600;
-}
-
-.complete-btn {
-  width: 56rpx;
-  height: 56rpx;
-  justify-content: center;
+/* 破：金句标题 */
+.lesson-breakthrough {
+  display: flex;
   align-items: center;
-  background: rgba(140, 134, 128, 0.08);
-  border: 2rpx solid rgba(140, 134, 128, 0.15);
+  gap: 8rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.breakthrough-icon {
+  font-size: 24rpx;
   flex-shrink: 0;
 }
 
-.complete-btn:active {
-  background: rgba(140, 134, 128, 0.12);
-  transform: scale(0.95);
+.breakthrough-text {
+  flex: 1;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #2B303A;
+  line-height: 1.4;
+  font-family: "Songti SC", serif;
 }
 
-.complete-btn.completed {
-  background: rgba(212, 175, 55, 0.15);
-  border-color: rgba(212, 175, 55, 0.3);
+/* 立：解读 */
+.lesson-insight {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.4;
+  color: #5D4037;
+  font-family: "KaiTi", "STKaiti", serif;
+  letter-spacing: 0.5rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  white-space: pre-line;
 }
 
-.complete-btn .btn-icon {
-  font-size: 28rpx;
-  color: rgba(140, 134, 128, 0.4);
+/* 行：行动建议 */
+.lesson-action {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 16rpx;
+  background: rgba(212, 175, 55, 0.08);
+  border-radius: 12rpx;
+  border-left: 3rpx solid rgba(212, 175, 55, 0.3);
 }
 
-.complete-btn.completed .btn-icon {
+.action-icon {
+  font-size: 20rpx;
+  flex-shrink: 0;
+}
+
+.action-text {
+  flex: 1;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: #D4AF37;
+  font-family: "KaiTi", "STKaiti", serif;
+  font-weight: 600;
+}
+
+/* 完成状态 */
+.lesson-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 12rpx;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.status-text {
+  font-size: 20rpx;
+  color: rgba(140, 134, 128, 0.6);
+}
+
+.status-icon {
+  font-size: 24rpx;
+  color: rgba(140, 134, 128, 0.3);
+}
+
+.lesson-card.completed .status-icon {
   color: #D4AF37;
 }
 
@@ -257,4 +262,195 @@
 .btn-sub-text {
   font-size: 20rpx;
   color: rgba(255, 255, 255, 0.9);
+}
+
+/* ========== 自定义微课详情弹窗 ========== */
+.lesson-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  width: 660rpx;
+  max-height: 80vh;
+  background: linear-gradient(180deg, #FFFEF9 0%, #F9F6F0 100%);
+  border-radius: 32rpx;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100rpx);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 关闭按钮 */
+.modal-close {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(140, 134, 128, 0.1);
+  border-radius: 50%;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.modal-close:active {
+  background: rgba(140, 134, 128, 0.2);
+  transform: scale(0.95);
+}
+
+.close-icon {
+  font-size: 48rpx;
+  color: rgba(140, 134, 128, 0.6);
+  line-height: 1;
+  font-weight: 300;
+}
+
+/* 弹窗滚动区域 */
+.modal-scroll {
+  flex: 1;
+  padding: 80rpx 40rpx 40rpx;
+  max-height: calc(80vh - 160rpx);
+}
+
+/* 弹窗段落 */
+.modal-section {
+  margin-bottom: 32rpx;
+  position: relative;
+}
+
+.section-label {
+  display: inline-block;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #D4AF37;
+  margin-bottom: 16rpx;
+  letter-spacing: 2rpx;
+  font-family: "Songti SC", serif;
+}
+
+/* 破：金句 */
+.breakthrough-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #2B303A;
+  line-height: 1.5;
+  font-family: "Songti SC", serif;
+}
+
+/* 立：解读 */
+.insight-text {
+  display: block;
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: #5D4037;
+  font-family: "KaiTi", "STKaiti", serif;
+  text-align: justify;
+  white-space: pre-line;
+}
+
+/* 行：行动 */
+.action-text-full {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: #D4AF37;
+  font-family: "KaiTi", "STKaiti", serif;
+  padding: 16rpx 20rpx;
+  background: rgba(212, 175, 55, 0.08);
+  border-radius: 12rpx;
+  border-left: 4rpx solid rgba(212, 175, 55, 0.3);
+}
+
+/* 底部操作按钮 */
+.modal-actions {
+  display: flex;
+  gap: 16rpx;
+  padding: 24rpx 40rpx 32rpx;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.06);
+  background: #FFFFFF;
+  border-radius: 0 0 32rpx 32rpx;
+}
+
+.action-btn {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  border-radius: 16rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.practice-btn-full {
+  background: linear-gradient(135deg, #8B7E74 0%, #6B5E54 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 12rpx rgba(139, 126, 116, 0.3);
+}
+
+.practice-btn-full:active {
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(139, 126, 116, 0.4);
+}
+
+.complete-btn-full {
+  background: rgba(212, 175, 55, 0.1);
+  color: #D4AF37;
+  border: 2rpx solid rgba(212, 175, 55, 0.3);
+}
+
+.complete-btn-full:active {
+  transform: scale(0.98);
+  background: rgba(212, 175, 55, 0.15);
+}
+
+.complete-btn-full.completed {
+  background: rgba(212, 175, 55, 0.2);
+  color: #FFFFFF;
+}
+
+.action-btn .btn-icon {
+  font-size: 32rpx;
+}
+
+.action-btn .btn-label {
+  font-size: 26rpx;
+  font-weight: 600;
 }

@@ -18,7 +18,7 @@
         </view>
         <view class="progress-info">
           <text class="progress-text">已完成 {{album.progress}}%</text>
-          <text class="progress-detail">{{completedCount}}/{{totalCount}} 课</text>
+          <text class="progress-detail">{{completedCount}}/{{totalCount}} 修</text>
         </view>
       </view>
     </view>
@@ -55,7 +55,7 @@
         <view class="chapter-status">
           <text class="status-icon" wx:if="{{item.locked}}">🔒</text>
           <view class="status-progress" wx:else>
-            <text class="progress-mini-text">{{item.completedCount}}/10</text>
+            <text class="progress-mini-text">{{item.completedCount}}/10修</text>
           </view>
         </view>
       </view>

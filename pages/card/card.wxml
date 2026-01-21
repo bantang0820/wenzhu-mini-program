@@ -29,10 +29,6 @@
       <button class="action-btn success" open-type="share">
         <text class="icon">分享</text>
       </button>
-
-      <button class="action-btn default" bindtap="backToHome">
-        <text class="icon">返回</text>
-      </button>
     </view>
   </view>
 

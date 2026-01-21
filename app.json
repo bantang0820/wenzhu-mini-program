@@ -10,7 +10,8 @@
     "pages/journal/journal",
     "pages/share/share",
     "pages/album/album",
-    "pages/chapter/chapter"
+    "pages/chapter/chapter",
+    "pages/lesson/lesson"
   ],
   "window": {
     "backgroundTextStyle": "light",

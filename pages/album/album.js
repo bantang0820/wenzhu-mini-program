@@ -18,7 +18,7 @@ Page({
       nvc: {
         id: 'nvc',
         title: '非暴力沟通',
-        subtitle: '100句',
+        subtitle: '100修',
         shortDesc: '找回连结',
         icon: '🦒',
         progress: 12,
@@ -30,7 +30,7 @@ Page({
       adler: {
         id: 'adler',
         title: '课题分离',
-        subtitle: '100句',
+        subtitle: '100修',
         shortDesc: '建立边界',
         icon: '🏔️',
         progress: 0,
@@ -42,7 +42,7 @@ Page({
       self: {
         id: 'self',
         title: '自我关怀',
-        subtitle: '100句',
+        subtitle: '100修',
         shortDesc: '接纳自己',
         icon: '🤗',
         progress: 0,
@@ -54,7 +54,7 @@ Page({
       growth: {
         id: 'growth',
         title: '成长型思维',
-        subtitle: '100句',
+        subtitle: '100修',
         shortDesc: '激发动力',
         icon: '🌱',
         progress: 0,
