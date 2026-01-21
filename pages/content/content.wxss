@@ -1,199 +1,326 @@
-/* pages/content/content.wxss - Insight Page */
+/* pages/content/content.wxss - 阅见页面（心灵工位版）*/
 
+/* ========== 全局背景：纸张纹理 ========== */
 .page-container {
   min-height: 100vh;
-  padding: 40rpx 24rpx 140rpx;
-  background: linear-gradient(180deg, #F5F3F0 0%, #EBE9E5 100%);
+  padding: 40rpx 24rpx 160rpx;
+  background: #F9F9F4;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2rpx,
+      rgba(0, 0, 0, 0.02) 2rpx,
+      rgba(0, 0, 0, 0.02) 4rpx
+    );
 }
 
-.header-box {
-  margin-bottom: 32rpx;
-}
-
-.title-text {
-  display: block;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #2B303A;
-  margin-bottom: 8rpx;
-}
-
-.subtitle-text {
-  display: block;
-  font-size: 22rpx;
-  color: rgba(140, 134, 128, 0.6);
-}
-
-/* Grid Layout */
-.album-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20rpx;
-  margin-bottom: 32rpx;
-}
-
-.album-card {
-  min-height: 320rpx;
-  padding: 24rpx;
-  border-radius: 20rpx;
+/* ========== 顶部：灵感便签（撕边日历纸） ========== */
+.daily-inspiration {
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  margin-bottom: 48rpx;
+  margin-left: 20rpx;
+  background: #FFFCF5;
+  border-radius: 2rpx;
+  padding: 32rpx 28rpx 28rpx 32rpx;
+  box-shadow: 0 8rpx 24rpx rgba(139, 69, 19, 0.08);
+  overflow: visible;
 }
 
-/* 背景水印 */
-.card-watermark {
+/* 撕边效果 */
+.daily-inspiration::before {
+  content: '';
   position: absolute;
-  bottom: -30rpx;
-  right: -30rpx;
-  font-size: 160rpx;
-  opacity: 0.15;
-  z-index: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8rpx;
+  background:
+    radial-gradient(circle at 10rpx 50%, transparent 8rpx, #F9F9F4 10rpx),
+    radial-gradient(circle at 30rpx 50%, transparent 8rpx, #F9F9F4 8rpx),
+    radial-gradient(circle at 50rpx 50%, transparent 8rpx, #F9F9F4 6rpx),
+    radial-gradient(circle at 70rpx 50%, transparent 8rpx, #F9F9F4 10rpx),
+    radial-gradient(circle at 90rpx 50%, transparent 8rpx, #F9F9F4 8rpx);
 }
 
-.album-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
+.daily-inspiration::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6rpx;
+  background:
+    radial-gradient(circle at 20rpx 50%, transparent 6rpx, #F9F9F4 8rpx),
+    radial-gradient(circle at 50rpx 50%, transparent 6rpx, #F9F9F4 6rpx),
+    radial-gradient(circle at 80rpx 50%, transparent 6rpx, #F9F9F4 8rpx),
+    radial-gradient(circle at 100rpx 50%, transparent 6rpx, #F9F9F4 8rpx);
+}
+
+/* 图钉装饰 */
+.pin-decoration {
+  position: absolute;
+  top: 12rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32rpx;
+  height: 32rpx;
+  background: linear-gradient(135deg, #C4A484 0%, #A08060 100%);
+  border-radius: 50%;
+  box-shadow:
+    0 2rpx 8rpx rgba(0, 0, 0, 0.2),
+    inset 0 1rpx 2rpx rgba(255, 255, 255, 0.3);
+}
+
+.pin-decoration::before {
+  content: '';
+  position: absolute;
+  top: 6rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12rpx;
+  height: 12rpx;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 50%;
+}
+
+.inspiration-content {
   position: relative;
   z-index: 1;
 }
 
-.album-tag {
-  display: inline-block;
-  padding: 6rpx 14rpx;
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: 8rpx;
-  font-size: 18rpx;
-  color: #FFFFFF;
-  width: fit-content;
+.inspiration-date {
+  font-size: 20rpx;
+  color: #8B7355;
+  margin-bottom: 12rpx;
+  font-family: serif;
+  letter-spacing: 1rpx;
+  font-style: italic;
 }
 
-.album-title {
+.inspiration-text {
   display: block;
   font-size: 30rpx;
-  font-weight: 700;
-  color: #FFFFFF;
-  line-height: 1.3;
+  line-height: 1.8;
+  color: #4A4A4A;
+  font-weight: 500;
+  margin-bottom: 16rpx;
+  font-family: serif;
 }
 
-.album-subtitle {
-  display: block;
-  font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.9);
+/* 胶带装饰 */
+.tape-decoration {
+  width: 120rpx;
+  height: 32rpx;
+  background: rgba(255, 255, 255, 0.5);
+  margin: 0 auto;
+  transform: rotate(-2deg);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+/* ========== 书籍陈列（2列网格）========== */
+.books-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+  padding: 0 8rpx;
+}
+
+.book-cover {
+  position: relative;
+  aspect-ratio: 3/4;
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 8rpx 12rpx 32rpx rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 32rpx 24rpx;
+}
+
+.book-cover:active {
+  transform: scale(0.96);
+  box-shadow:
+    0 4rpx 12rpx rgba(0, 0, 0, 0.1),
+    0 1rpx 4rpx rgba(0, 0, 0, 0.06);
+}
+
+/* 水彩装饰 */
+.book-illustration {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  font-size: 80rpx;
+  opacity: 0.12;
+  z-index: 0;
+  filter: blur(1rpx);
+}
+
+/* 书籍内容 */
+.book-info {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8rpx;
+}
+
+.book-tag {
+  padding: 6rpx 16rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 20rpx;
+  font-size: 18rpx;
+  color: #FFFFFF;
+  backdrop-filter: blur(4rpx);
+}
+
+.book-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.2;
+  font-family: serif;
+}
+
+.book-subtitle {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.85);
   margin-top: -4rpx;
 }
 
-.album-desc {
-  display: block;
+.book-desc {
   font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.7);
   line-height: 1.4;
-  margin-top: 4rpx;
+  text-align: center;
+  max-width: 240rpx;
 }
 
-/* 底部信息 */
-.album-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-  margin-top: 16rpx;
+/* 四种莫兰迪配色 */
+.book-green .book-cover {
+  background: #7E9C8B;
 }
 
-.progress-circle {
-  padding: 10rpx 20rpx;
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 30rpx;
-  display: flex;
-  align-items: baseline;
-  gap: 4rpx;
+.book-blue .book-cover {
+  background: #8DA3B8;
 }
 
-.progress-number {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: #FFFFFF;
-  line-height: 1;
+.book-pink .book-cover {
+  background: #C6A4A4;
 }
 
-.progress-percent {
-  font-size: 20rpx;
-  color: rgba(255, 255, 255, 0.8);
+.book-purple .book-cover {
+  background: #9B8EA9;
 }
 
-.album-icon-small {
-  font-size: 48rpx;
-  opacity: 0.4;
-}
-
-/* Quote Card */
-.quote-card {
-  background: #FFFFFF;
-  padding: 28rpx;
-  border-left: 6rpx solid #D4AF37;
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
-}
-
-.quote-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16rpx;
-}
-
-.quote-label {
-  font-size: 20rpx;
-  font-weight: 600;
-  color: rgba(43, 48, 58, 0.5);
-}
-
-.quote-icon {
-  font-size: 28rpx;
-}
-
-.quote-content {
-  display: block;
-  font-size: 26rpx;
-  line-height: 1.8;
-  color: #5D4037;
-}
-
-/* Locked Album State */
-.album-card.locked {
-  opacity: 0.6;
-  filter: grayscale(0.3);
-}
-
-.lock-overlay {
+/* 纸张纹理覆盖 */
+.book-cover::before {
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1rpx,
+      rgba(255, 255, 255, 0.03) 1rpx,
+      rgba(255, 255, 255, 0.03) 2rpx
+    );
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ========== 封条（锁定状态 - 磨砂效果） ========== */
+.book-seal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 12rpx;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 24rpx;
-  backdrop-filter: blur(4rpx);
+  align-items: center;
+  gap: 16rpx;
+  z-index: 2;
 }
 
-.lock-icon {
-  font-size: 48rpx;
+.seal-icon {
+  font-size: 64rpx;
+  filter: drop-shadow(0 2rpx 8rpx rgba(0, 0, 0, 0.2));
 }
 
-.lock-text {
-  font-size: 24rpx;
+.seal-text {
+  font-size: 26rpx;
   font-weight: 600;
   color: #FFFFFF;
   letter-spacing: 2rpx;
+  font-family: serif;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
+}
+
+/* ========== 进度标签 ========== */
+.progress-label {
+  position: absolute;
+  bottom: 16rpx;
+  padding: 6rpx 16rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20rpx;
+  backdrop-filter: blur(8rpx);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.progress-text {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #2B303A;
+}
+
+/* ========== 底部：玻璃拟态胶囊 ========== */
+.reading-capsule {
+  position: fixed;
+  bottom: 40rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+}
+
+.capsule-content {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 28rpx;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  border-radius: 100rpx;
+  box-shadow:
+    0 8rpx 32rpx rgba(0, 0, 0, 0.12),
+    0 0 0 1rpx rgba(255, 255, 255, 0.5) inset,
+    0 0 0 1rpx rgba(0, 0, 0, 0.05);
+}
+
+.capsule-icon {
+  font-size: 28rpx;
+}
+
+.capsule-text {
+  font-size: 20rpx;
+  color: rgba(43, 48, 58, 0.5);
+}
+
+.capsule-lesson {
+  font-size: 22rpx;
+  color: #2B303A;
+  font-weight: 500;
 }

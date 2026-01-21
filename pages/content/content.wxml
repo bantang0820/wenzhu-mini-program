@@ -1,49 +1,134 @@
-<!--pages/content/content.wxml - 阅见页面-->
+<!--pages/content/content.wxml - 阅见页面（心灵工位版）-->
 <view class="page-container">
-  <!-- 头部 -->
-  <view class="header-box">
-    <text class="title-text">系统修习</text>
-    <text class="subtitle-text">从碎片到体系，全面提升</text>
+  <!-- ========== 顶部：灵感便签（撕边日历纸效果）========== -->
+  <view class="daily-inspiration" bindtap="onDailyTap">
+    <!-- 图钉装饰 -->
+    <view class="pin-decoration"></view>
+
+    <!-- 便签内容 -->
+    <view class="inspiration-content">
+      <view class="inspiration-date">{{dailyDate}}</view>
+      <text class="inspiration-text">{{dailyQuote}}</text>
+      <view class="inspiration-footer">
+        <view class="tape-decoration"></view>
+      </view>
+    </view>
   </view>
 
-  <!-- 专辑网格 -->
-  <view class="album-grid">
+  <!-- ========== 中部：书籍陈列（2列瀑布流）========== -->
+  <view class="books-grid">
+    <!-- 非暴力沟通 - 绿色水彩 -->
     <view
-      class="album-card"
-      wx:for="{{albums}}"
-      wx:key="id"
+      class="book-cover book-green"
       bindtap="onAlbumTap"
-      data-id="{{item.id}}"
-      style="background: linear-gradient(135deg, {{item.colorStart}} 0%, {{item.colorEnd}} 100%);"
+      data-id="{{albums[0].id}}"
+      data-locked="{{albums[0].locked}}"
     >
-      <!-- 背景水印 -->
-      <text class="card-watermark">{{item.icon}}</text>
+      <!-- 水彩装饰 -->
+      <view class="book-illustration">{{albums[0].icon}}</view>
 
-      <!-- 卡片内容 -->
-      <view class="album-content">
-        <view class="album-tag">{{item.tag}}</view>
-        <text class="album-title">{{item.title}}</text>
-        <text class="album-subtitle">{{item.subtitle}}</text>
-        <text class="album-desc">{{item.desc}}</text>
+      <!-- 封面内容 -->
+      <view class="book-info">
+        <view class="book-tag">{{albums[0].tag}}</view>
+        <text class="book-title">{{albums[0].title}}</text>
+        <text class="book-subtitle">{{albums[0].subtitle}}</text>
+        <text class="book-desc">{{albums[0].desc}}</text>
       </view>
 
-      <!-- 底部信息 -->
-      <view class="album-footer">
-        <view class="progress-circle">
-          <text class="progress-number">{{item.progress}}</text>
-          <text class="progress-percent">%</text>
-        </view>
-        <text class="album-icon-small">{{item.icon}}</text>
+      <!-- 封条（锁定状态） -->
+      <view class="book-seal" wx:if="{{albums[0].locked}}">
+        <text class="seal-icon">🔒</text>
+        <text class="seal-text">Coming Soon</text>
+      </view>
+
+      <!-- 进度标签 -->
+      <view class="progress-label" wx:if="{{!albums[0].locked}}">
+        <text class="progress-text">{{albums[0].progress}}%</text>
+      </view>
+    </view>
+
+    <!-- 课题分离 - 蓝色水彩 -->
+    <view
+      class="book-cover book-blue"
+      bindtap="onAlbumTap"
+      data-id="{{albums[1].id}}"
+      data-locked="{{albums[1].locked}}"
+    >
+      <view class="book-illustration">{{albums[1].icon}}</view>
+
+      <view class="book-info">
+        <view class="book-tag">{{albums[1].tag}}</view>
+        <text class="book-title">{{albums[1].title}}</text>
+        <text class="book-subtitle">{{albums[1].subtitle}}</text>
+        <text class="book-desc">{{albums[1].desc}}</text>
+      </view>
+
+      <view class="book-seal" wx:if="{{albums[1].locked}}">
+        <text class="seal-text">Coming Soon</text>
+      </view>
+
+      <view class="progress-label" wx:if="{{!albums[1].locked}}">
+        <text class="progress-text">{{albums[1].progress}}%</text>
+      </view>
+    </view>
+
+    <!-- 自我关怀 - 粉色水彩 -->
+    <view
+      class="book-cover book-pink"
+      bindtap="onAlbumTap"
+      data-id="{{albums[2].id}}"
+      data-locked="{{albums[2].locked}}"
+    >
+      <view class="book-illustration">{{albums[2].icon}}</view>
+
+      <view class="book-info">
+        <view class="book-tag">{{albums[2].tag}}</view>
+        <text class="book-title">{{albums[2].title}}</text>
+        <text class="book-subtitle">{{albums[2].subtitle}}</text>
+        <text class="book-desc">{{albums[2].desc}}</text>
+      </view>
+
+      <view class="book-seal" wx:if="{{albums[2].locked}}">
+        <text class="seal-text">Coming Soon</text>
+      </view>
+
+      <view class="progress-label" wx:if="{{!albums[2].locked}}">
+        <text class="progress-text">{{albums[2].progress}}%</text>
+      </view>
+    </view>
+
+    <!-- 成长型思维 - 紫色水彩 -->
+    <view
+      class="book-cover book-purple"
+      bindtap="onAlbumTap"
+      data-id="{{albums[3].id}}"
+      data-locked="{{albums[3].locked}}"
+    >
+      <view class="book-illustration">{{albums[3].icon}}</view>
+
+      <view class="book-info">
+        <view class="book-tag">{{albums[3].tag}}</view>
+        <text class="book-title">{{albums[3].title}}</text>
+        <text class="book-subtitle">{{albums[3].subtitle}}</text>
+        <text class="book-desc">{{albums[3].desc}}</text>
+      </view>
+
+      <view class="book-seal" wx:if="{{albums[3].locked}}">
+        <text class="seal-text">Coming Soon</text>
+      </view>
+
+      <view class="progress-label" wx:if="{{!albums[3].locked}}">
+        <text class="progress-text">{{albums[3].progress}}%</text>
       </view>
     </view>
   </view>
+</view>
 
-  <!-- 每日金句 -->
-  <view class="quote-card" bindtap="onDailyTap">
-    <view class="quote-header">
-      <text class="quote-label">今日偶遇</text>
-      <text class="quote-icon">📖</text>
-    </view>
-    <text class="quote-content">{{dailyQuote}}</text>
+<!-- ========== 底部：正在修习（玻璃拟态胶囊）========== -->
+<view class="reading-capsule">
+  <view class="capsule-content">
+    <view class="capsule-icon">📖</view>
+    <view class="capsule-text">{{lastReadLesson ? '正在修习' : '开始学习'}}</view>
+    <view class="capsule-lesson">{{lastReadLesson || '第1章 · 区分观察与评论'}}</view>
   </view>
 </view>
