@@ -10,8 +10,9 @@ App({
         });
         console.log('云开发初始化成功');
 
+        // 【临时禁用】等待云开发开通后再启用
         // 检查登录状态
-        this.checkLoginStatus();
+        // this.checkLoginStatus();
       } catch (e) {
         console.log('云开发初始化失败', e);
       }

@@ -1,0 +1,237 @@
+/* pages/album/album.wxss - 专辑详情页 */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #F5F3F0 0%, #EBE9E5 100%);
+  padding-bottom: 120rpx;
+}
+
+/* ========== 专辑封面卡片 ========== */
+.album-hero {
+  position: relative;
+  width: 100%;
+  min-height: 400rpx;
+  padding: 48rpx 40rpx;
+  margin-bottom: 32rpx;
+  border-radius: 0 0 48rpx 48rpx;
+  overflow: hidden;
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.12);
+}
+
+/* 巨型背景水印 */
+.hero-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  font-size: 400rpx;
+  line-height: 1;
+  opacity: 0.08;
+  pointer-events: none;
+  filter: blur(2rpx);
+}
+
+.album-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.album-tag {
+  display: inline-block;
+  width: fit-content;
+  padding: 8rpx 20rpx;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border-radius: 12rpx;
+  font-size: 22rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+  letter-spacing: 1rpx;
+}
+
+.album-title {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  font-family: "Songti SC", serif;
+  letter-spacing: 4rpx;
+  line-height: 1.3;
+  text-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+}
+
+.album-subtitle {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: "Songti SC", serif;
+  letter-spacing: 1rpx;
+}
+
+/* 进度条 */
+.hero-progress {
+  margin-top: 24rpx;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 8rpx;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 4rpx;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #FFFFFF;
+  border-radius: 4rpx;
+  box-shadow: 0 0 16rpx rgba(255, 255, 255, 0.6);
+  transition: width 0.6s ease;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12rpx;
+}
+
+.progress-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+  font-family: "Songti SC", serif;
+}
+
+.progress-detail {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: "Songti SC", serif;
+}
+
+/* ========== 章节列表 ========== */
+.chapters-section {
+  padding: 0 24rpx;
+}
+
+.section-header {
+  margin-bottom: 24rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #2B303A;
+  letter-spacing: 2rpx;
+  font-family: "Songti SC", serif;
+}
+
+.section-subtitle {
+  display: block;
+  font-size: 20rpx;
+  color: rgba(140, 134, 128, 0.6);
+  margin-top: 8rpx;
+  letter-spacing: 1rpx;
+}
+
+.chapter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.chapter-card {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 24rpx;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(255, 255, 255, 0.8);
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.chapter-card:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* 章节序号 */
+.chapter-number {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
+  border: 2rpx solid rgba(212, 175, 55, 0.3);
+  border-radius: 16rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+.chapter-number.locked {
+  background: rgba(140, 134, 128, 0.08);
+  border-color: rgba(140, 134, 128, 0.15);
+}
+
+.number-text {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #D4AF37;
+  font-family: "Songti SC", serif;
+}
+
+.chapter-number.locked .number-text {
+  color: rgba(140, 134, 128, 0.4);
+}
+
+/* 章节信息 */
+.chapter-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.chapter-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #2B303A;
+  font-family: "Songti SC", serif;
+  letter-spacing: 1rpx;
+}
+
+.chapter-subtitle {
+  font-size: 22rpx;
+  color: rgba(140, 134, 128, 0.6);
+  line-height: 1.4;
+}
+
+/* 章节状态 */
+.chapter-status {
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.status-icon {
+  font-size: 32rpx;
+  opacity: 0.4;
+}
+
+.status-progress {
+  padding: 6rpx 12rpx;
+  background: rgba(212, 175, 55, 0.1);
+  border-radius: 12rpx;
+  border: 1rpx solid rgba(212, 175, 55, 0.2);
+}
+
+.progress-mini-text {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #D4AF37;
+  font-family: "DIN Alternate", "Songti SC", serif;
+}

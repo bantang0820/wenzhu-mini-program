@@ -1,18 +1,27 @@
-// pages/index/index.js
+// pages/index/index.js - 呼吸之核
 const app = getApp();
 
 Page({
   data: {
-    scenarios: [], // 场景列表
+    scenarios: [], // 所有场景列表
+    heroScenarios: [], // Top 6 高频场景
+    restScenarios: [], // 其余场景
     isPro: false, // 是否为会员
     loading: true,
     unlockedScenarios: [], // 已解锁的场景ID列表
-    selectedId: null // 当前选中的气泡ID
+    selectedId: null, // 当前选中的气泡ID
+
+    // 呼吸动画
+    isBreathing: true, // 是否正在呼吸
+    isPressed: false, // 是否被按压
+    showRipple: false, // 是否显示涟漪
+    holdProgress: 0, // 长按进度（0-100）
+    holdTimer: null, // 长按定时器
   },
 
   onLoad() {
     console.log('首页 onLoad 执行');
-    this.loadUnlockedScenarios(); // 加载已解锁的场景
+    this.loadUnlockedScenarios();
     this.loadScenarios();
     this.checkProStatus();
   },
@@ -24,7 +33,113 @@ Page({
     this.setData({
       selectedId: null
     });
+    // 启动呼吸动画
+    this.setData({
+      isBreathing: true
+    });
   },
+
+  onReady() {
+    // 页面渲染完成后，开始涟漪动画
+    setTimeout(() => {
+      this.setData({
+        showRipple: true
+      });
+    }, 500);
+  },
+
+  onHide() {
+    // 页面隐藏时停止呼吸动画和清理定时器
+    this.setData({
+      isBreathing: false
+    });
+
+    // 清理定时器
+    if (this.data.holdTimer) {
+      clearTimeout(this.data.holdTimer);
+    }
+    if (this.data.progressTimer) {
+      clearInterval(this.data.progressTimer);
+    }
+  },
+
+  onUnload() {
+    // 清理定时器
+    if (this.data.holdTimer) {
+      clearTimeout(this.data.holdTimer);
+    }
+    if (this.data.progressTimer) {
+      clearInterval(this.data.progressTimer);
+    }
+  },
+
+  // ========== 呼吸按钮交互 ==========
+
+  // 点击呼吸按钮（直接进入日常修习模式）
+  onBreathTap() {
+    wx.vibrateShort({ type: 'heavy' });
+
+    // 跳转到日常修习模式
+    this.navigateToDaily();
+  },
+
+  // 跳转到日常修习模式
+  navigateToDaily() {
+    wx.navigateTo({
+      url: '/pages/detail/detail?id=daily&autoStart=true',
+      success: () => {
+        console.log('进入日常修习模式');
+
+        // 重置状态
+        this.setData({
+          isPressed: false,
+          holdProgress: 0,
+          isBreathing: true
+        });
+      },
+      fail: err => {
+        console.error('跳转失败', err);
+        wx.showToast({
+          title: '跳转失败',
+          icon: 'none'
+        });
+
+        // 失败也重置状态
+        this.setData({
+          isPressed: false,
+          holdProgress: 0,
+          isBreathing: true
+        });
+      }
+    });
+  },
+
+  // ========== 场景矩阵交互 ==========
+
+  // 点击场景
+  onScenarioTap(e) {
+    const { id } = e.currentTarget.dataset;
+
+    // 震动反馈
+    wx.vibrateShort({ type: 'light' });
+
+    // 跳转到详情页，直接进入朗读模式（跳过长按止颤）
+    wx.navigateTo({
+      url: `/pages/detail/detail?id=${id}&autoStart=true`,
+      success: () => {
+        console.log('进入场景:', id);
+      },
+      fail: err => {
+        console.error('跳转失败', err);
+        wx.showToast({
+          title: '跳转失败',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  // ========== 场景加载与管理 ==========
 
   // 加载已解锁的场景
   loadUnlockedScenarios() {
@@ -41,107 +156,50 @@ Page({
     this.loadMockScenarios();
   },
 
-  // 生成随机浮动偏移量
-  generateRandomOffset() {
-    return Math.floor(Math.random() * 20) - 10; // -10 到 10 之间的随机数
-  },
-
   // 模拟数据（开发阶段使用）
   loadMockScenarios() {
-    console.log('开始加载模拟数据');
-    const mockScenarios = [
-      {
-        id: "001",
-        title: "孩子磨蹭",
-        category: "焦虑",
-        is_free: true,
-        icon: "◎", // 蜗牛线条 - 缓慢
-      },
-      {
-        id: "002",
-        title: "孩子大哭",
-        category: "无助",
-        is_free: true,
-        icon: "●", // 水滴 - 眼泪
-      },
-      {
-        id: "003",
-        title: "不听话",
-        category: "愤怒",
-        is_free: true,
-        icon: "✕", // 叉号 - 冲突
-      },
-      {
-        id: "004",
-        title: "吃饭慢",
-        category: "焦虑",
-        is_free: false,
-        icon: "○", // 圆圈 - 等待
-      },
-      {
-        id: "005",
-        title: "顶嘴",
-        category: "愤怒",
-        is_free: false,
-        icon: "△", // 三角 - 尖锐
-      },
-      {
-        id: "006",
-        title: "不肯睡觉",
-        category: "疲惫",
-        is_free: false,
-        icon: "◇", // 菱形 - 疲惫
-      },
-      {
-        id: "007",
-        title: "写作业拖拉",
-        category: "焦虑",
-        is_free: false,
-        icon: "≈", // 波浪 - 拖延
-      },
-      {
-        id: "008",
-        title: "发脾气",
-        category: "愤怒",
-        is_free: false,
-        icon: "※", // 星号 - 爆发
-      },
-      {
-        id: "009",
-        title: "沉迷电子产品",
-        category: "焦虑",
-        is_free: false,
-        icon: "▢", // 方块 - 屏幕
-      },
-      {
-        id: "010",
-        title: "不肯收拾玩具",
-        category: "烦躁",
-        is_free: false,
-        icon: "◈", // 菱形 - 混乱
-      },
-      {
-        id: "011",
-        title: "撒谎",
-        category: "担忧",
-        is_free: false,
-        icon: "≠", // 不等 - 隐瞒
-      },
-      {
-        id: "012",
-        title: "打人/咬人",
-        category: "愤怒",
-        is_free: false,
-        icon: "⚡", // 闪电 - 攻击
-      }
+    console.log('开始加载场景数据');
+
+    // Top 6 高频急救场景
+    const heroList = [
+      { id: "001", title: "没忍住吼了", icon: "❗", is_free: true, isHero: true },
+      { id: "002", title: "作业拖拉", icon: "⏳", is_free: true, isHero: true },
+      { id: "003", title: "遇难题就放弃", icon: "⟡", is_free: true, isHero: true },
+      { id: "004", title: "早上不起床", icon: "△", is_free: true, isHero: true },
+      { id: "005", title: "沉迷手机", icon: "▭", is_free: true, isHero: true },
+      { id: "006", title: "磨蹭发呆", icon: "✎", is_free: true, isHero: true },
     ];
 
-    console.log('模拟数据加载成功', mockScenarios);
+    // 其余场景
+    const restList = [
+      { id: "007", title: "不肯尝试", is_free: true },
+      { id: "008", title: "孩子顶嘴", is_free: true },
+      { id: "009", title: "孩子冷漠", is_free: true },
+      { id: "010", title: "孩子怕输", is_free: true },
+      { id: "011", title: "吃饭挑食", is_free: true },
+      { id: "012", title: "俩娃争宠", is_free: true },
+      { id: "013", title: "不想上学", is_free: true },
+      { id: "014", title: "沉迷看电视", is_free: true },
+      { id: "015", title: "孩子撒谎", is_free: true },
+      { id: "016", title: "爱发脾气", is_free: true },
+      { id: "017", title: "和人打架", is_free: true },
+      { id: "018", title: "不听话", is_free: true },
+      { id: "019", title: "被打不还手", is_free: true },
+      { id: "020", title: "玻璃心", is_free: true },
+      { id: "021", title: "孩子躺平", is_free: true },
+    ];
+
+    const allScenarios = [...heroList, ...restList];
+
+    console.log('场景数据加载成功', allScenarios);
     this.setData({
-      scenarios: mockScenarios,
+      scenarios: allScenarios,
+      heroScenarios: heroList,
+      restScenarios: restList,
       loading: false
     });
-    console.log('setData 完成，当前 scenarios:', this.data.scenarios);
+    console.log('setData 完成，当前 heroScenarios:', this.data.heroScenarios);
+    console.log('当前 restScenarios:', this.data.restScenarios);
   },
 
   // 检查会员状态
@@ -149,40 +207,5 @@ Page({
     this.setData({
       isPro: app.globalData.isPro
     });
-  },
-
-  // 点击场景气泡
-  onScenarioTap(e) {
-    const { id, isFree } = e.currentTarget.dataset;
-
-    // 设置选中状态
-    this.setData({
-      selectedId: id
-    });
-
-    // 延迟跳转，让用户看到选中动画
-    setTimeout(() => {
-      // 如果不是免费场景且不是会员，提示解锁
-      if (!isFree && !this.data.isPro) {
-        wx.showToast({
-          title: '解锁全部场景',
-          icon: 'none',
-          duration: 2000
-        });
-        // TODO: 跳转到会员订阅页
-        return;
-      }
-
-      // 跳转到详情页
-      wx.navigateTo({
-        url: `/pages/detail/detail?id=${id}`,
-        success: () => {
-          console.log('跳转到详情页', id);
-        },
-        fail: err => {
-          console.error('跳转失败', err);
-        }
-      });
-    }, 300);
   }
 });

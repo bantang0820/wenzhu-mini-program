@@ -1,33 +1,78 @@
-<!--pages/index/index.wxml - 原研哉式极简主义-->
+<!--pages/index/index.wxml - 天人地布局-->
 <view class="container">
-  <!-- 顶部标题区 -->
-  <view class="header">
-    <text class="title title-serif">稳住</text>
-    <text class="subtitle">此刻，你遇到了什么？</text>
+  <!-- ========== 天：顶层世界观 Slogan ========== -->
+  <view class="top-header">
+    <text class="header-text">先 稳 住 自 己 · 再 拥 抱 孩 子</text>
   </view>
 
-  <!-- 2x3 场景网格 -->
-  <view class="scenarios-grid">
-    <view
-      class="scenario-card neumorphism-convex"
-      wx:for="{{scenarios}}"
-      wx:key="id"
-      bindtap="onScenarioTap"
-      data-id="{{item.id}}"
-      data-is-free="{{item.is_free || unlockedScenarios.includes(item.id)}}"
-      hover-class="neumorphism-pressed"
-    >
-      <!-- 几何符号 -->
-      <view class="scenario-icon">{{item.icon}}</view>
+  <!-- ========== 人：呼吸之核 ========== -->
+  <view class="top-zone">
+    <view class="breathing-core-container">
+      <view
+        class="breathing-core {{isBreathing ? 'breathing' : ''}}"
+        bindtap="onBreathTap"
+      >
+        <!-- 内部光晕 -->
+        <view class="core-inner"></view>
 
-      <!-- 场景标题 -->
-      <view class="scenario-title">
-        <text>{{item.title}}</text>
+        <!-- 外部光晕 -->
+        <view class="core-outer"></view>
+
+        <!-- 核心文字 -->
+        <view class="core-text">
+          <text class="core-main title-serif">稳住</text>
+          <text class="core-sub">点击日常朗读练习</text>
+        </view>
+
+        <!-- 涟漪效果 -->
+        <view class="ripple-effect" wx:if="{{showRipple}}">
+          <view class="ripple-wave"></view>
+          <view class="ripple-wave"></view>
+          <view class="ripple-wave"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 地：场景引导 + 矩阵 ========== -->
+  <view class="bottom-zone">
+    <view class="scenarios-container">
+      <!-- 引导文案 -->
+      <view class="section-guide">
+        <text class="guide-line">——</text>
+        <text class="guide-text">也可选择场景进行专项朗读练习</text>
+        <text class="guide-line">——</text>
       </view>
 
-      <!-- 锁定标记 -->
-      <view class="lock-badge" wx:if="{{!item.is_free && !isPro && !unlockedScenarios.includes(item.id)}}">
-        <text>🔒</text>
+      <!-- 第一层：Top 6 高频急救区 -->
+      <view class="hero-section">
+        <view class="hero-grid">
+          <view
+            class="hero-card"
+            wx:for="{{heroScenarios}}"
+            wx:key="id"
+            bindtap="onScenarioTap"
+            data-id="{{item.id}}"
+          >
+            <text class="hero-icon">{{item.icon}}</text>
+            <text class="hero-title">{{item.title}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 第二层：Rest 低频检索区 -->
+      <view class="tags-section">
+        <view class="tag-grid">
+          <view
+            class="text-tag"
+            wx:for="{{restScenarios}}"
+            wx:key="id"
+            bindtap="onScenarioTap"
+            data-id="{{item.id}}"
+          >
+            <text class="tag-title">{{item.title}}</text>
+          </view>
+        </view>
       </view>
     </view>
   </view>

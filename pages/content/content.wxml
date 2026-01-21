@@ -1,0 +1,49 @@
+<!--pages/content/content.wxml - 阅见页面-->
+<view class="page-container">
+  <!-- 头部 -->
+  <view class="header-box">
+    <text class="title-text">系统修习</text>
+    <text class="subtitle-text">从碎片到体系，全面提升</text>
+  </view>
+
+  <!-- 专辑网格 -->
+  <view class="album-grid">
+    <view
+      class="album-card"
+      wx:for="{{albums}}"
+      wx:key="id"
+      bindtap="onAlbumTap"
+      data-id="{{item.id}}"
+      style="background: linear-gradient(135deg, {{item.colorStart}} 0%, {{item.colorEnd}} 100%);"
+    >
+      <!-- 背景水印 -->
+      <text class="card-watermark">{{item.icon}}</text>
+
+      <!-- 卡片内容 -->
+      <view class="album-content">
+        <view class="album-tag">{{item.tag}}</view>
+        <text class="album-title">{{item.title}}</text>
+        <text class="album-subtitle">{{item.subtitle}}</text>
+        <text class="album-desc">{{item.desc}}</text>
+      </view>
+
+      <!-- 底部信息 -->
+      <view class="album-footer">
+        <view class="progress-circle">
+          <text class="progress-number">{{item.progress}}</text>
+          <text class="progress-percent">%</text>
+        </view>
+        <text class="album-icon-small">{{item.icon}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 每日金句 -->
+  <view class="quote-card" bindtap="onDailyTap">
+    <view class="quote-header">
+      <text class="quote-label">今日偶遇</text>
+      <text class="quote-icon">📖</text>
+    </view>
+    <text class="quote-content">{{dailyQuote}}</text>
+  </view>
+</view>

@@ -1,0 +1,260 @@
+/* pages/chapter/chapter.wxss - 章节详情页 */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #F5F3F0 0%, #EBE9E5 100%);
+  padding-bottom: 160rpx;
+}
+
+/* ========== 章节头部 ========== */
+.chapter-header {
+  padding: 40rpx 32rpx 32rpx;
+  background: #FFFFFF;
+  border-bottom: 1rpx solid rgba(0, 0, 0, 0.06);
+}
+
+.chapter-meta {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.chapter-number {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #D4AF37;
+  letter-spacing: 1rpx;
+  font-family: "Songti SC", serif;
+}
+
+.chapter-divider {
+  font-size: 20rpx;
+  color: rgba(140, 134, 128, 0.3);
+}
+
+.chapter-progress {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: rgba(140, 134, 128, 0.7);
+  font-family: "DIN Alternate", "Songti SC", serif;
+}
+
+.chapter-title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #2B303A;
+  line-height: 1.4;
+  margin-bottom: 12rpx;
+  font-family: "Songti SC", serif;
+  letter-spacing: 2rpx;
+}
+
+.chapter-subtitle {
+  display: block;
+  font-size: 24rpx;
+  color: rgba(140, 134, 128, 0.7);
+  line-height: 1.5;
+  font-family: "Songti SC", serif;
+}
+
+/* ========== 练习句子列表 ========== */
+.sentences-section {
+  padding: 24rpx;
+}
+
+.sentence-card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 完成状态标记 */
+.sentence-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6rpx;
+  background: rgba(140, 134, 128, 0.2);
+  transition: background 0.3s ease;
+}
+
+.sentence-card.completed::before {
+  background: linear-gradient(180deg, #D4AF37 0%, #F0D060 100%);
+}
+
+/* 句子序号 */
+.sentence-number {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(140, 134, 128, 0.08);
+  border-radius: 50%;
+  font-size: 20rpx;
+  font-weight: 600;
+  color: rgba(140, 134, 128, 0.5);
+  font-family: "DIN Alternate", sans-serif;
+}
+
+.sentence-number.completed {
+  background: rgba(212, 175, 55, 0.15);
+  color: #D4AF37;
+}
+
+/* 句子内容 */
+.sentence-content {
+  padding-right: 60rpx;
+  margin-bottom: 20rpx;
+}
+
+.sentence-text {
+  display: block;
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: #2B303A;
+  font-family: "KaiTi", "STKaiti", "Songti SC", serif;
+  letter-spacing: 0.5rpx;
+  margin-bottom: 12rpx;
+}
+
+/* 场景标签 */
+.scenario-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 6rpx 12rpx;
+  background: rgba(93, 64, 55, 0.05);
+  border-radius: 8rpx;
+}
+
+.scenario-icon {
+  font-size: 20rpx;
+}
+
+.scenario-text {
+  font-size: 20rpx;
+  color: rgba(93, 64, 55, 0.7);
+}
+
+/* 操作按钮 */
+.sentence-actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 12rpx 20rpx;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+  transition: all 0.2s ease;
+}
+
+.practice-btn {
+  flex: 1;
+  justify-content: center;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1rpx solid rgba(212, 175, 55, 0.2);
+}
+
+.practice-btn:active {
+  background: rgba(212, 175, 55, 0.15);
+  transform: scale(0.98);
+}
+
+.practice-btn .btn-icon {
+  font-size: 24rpx;
+}
+
+.practice-btn .btn-text {
+  color: #D4AF37;
+  font-weight: 600;
+}
+
+.complete-btn {
+  width: 56rpx;
+  height: 56rpx;
+  justify-content: center;
+  align-items: center;
+  background: rgba(140, 134, 128, 0.08);
+  border: 2rpx solid rgba(140, 134, 128, 0.15);
+  flex-shrink: 0;
+}
+
+.complete-btn:active {
+  background: rgba(140, 134, 128, 0.12);
+  transform: scale(0.95);
+}
+
+.complete-btn.completed {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.complete-btn .btn-icon {
+  font-size: 28rpx;
+  color: rgba(140, 134, 128, 0.4);
+}
+
+.complete-btn.completed .btn-icon {
+  color: #D4AF37;
+}
+
+/* ========== 底部完成按钮 ========== */
+.footer-action {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24rpx 32rpx;
+  background: linear-gradient(180deg, transparent 0%, rgba(245, 243, 240, 0.95) 20%);
+  backdrop-filter: blur(20px);
+  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.complete-chapter-btn {
+  width: 100%;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #D4AF37 0%, #F0D060 100%);
+  border-radius: 20rpx;
+  box-shadow: 0 8rpx 24rpx rgba(212, 175, 55, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  transition: all 0.3s ease;
+}
+
+.complete-chapter-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 16rpx rgba(212, 175, 55, 0.4);
+}
+
+.btn-main-text {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 2rpx;
+}
+
+.btn-sub-text {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.9);
+}

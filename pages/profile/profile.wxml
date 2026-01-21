@@ -1,0 +1,80 @@
+<!--pages/profile/profile.wxml - 本心-->
+<view class="container">
+  <!-- ========== 顶部：会员身份卡 ========== -->
+  <view class="member-card {{isPro ? 'pro' : ''}}" bindtap="onMemberCardTap">
+    <!-- 卡片背景装饰 -->
+    <view class="card-bg-decoration">
+      <view class="circle circle-1"></view>
+      <view class="circle circle-2"></view>
+    </view>
+
+    <!-- 用户信息 -->
+    <view class="card-user">
+      <view class="user-avatar">
+        <text class="avatar-emoji">🧘</text>
+      </view>
+      <view class="user-info">
+        <text class="user-name">{{userInfo.nickname}}</text>
+        <view class="user-tags">
+          <view class="level-tag">LV.{{userInfo.level}} {{userInfo.levelName}}</view>
+          <view class="pro-badge-text" wx:if="{{isPro}}">Pro 年卡会员</view>
+        </view>
+
+        <!-- 会员有效期 -->
+        <view class="validity-section" wx:if="{{isPro}}">
+          <text class="validity-text {{isExpiring ? 'expiring' : ''}}">
+            有效期至 {{expireDate}}
+          </text>
+          <view class="renew-btn" wx:if="{{isExpiring}}">
+            <text class="renew-text">续费</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="member-btn" wx:if="{{!isPro}}">
+        <text class="btn-text">开通会员</text>
+      </view>
+      <view class="member-btn pro" wx:else>
+        <text class="btn-text">会员中心 ></text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 中部：邀请有礼（礼物盒） ========== -->
+  <view class="share-banner" bindtap="onShareInvite">
+    <view class="share-content">
+      <text class="share-title">传递稳住的力量</text>
+      <text class="share-subtitle">邀请 1 位好友加入，双方各得 7 天 Pro 会员</text>
+    </view>
+    <view class="share-icon">
+      <text class="icon-emoji">🎁</text>
+    </view>
+  </view>
+
+  <!-- ========== 功能列表 ========== -->
+  <view class="menu-section">
+    <view
+      class="menu-item"
+      wx:for="{{menuList}}"
+      wx:key="id"
+      bindtap="onMenuTap"
+      data-id="{{item.id}}"
+    >
+      <view class="menu-icon">
+        <text class="icon-emoji">{{item.icon}}</text>
+      </view>
+      <view class="menu-info">
+        <text class="menu-title">{{item.title}}</text>
+        <text class="menu-desc">{{item.desc}}</text>
+      </view>
+      <view class="menu-arrow" wx:if="{{item.arrow}}">
+        <text class="arrow-icon">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 底部版本信息 ========== -->
+  <view class="footer">
+    <text class="footer-text">正念育儿 v1.0.0</text>
+  </view>
+</view>

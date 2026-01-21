@@ -1,0 +1,46 @@
+<!-- pages/card/card.wxml -->
+<view class="container">
+
+  <!-- 加载状态 -->
+  <view wx:if="{{!showCard}}" class="loading-container">
+    <view class="loading-text">正在生成...</view>
+  </view>
+
+  <!-- 卡片显示区域 -->
+  <view wx:if="{{showCard}}" class="card-wrapper">
+
+    <!-- 生成的卡片图片 -->
+    <view class="card-container">
+      <image
+        class="card-image"
+        src="{{cardImage}}"
+        mode="widthFix"
+        show-menu-by-longpress
+        bindtap="previewImage"
+      />
+    </view>
+
+    <!-- 操作按钮区域 -->
+    <view class="actions">
+      <button class="action-btn primary" bindtap="saveToAlbum">
+        <text class="icon">保存</text>
+      </button>
+
+      <button class="action-btn success" open-type="share">
+        <text class="icon">分享</text>
+      </button>
+
+      <button class="action-btn default" bindtap="backToHome">
+        <text class="icon">返回</text>
+      </button>
+    </view>
+  </view>
+
+  <!-- 隐藏的Canvas，用于绘制卡片 -->
+  <canvas
+    type="2d"
+    id="cardCanvas"
+    class="hidden-canvas"
+  ></canvas>
+
+</view>

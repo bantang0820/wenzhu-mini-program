@@ -1,0 +1,100 @@
+<!--pages/stats/stats.wxml - 觉察-->
+<view class="container">
+  <!-- ========== 顶部：核心数据 ========== -->
+  <view class="hero-section">
+    <text class="hero-label">已 稳 住</text>
+    <text class="hero-number">{{totalDays}}</text>
+    <text class="hero-unit">天</text>
+
+    <view class="hero-stats">
+      <text class="stats-text">累计获得 {{totalEnergy}} 能量 | 击败了 {{beatPercent}}% 的焦虑</text>
+    </view>
+  </view>
+
+  <!-- ========== 等级进度条 ========== -->
+  <view class="level-section">
+    <view class="level-header">
+      <text class="level-title">等级进度</text>
+    </view>
+
+    <view class="level-progress">
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{totalDays % 30 / 30 * 100}}%;"></view>
+      </view>
+      <view class="level-info">
+        <text class="level-current">{{userInfo.levelName}}</text>
+        <text class="level-next">下一等级：还需 {{30 - (totalDays % 30)}} 天</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 中部：修习日历 ========== -->
+  <view class="calendar-section">
+    <view class="section-header">
+      <text class="section-title">{{currentYear}}年{{currentMonth}}月</text>
+    </view>
+
+    <view class="calendar-grid">
+      <view
+        class="calendar-day {{item.isToday ? 'today' : ''}} {{item.isCheckedIn ? 'checked' : ''}}"
+        wx:for="{{calendarDays}}"
+        wx:key="dateStr"
+        bindtap="onDateTap"
+        data-date-str="{{item.dateStr}}"
+        data-is-checked-in="{{item.isCheckedIn}}"
+      >
+        <text class="day-number">{{item.day}}</text>
+        <view class="check-dot" wx:if="{{item.isCheckedIn}}"></view>
+      </view>
+    </view>
+
+    <view class="calendar-legend">
+      <view class="legend-item">
+        <view class="legend-dot"></view>
+        <text class="legend-text">未打卡</text>
+      </view>
+      <view class="legend-item">
+        <view class="legend-dot checked"></view>
+        <text class="legend-text">已打卡</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 底部：勋章墙 ========== -->
+  <view class="medal-section">
+    <view class="section-header">
+      <text class="section-title">获得的勋章</text>
+    </view>
+
+    <!-- 已获得的勋章 -->
+    <view class="medal-grid" wx:if="{{medals.length > 0}}">
+      <view
+        class="medal-item unlocked"
+        wx:for="{{medals}}"
+        wx:key="id"
+      >
+        <text class="medal-icon">{{item.icon}}</text>
+        <text class="medal-name">{{item.name}}</text>
+      </view>
+    </view>
+
+    <view class="empty-medals" wx:else>
+      <text class="empty-text">还没有获得勋章，继续坚持吧</text>
+    </view>
+
+    <!-- 未获得的勋章 -->
+    <view class="medal-grid locked" wx:if="{{lockedMedals.length > 0}}">
+      <view
+        class="medal-item locked"
+        wx:for="{{lockedMedals}}"
+        wx:key="id"
+        bindtap="onMedalTap"
+        data-locked="{{true}}"
+      >
+        <text class="medal-icon locked-icon">◑</text>
+        <text class="medal-name">{{item.name}}</text>
+        <text class="medal-desc">{{item.desc}}</text>
+      </view>
+    </view>
+  </view>
+</view>

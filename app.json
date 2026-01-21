@@ -1,31 +1,53 @@
 {
   "pages": [
-    "pages/login/login",
     "pages/index/index",
+    "pages/content/content",
+    "pages/stats/stats",
+    "pages/profile/profile",
+    "pages/login/login",
     "pages/detail/detail",
+    "pages/card/card",
     "pages/journal/journal",
-    "pages/share/share"
+    "pages/share/share",
+    "pages/album/album",
+    "pages/chapter/chapter"
   ],
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#F5F3EF",
-    "navigationBarTitleText": "正念家长",
+    "navigationBarTitleText": "正念育儿朗读",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#F5F3EF"
   },
   "tabBar": {
-    "color": "#999999",
-    "selectedColor": "#8B7E74",
+    "color": "#8B7E74",
+    "selectedColor": "#D4AF37",
     "backgroundColor": "#FFFFFF",
-    "borderStyle": "black",
+    "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "急救"
+        "text": "稳住",
+        "iconPath": "images/tabbar/home.png",
+        "selectedIconPath": "images/tabbar/home-active.png"
       },
       {
-        "pagePath": "pages/journal/journal",
-        "text": "觉察"
+        "pagePath": "pages/content/content",
+        "text": "阅见",
+        "iconPath": "images/tabbar/book.png",
+        "selectedIconPath": "images/tabbar/book-active.png"
+      },
+      {
+        "pagePath": "pages/stats/stats",
+        "text": "觉察",
+        "iconPath": "images/tabbar/stats.png",
+        "selectedIconPath": "images/tabbar/stats-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "本心",
+        "iconPath": "images/tabbar/profile.png",
+        "selectedIconPath": "images/tabbar/profile-active.png"
       }
     ]
   },

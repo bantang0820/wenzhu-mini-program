@@ -1,0 +1,344 @@
+/* pages/stats/stats.wxss - 觉察页面 */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #F5F3F0 0%, #EBE9E5 100%);
+  padding: 40rpx 24rpx 140rpx;
+}
+
+/* ========== 顶部：核心数据 ========== */
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 0 60rpx;
+}
+
+.hero-label {
+  font-family: "Songti SC", serif;
+  font-size: 28rpx;
+  color: rgba(43, 48, 58, 0.5);
+  letter-spacing: 4rpx;
+  margin-bottom: 20rpx;
+}
+
+.hero-number {
+  font-family: "Songti SC", serif;
+  font-size: 120rpx;
+  font-weight: 700;
+  color: #2B303A;
+  line-height: 1;
+  margin-bottom: 12rpx;
+  text-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.2);
+}
+
+.hero-unit {
+  font-family: "Songti SC", serif;
+  font-size: 32rpx;
+  color: rgba(43, 48, 58, 0.4);
+  letter-spacing: 2rpx;
+  margin-bottom: 30rpx;
+}
+
+.hero-stats {
+  margin-top: 20rpx;
+}
+
+.stats-text {
+  font-size: 22rpx;
+  color: rgba(140, 134, 128, 0.8);
+  letter-spacing: 1rpx;
+  text-align: center;
+}
+
+/* ========== 等级进度 ========== */
+.level-section {
+  padding: 28rpx;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  border-radius: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.level-header {
+  margin-bottom: 20rpx;
+}
+
+.level-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #2B303A;
+  font-family: "Songti SC", serif;
+}
+
+.level-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8rpx;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.6) 0%, rgba(212, 175, 55, 0.9) 100%);
+  border-radius: 4rpx;
+  transition: width 0.3s ease;
+}
+
+.level-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.level-current {
+  font-size: 22rpx;
+  color: #2B303A;
+  font-weight: 600;
+}
+
+.level-next {
+  font-size: 20rpx;
+  color: rgba(140, 134, 128, 0.6);
+}
+
+/* ========== 通用区块样式 ========== */
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 0 60rpx;
+}
+
+.hero-label {
+  font-family: "Songti SC", serif;
+  font-size: 28rpx;
+  color: rgba(43, 48, 58, 0.5);
+  letter-spacing: 4rpx;
+  margin-bottom: 20rpx;
+}
+
+.hero-number {
+  font-family: "Songti SC", serif;
+  font-size: 120rpx;
+  font-weight: 700;
+  color: #2B303A;
+  line-height: 1;
+  margin-bottom: 12rpx;
+  text-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.2);
+}
+
+.hero-unit {
+  font-family: "Songti SC", serif;
+  font-size: 32rpx;
+  color: rgba(43, 48, 58, 0.4);
+  letter-spacing: 2rpx;
+  margin-bottom: 30rpx;
+}
+
+.hero-stats {
+  margin-top: 20rpx;
+}
+
+.stats-text {
+  font-size: 22rpx;
+  color: rgba(140, 134, 128, 0.8);
+  letter-spacing: 1rpx;
+  text-align: center;
+}
+
+/* ========== 通用区块样式 ========== */
+.calendar-section,
+.radar-section,
+.medal-section {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1rpx solid rgba(255, 255, 255, 0.6);
+  border-radius: 24rpx;
+  padding: 32rpx 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.section-header {
+  margin-bottom: 24rpx;
+}
+
+.section-title {
+  font-family: "Songti SC", serif;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #2B303A;
+  letter-spacing: 2rpx;
+}
+
+/* ========== 日历 ========== */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease;
+}
+
+.calendar-day.today {
+  border: 2rpx solid rgba(212, 175, 55, 0.5);
+}
+
+.calendar-day.checked {
+  background: rgba(212, 175, 55, 0.15);
+}
+
+.day-number {
+  font-size: 22rpx;
+  color: rgba(43, 48, 58, 0.6);
+  font-weight: 500;
+}
+
+.calendar-day.checked .day-number {
+  color: #2B303A;
+  font-weight: 600;
+}
+
+.check-dot {
+  position: absolute;
+  bottom: 6rpx;
+  width: 10rpx;
+  height: 10rpx;
+  background: #D4AF37;
+  border-radius: 50%;
+  box-shadow: 0 0 12rpx rgba(212, 175, 55, 0.6), 0 0 6rpx rgba(212, 175, 55, 0.8);
+}
+
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  gap: 32rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.legend-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1rpx solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-dot.checked {
+  background: #D4AF37;
+  border: none;
+  box-shadow: 0 0 6rpx rgba(212, 175, 55, 0.5);
+}
+
+.legend-text {
+  font-size: 20rpx;
+  color: rgba(140, 134, 128, 0.7);
+}
+
+/* ========== 勋章墙 ========== */
+.medal-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+}
+
+.medal-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  padding: 20rpx 12rpx;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 16rpx;
+  transition: all 0.2s ease;
+}
+
+.medal-item.unlocked {
+  border: 1rpx solid rgba(212, 175, 55, 0.4);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.medal-item.locked {
+  opacity: 0.4;
+  border: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.medal-icon {
+  font-size: 48rpx;
+  line-height: 1;
+}
+
+.medal-item.unlocked .medal-icon {
+  filter: drop-shadow(0 0 8rpx rgba(212, 175, 55, 0.6));
+  animation: medalGlow 2s ease-in-out infinite;
+}
+
+@keyframes medalGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8rpx rgba(212, 175, 55, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 16rpx rgba(212, 175, 55, 0.9));
+  }
+}
+
+.medal-icon.locked-icon {
+  font-size: 36rpx;
+  opacity: 0.3;
+}
+
+.medal-name {
+  font-size: 20rpx;
+  color: rgba(43, 48, 58, 0.8);
+  font-family: "Songti SC", serif;
+  text-align: center;
+}
+
+.medal-desc {
+  font-size: 16rpx;
+  color: rgba(140, 134, 128, 0.6);
+  text-align: center;
+}
+
+.medal-grid.locked {
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.empty-medals {
+  padding: 40rpx 0;
+  text-align: center;
+}
+
+.empty-text {
+  font-size: 22rpx;
+  color: rgba(140, 134, 128, 0.6);
+  font-family: "Songti SC", serif;
+}

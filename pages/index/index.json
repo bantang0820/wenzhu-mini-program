@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
-  "navigationBarTitleText": "正念急救"
+  "navigationBarTitleText": "正念育儿朗读",
+  "navigationBarBackgroundColor": "#F5F3EF",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#F5F3EF"
 }

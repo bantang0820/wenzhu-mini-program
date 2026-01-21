@@ -1,0 +1,139 @@
+/* pages/card/card.wxss - 原研哉极简风 */
+
+.container {
+  min-height: 100vh;
+  background: #F5F3EF;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #8B7E74;
+  font-family: 'Songti SC', serif;
+  letter-spacing: 2rpx;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* 卡片包装器 */
+.card-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60rpx 40rpx;
+  box-sizing: border-box;
+}
+
+/* 卡片容器 - 柔光投影 */
+.card-container {
+  width: 100%;
+  max-width: 600rpx;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.06);
+  overflow: visible;
+  margin-bottom: 80rpx;
+}
+
+.card-image {
+  width: 100%;
+  display: block;
+  border-radius: 0;
+}
+
+/* 操作按钮区域 - 极简设计 */
+.actions {
+  width: 100%;
+  max-width: 600rpx;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 26rpx;
+  border: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
+  background: #FFFFFF;
+  color: #8B7E74;
+}
+
+.action-btn::after {
+  border: none;
+}
+
+.action-btn .icon {
+  font-size: 24rpx;
+  font-family: 'Songti SC', serif;
+}
+
+/* 主要按钮 */
+.action-btn.primary {
+  background: #2B303A;
+  color: #FAF8F3;
+}
+
+.action-btn.primary:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* 成功按钮 */
+.action-btn.success {
+  background: #D4AF37;
+  color: #FAF8F3;
+}
+
+.action-btn.success:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* 默认按钮 */
+.action-btn.default {
+  background: transparent;
+  color: #8B7E74;
+  border: 1rpx solid #E0DCD4;
+  box-shadow: none;
+}
+
+.action-btn.default:active {
+  transform: scale(0.96);
+  background: #F5F3EF;
+}
+
+/* 隐藏的Canvas */
+.hidden-canvas {
+  position: fixed;
+  left: -9999rpx;
+  top: -9999rpx;
+  width: 750rpx;
+  height: 1200rpx;
+}

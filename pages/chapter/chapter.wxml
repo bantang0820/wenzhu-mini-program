@@ -1,0 +1,63 @@
+<!--pages/chapter/chapter.wxml - 章节详情页-->
+<view class="container">
+  <!-- ========== 章节头部 ========== -->
+  <view class="chapter-header">
+    <view class="chapter-meta">
+      <text class="chapter-number">第 {{chapter.id}} 章</text>
+      <view class="chapter-divider">|</view>
+      <text class="chapter-progress">{{completedCount}}/10 句</text>
+    </view>
+    <text class="chapter-title">{{chapter.title}}</text>
+    <text class="chapter-subtitle">{{chapter.subtitle}}</text>
+  </view>
+
+  <!-- ========== 练习句子列表 ========== -->
+  <view class="sentences-section">
+    <view class="sentence-card" wx:for="{{sentences}}" wx:key="id">
+      <!-- 句子序号 -->
+      <view class="sentence-number {{item.completed ? 'completed' : ''}}">
+        {{item.id}}
+      </view>
+
+      <!-- 句子内容 -->
+      <view class="sentence-content">
+        <text class="sentence-text">{{item.content}}</text>
+
+        <!-- 场景标签 -->
+        <view class="scenario-tag" wx:if="{{item.scenario}}">
+          <text class="scenario-icon">💡</text>
+          <text class="scenario-text">{{item.scenario}}</text>
+        </view>
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="sentence-actions">
+        <view
+          class="action-btn practice-btn"
+          bindtap="onPracticeTap"
+          data-id="{{item.id}}"
+          data-content="{{item.content}}"
+        >
+          <text class="btn-icon">{{item.completed ? '🔁' : '🎯'}}</text>
+          <text class="btn-text">{{item.completed ? '再练一次' : '开始练习'}}</text>
+        </view>
+
+        <view
+          class="action-btn complete-btn {{item.completed ? 'completed' : ''}}"
+          bindtap="onCompleteTap"
+          data-id="{{item.id}}"
+        >
+          <text class="btn-icon">{{item.completed ? '✓' : '○'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 底部完成按钮 ========== -->
+  <view class="footer-action" wx:if="{{completedCount >= 6}}">
+    <view class="complete-chapter-btn" bindtap="onCompleteChapter">
+      <text class="btn-main-text">完成本章节</text>
+      <text class="btn-sub-text">解锁下一章</text>
+    </view>
+  </view>
+</view>
