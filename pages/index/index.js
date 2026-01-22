@@ -27,8 +27,9 @@ Page({
   },
 
   onShow() {
-    // 每次显示页面时重新加载已解锁的场景
+    // 每次显示页面时重新加载已解锁的场景和会员状态
     this.loadUnlockedScenarios();
+    this.checkProStatus();
     // 清除选中状态
     this.setData({
       selectedId: null
@@ -119,23 +120,37 @@ Page({
   // 点击场景
   onScenarioTap(e) {
     const { id } = e.currentTarget.dataset;
+    // 直接从全局获取最新的会员状态
+    const isMember = app.globalData.isMember;
+
+    console.log('--- 场景点击拦截检查 (最终加固版) ---');
+    console.log('点击场景 ID:', id);
+    console.log('是否为会员 (app.globalData.isMember):', isMember);
 
     // 震动反馈
     wx.vibrateShort({ type: 'light' });
 
-    // 跳转到详情页，直接进入朗读模式（跳过长按止颤）
+    // 定义免费场景白名单 (字符串格式)
+    const freeList = ['001', '002', 'daily'];
+    const isFreeScenario = freeList.indexOf(String(id)) !== -1;
+
+    console.log('是否为免费场景:', isFreeScenario);
+
+    // 如果不是免费场景，且不是会员，则拦截
+    if (!isFreeScenario && !isMember) {
+      console.log('！拦截成功：准备跳转到 Pro 页面');
+      wx.navigateTo({
+        url: '/pages/pro/pro',
+        success: () => console.log('跳转 Pro 页面成功'),
+        fail: (err) => console.error('跳转 Pro 页面失败', err)
+      });
+      return; // 必须 return，否则会执行下面的跳转
+    }
+
+    console.log('✓ 放行：进入详情朗读页');
+    // 跳转到详情页
     wx.navigateTo({
-      url: `/pages/detail/detail?id=${id}&autoStart=true`,
-      success: () => {
-        console.log('进入场景:', id);
-      },
-      fail: err => {
-        console.error('跳转失败', err);
-        wx.showToast({
-          title: '跳转失败',
-          icon: 'none'
-        });
-      }
+      url: `/pages/detail/detail?id=${id}&autoStart=true`
     });
   },
 
@@ -164,29 +179,29 @@ Page({
     const heroList = [
       { id: "001", title: "没忍住吼了", icon: "❗", is_free: true, isHero: true },
       { id: "002", title: "作业拖拉", icon: "⏳", is_free: true, isHero: true },
-      { id: "003", title: "遇难题就放弃", icon: "⟡", is_free: true, isHero: true },
-      { id: "004", title: "早上不起床", icon: "△", is_free: true, isHero: true },
-      { id: "005", title: "沉迷手机", icon: "▭", is_free: true, isHero: true },
-      { id: "006", title: "磨蹭发呆", icon: "✎", is_free: true, isHero: true },
+      { id: "003", title: "遇难题就放弃", icon: "⟡", is_free: false, isHero: true },
+      { id: "004", title: "早上不起床", icon: "△", is_free: false, isHero: true },
+      { id: "005", title: "沉迷手机", icon: "▭", is_free: false, isHero: true },
+      { id: "006", title: "磨蹭发呆", icon: "✎", is_free: false, isHero: true },
     ];
 
     // 其余场景
     const restList = [
-      { id: "007", title: "不肯尝试", is_free: true },
-      { id: "008", title: "孩子顶嘴", is_free: true },
-      { id: "009", title: "孩子冷漠", is_free: true },
-      { id: "010", title: "孩子怕输", is_free: true },
-      { id: "011", title: "吃饭挑食", is_free: true },
-      { id: "012", title: "俩娃争宠", is_free: true },
-      { id: "013", title: "不想上学", is_free: true },
-      { id: "014", title: "沉迷看电视", is_free: true },
-      { id: "015", title: "孩子撒谎", is_free: true },
-      { id: "016", title: "爱发脾气", is_free: true },
-      { id: "017", title: "和人打架", is_free: true },
-      { id: "018", title: "不听话", is_free: true },
-      { id: "019", title: "被打不还手", is_free: true },
-      { id: "020", title: "玻璃心", is_free: true },
-      { id: "021", title: "孩子躺平", is_free: true },
+      { id: "007", title: "不肯尝试", is_free: false },
+      { id: "008", title: "孩子顶嘴", is_free: false },
+      { id: "009", title: "孩子冷漠", is_free: false },
+      { id: "010", title: "孩子怕输", is_free: false },
+      { id: "011", title: "吃饭挑食", is_free: false },
+      { id: "012", title: "俩娃争宠", is_free: false },
+      { id: "013", title: "不想上学", is_free: false },
+      { id: "014", title: "沉迷看电视", is_free: false },
+      { id: "015", title: "孩子撒谎", is_free: false },
+      { id: "016", title: "爱发脾气", is_free: false },
+      { id: "017", title: "和人打架", is_free: false },
+      { id: "018", title: "不听话", is_free: false },
+      { id: "019", title: "被打不还手", is_free: false },
+      { id: "020", title: "玻璃心", is_free: false },
+      { id: "021", title: "孩子躺平", is_free: false },
     ];
 
     const allScenarios = [...heroList, ...restList];
@@ -205,7 +220,7 @@ Page({
   // 检查会员状态
   checkProStatus() {
     this.setData({
-      isPro: app.globalData.isPro
+      isPro: app.globalData.isMember
     });
   }
 });

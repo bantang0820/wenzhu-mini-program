@@ -1,0 +1,77 @@
+<view class="container">
+  <!-- 顶部：品牌形象 -->
+  <view class="header">
+    <view class="logo-orb"></view>
+    <view class="title-section">
+      <text class="title">稳住 Pro</text>
+      <text class="subtitle">深度觉察，温柔育儿</text>
+    </view>
+  </view>
+
+  <!-- 会员特权卡片 -->
+  <view class="privilege-section">
+    <view class="section-title">专属特权</view>
+    
+    <view class="privilege-list">
+      <view class="privilege-item">
+        <view class="item-icon">♾️</view>
+        <view class="item-content">
+          <text class="item-title">每日无限次打卡</text>
+          <text class="item-desc">不再受限，随时随地稳住情绪</text>
+        </view>
+      </view>
+
+      <view class="privilege-item">
+        <view class="item-icon">📂</view>
+        <view class="item-content">
+          <text class="item-title">解锁 30+ 急救场景</text>
+          <text class="item-desc">涵盖磨蹭、叛逆、作业等所有高频痛点</text>
+        </view>
+      </view>
+
+      <view class="privilege-item">
+        <view class="item-icon">📚</view>
+        <view class="item-content">
+          <text class="item-title">深度专题课程</text>
+          <text class="item-desc">非暴力沟通、课题分离等全套进阶内容</text>
+        </view>
+      </view>
+
+      <view class="privilege-item">
+        <view class="item-icon">✨</view>
+        <view class="item-content">
+          <text class="item-title">专属治愈皮肤</text>
+          <text class="item-desc">更多呼吸卡片皮肤与音效即将上线</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 价格与购买 -->
+  <view class="purchase-section">
+    <view class="price-card selected">
+      <view class="card-left">
+        <text class="plan-name">Pro 年卡会员</text>
+        <text class="plan-desc">平均每天仅需 0.5 元</text>
+      </view>
+      <view class="card-right">
+        <text class="currency">¥</text>
+        <text class="price">199</text>
+        <text class="original">¥299</text>
+      </view>
+    </view>
+
+    <view class="tip-text">当前支持：通过兑换码免费兑换</view>
+    
+    <button class="pay-btn" bindtap="onPayTap">
+      立即开通
+    </button>
+    <text class="cancel-text" bindtap="onBack">先看看再说</text>
+  </view>
+
+  <view class="footer">
+    <text class="footer-link">会员服务协议</text>
+    <text class="divider">|</text>
+    <text class="footer-link">隐私政策</text>
+  </view>
+</view>

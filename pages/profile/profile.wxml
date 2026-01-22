@@ -1,41 +1,37 @@
 <!--pages/profile/profile.wxml - 本心-->
 <view class="container">
-  <!-- ========== 顶部：会员身份卡 ========== -->
-  <view class="member-card {{isPro ? 'pro' : ''}}" bindtap="onMemberCardTap">
+  <!-- ========== 顶部：用户身份卡 ========== -->
+  <view class="member-card {{isPro ? 'pro' : ''}}">
     <!-- 卡片背景装饰 -->
     <view class="card-bg-decoration">
       <view class="circle circle-1"></view>
       <view class="circle circle-2"></view>
     </view>
 
-    <!-- 用户信息 -->
+    <!-- 用户信息区域：点击头像和名字进行登录/同步 -->
     <view class="card-user">
-      <view class="user-avatar">
-        <text class="avatar-emoji">🧘</text>
-      </view>
-      <view class="user-info">
-        <text class="user-name">{{userInfo.nickname}}</text>
-        <view class="user-tags">
-          <view class="level-tag">LV.{{userInfo.level}} {{userInfo.levelName}}</view>
-          <view class="pro-badge-text" wx:if="{{isPro}}">Pro 年卡会员</view>
+      <view class="user-avatar-group" bindtap="handleUserClick">
+        <view class="user-avatar">
+          <image class="avatar-img" wx:if="{{userInfo.avatarUrl}}" src="{{userInfo.avatarUrl}}"></image>
+          <text class="avatar-emoji" wx:else>🧘</text>
         </view>
-
-        <!-- 会员有效期 -->
-        <view class="validity-section" wx:if="{{isPro}}">
-          <text class="validity-text {{isExpiring ? 'expiring' : ''}}">
-            有效期至 {{expireDate}}
-          </text>
-          <view class="renew-btn" wx:if="{{isExpiring}}">
-            <text class="renew-text">续费</text>
+        <view class="user-info">
+          <text class="user-name">{{userInfo.nickname || '点击登录'}}</text>
+          <view class="user-tags">
+            <view class="level-tag">{{userInfo.levelName || '觉察者'}}</view>
+            <view class="pro-badge-text" wx:if="{{isPro}}">Pro 年卡会员</view>
+          </view>
+          
+          <!-- 会员有效期 -->
+          <view class="validity-section" wx:if="{{isPro}}">
+            <text class="validity-text">有效期至 {{expireDate}}</text>
           </view>
         </view>
       </view>
 
-      <view class="member-btn" wx:if="{{!isPro}}">
-        <text class="btn-text">开通会员</text>
-      </view>
-      <view class="member-btn pro" wx:else>
-        <text class="btn-text">会员中心 ></text>
+      <!-- 只有这个按钮触发会员中心/开通 -->
+      <view class="member-btn {{isPro ? 'pro' : ''}}" bindtap="onMemberCardTap">
+        <text class="btn-text">{{isPro ? '会员中心' : '开通 Pro'}}</text>
       </view>
     </view>
   </view>
@@ -76,5 +72,118 @@
   <!-- ========== 底部版本信息 ========== -->
   <view class="footer">
     <text class="footer-text">正念育儿 v1.0.0</text>
+  </view>
+
+  <!-- ========== 设置弹窗 (统一半层模态) ========== -->
+  <view class="settings-modal {{showSettings ? 'show' : ''}}" bindtap="closeSettings">
+    <view class="modal-content" catchtap="stopBubble">
+      <view class="modal-header">
+        <text class="modal-title">{{modalTitle}}</text>
+        <view class="close-icon" bindtap="closeSettings">×</view>
+      </view>
+
+      <!-- 1. 朗读设置内容 -->
+      <view class="modal-body" wx:if="{{modalType === 'settings'}}">
+        <view class="setting-row">
+          <text class="label">背景音量</text>
+          <slider 
+            class="custom-slider" 
+            value="{{audioSettings.bgVolume}}" 
+            min="0" max="100" 
+            activeColor="#D4AF37" 
+            backgroundColor="rgba(0,0,0,0.05)" 
+            block-size="20"
+            bindchange="onBgVolumeChange"
+          />
+          <text class="value">{{audioSettings.bgVolume}}%</text>
+        </view>
+        <view class="setting-row">
+          <text class="label">人声音量</text>
+          <slider 
+            class="custom-slider" 
+            value="{{audioSettings.voiceVolume}}" 
+            min="0" max="100" 
+            activeColor="#D4AF37" 
+            backgroundColor="rgba(0,0,0,0.05)" 
+            block-size="20"
+            bindchange="onVoiceVolumeChange"
+          />
+          <text class="value">{{audioSettings.voiceVolume}}%</text>
+        </view>
+      </view>
+
+      <!-- 2. 提醒设置内容 -->
+      <view class="modal-body" wx:if="{{modalType === 'reminder'}}">
+        <view class="setting-row flex-between">
+          <text class="label">每日提醒</text>
+          <switch 
+            checked="{{reminderSettings.enabled}}" 
+            color="#D4AF37" 
+            bindchange="onReminderToggle"
+          />
+        </view>
+        <view class="setting-row flex-between" wx:if="{{reminderSettings.enabled}}">
+          <text class="label">提醒时间</text>
+          <picker mode="time" value="{{reminderSettings.time}}" bindchange="onReminderTimeChange">
+            <view class="time-picker-val">{{reminderSettings.time}} ❯</view>
+          </picker>
+        </view>
+        <view class="reminder-desc">开启后，系统将在设定时间提醒您进行正念修习，帮助建立稳定的心理状态。</view>
+      </view>
+
+      <!-- 3. 意见反馈内容 -->
+      <view class="modal-body" wx:if="{{modalType === 'feedback'}}">
+        <textarea 
+          class="feedback-input" 
+          placeholder="请输入您的宝贵建议或遇到的问题..." 
+          placeholder-class="placeholder"
+          value="{{feedbackContent}}"
+          bindinput="onFeedbackInput"
+          maxlength="500"
+        />
+        <input 
+          class="contact-input" 
+          placeholder="联系方式 (选填，方便我们联系您)" 
+          placeholder-class="placeholder"
+          value="{{contactInfo}}"
+          bindinput="onContactInput"
+        />
+        <view class="reminder-desc">您的反馈对我们至关重要，我们会认真阅读每一条建议。</view>
+      </view>
+
+      <!-- 4. 关于稳住内容 -->
+      <view class="modal-body about-body" wx:if="{{modalType === 'about'}}">
+        <view class="about-logo">
+          <view class="logo-orb"></view>
+          <text class="logo-name">稳住</text>
+          <text class="version-tag">v1.0.0</text>
+        </view>
+        <view class="about-content">
+          <view class="philosophy-item">
+            <text class="p-title">我们的初衷</text>
+            <text class="p-text">带娃是一场修行。我们希望通过正念，帮助每一位家长在琐碎的日常中找回内心的宁静。先稳住自己，才能给孩子更温柔、更有力量的爱。</text>
+          </view>
+          <view class="philosophy-item">
+            <text class="p-title">核心理念</text>
+            <view class="tag-group">
+              <text class="concept-tag">非暴力沟通</text>
+              <text class="concept-tag">课题分离</text>
+              <text class="concept-tag">NLP觉察</text>
+              <text class="concept-tag">正念育儿</text>
+            </view>
+          </view>
+        </view>
+        <view class="about-links">
+          <text class="link-item">服务协议</text>
+          <text class="link-item">隐私政策</text>
+        </view>
+      </view>
+
+      <view class="modal-footer" wx:if="{{modalType !== 'about'}}">
+        <button class="save-btn" bindtap="{{modalType === 'feedback' ? 'submitFeedback' : 'saveAndClose'}}">
+          {{modalType === 'feedback' ? '提交反馈' : '保存设置'}}
+        </button>
+      </view>
+    </view>
   </view>
 </view>

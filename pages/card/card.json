@@ -2,7 +2,5 @@
   "navigationBarTitleText": "正念日记",
   "navigationBarBackgroundColor": "#F5F3EF",
   "navigationBarTextStyle": "black",
-  "backgroundColor": "#F5F3EF",
-  "enableShareAppMessage": true,
-  "enableShareTimeline": true
+  "backgroundColor": "#F5F3EF"
 }

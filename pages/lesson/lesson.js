@@ -1054,10 +1054,41 @@ Page({
       prevPage.updateLessonStatus(this.data.lessonId, newStatus);
     }
 
+    if (newStatus) {
+      this.updateCheckIn(lesson.title);
+    }
+
     wx.showToast({
       title: newStatus ? '已标记完成 ✓' : '已取消',
       icon: 'success'
     });
+  },
+
+  // 更新打卡记录
+  updateCheckIn(lessonTitle) {
+    try {
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      
+      // 1. 更新打卡地图 (用于Stats页面日历显示)
+      const checkInMap = wx.getStorageSync('checkInMap') || {};
+      if (!checkInMap[dateStr]) {
+        checkInMap[dateStr] = true;
+        wx.setStorageSync('checkInMap', checkInMap);
+        
+        // 2. 更新总天数
+        const totalDays = wx.getStorageSync('totalDays') || 0;
+        wx.setStorageSync('totalDays', totalDays + 1);
+      }
+      
+      // 3. 更新总次数
+      const totalCount = wx.getStorageSync('totalCount') || 0;
+      wx.setStorageSync('totalCount', totalCount + 1);
+      
+      console.log('打卡成功:', { dateStr, lessonTitle });
+    } catch (e) {
+      console.error('更新打卡记录失败', e);
+    }
   },
 
   // 学习下一节

@@ -79,45 +79,45 @@
     <view class="quote-reveal-container">
       <text class="quote-reveal-text title-serif typewriter shimmer">{{displayText}}</text>
     </view>
+  </view>
 
-    <!-- 录音按钮（延迟显示） -->
-    <view class="stamp-section" wx:if="{{showStamp}}">
-      <!-- 录音按钮 -->
-      <view class="stamp-wrapper">
-        <!-- 未录音状态：显示录音按钮 -->
+  <!-- 录音按钮（延迟显示）- 移出 phase-reveal 以实现真正的底部固定 -->
+  <view class="stamp-section" wx:if="{{currentPhase === 'reading' && showStamp}}">
+    <!-- 录音按钮 -->
+    <view class="stamp-wrapper">
+      <!-- 未录音状态：显示录音按钮 -->
+      <view
+        wx:if="{{!hasRecorded}}"
+        class="record-button {{isRecording ? 'recording' : ''}}"
+        bindtouchstart="onRecordStart"
+        bindtouchend="onRecordEnd"
+      >
+        <text class="record-icon">{{isRecording ? '🔴' : '🎤'}}</text>
+        <text class="record-label">{{isRecording ? '按住朗读' : '按住朗读'}}</text>
+      </view>
+
+      <!-- 已录音状态：显示回放按钮和确认按钮 -->
+      <view wx:else class="playback-buttons">
+        <!-- 回放按钮 -->
         <view
-          wx:if="{{!hasRecorded}}"
-          class="record-button {{isRecording ? 'recording' : ''}}"
-          bindtouchstart="onRecordStart"
-          bindtouchend="onRecordEnd"
+          class="play-button {{isPlaying ? 'playing' : ''}}"
+          bindtap="onPlayRecord"
         >
-          <text class="record-icon">{{isRecording ? '🔴' : '🎤'}}</text>
-          <text class="record-label">{{isRecording ? '录音中...' : '按住朗读'}}</text>
+          <text class="play-icon">{{isPlaying ? '⏸️' : '▶️'}}</text>
+          <text class="play-label">{{isPlaying ? '播放中' : '回听'}}</text>
         </view>
 
-        <!-- 已录音状态：显示回放按钮和确认按钮 -->
-        <view wx:else class="playback-buttons">
-          <!-- 回放按钮 -->
-          <view
-            class="play-button {{isPlaying ? 'playing' : ''}}"
-            bindtap="onPlayRecord"
-          >
-            <text class="play-icon">{{isPlaying ? '⏸️' : '▶️'}}</text>
-            <text class="play-label">{{isPlaying ? '播放中' : '回听'}}</text>
-          </view>
-
-          <!-- 确认按钮 -->
-          <view class="confirm-button" bindtap="onConfirmRecord">
-            <text class="confirm-icon">✓</text>
-            <text class="confirm-label">完成</text>
-          </view>
+        <!-- 确认按钮 -->
+        <view class="confirm-button" bindtap="onConfirmRecord">
+          <text class="confirm-icon">✓</text>
+          <text class="confirm-label">完成</text>
         </view>
       </view>
+    </view>
 
-      <!-- 引导语（录音按钮下方） -->
-      <view class="guide-text-container" wx:if="{{showGuide && !hasRecorded}}">
-        <text class="guide-text">{{guideText}}</text>
-      </view>
+    <!-- 引导语（录音按钮下方） -->
+    <view class="guide-text-container" wx:if="{{showGuide && !hasRecorded}}">
+      <text class="guide-text">{{guideText}}</text>
     </view>
   </view>
 

@@ -11,7 +11,8 @@
     "pages/share/share",
     "pages/album/album",
     "pages/chapter/chapter",
-    "pages/lesson/lesson"
+    "pages/lesson/lesson",
+    "pages/pro/pro"
   ],
   "window": {
     "backgroundTextStyle": "light",

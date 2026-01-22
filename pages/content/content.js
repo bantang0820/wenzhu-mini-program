@@ -1,17 +1,90 @@
 // pages/content/content.js
+const { quotes: quotesData } = require('./quotes-data.js');
+
 Page({
   data: {
-    albums: [],
-    dailyQuote: '我观察到你不高兴，而不是你在闹脾气。',
+    albums: [
+      {
+        id: 'nvc',
+        title: '非暴力沟通',
+        subtitle: 'Micro Course',
+        desc: '爱的语言，让理解自然发生',
+        actionText: '点击开启沟通之旅 >',
+        progress: 12,
+        tag: '沟通技巧',
+        isFree: true
+      },
+      {
+        id: 'adler',
+        title: '课题分离',
+        subtitle: 'Micro Course',
+        desc: '找回边界，获得真正的自由',
+        actionText: '掌握人际关系钥匙 >',
+        progress: 0,
+        tag: '边界感',
+        isFree: false
+      },
+      {
+        id: 'self',
+        title: '自我关怀',
+        subtitle: 'Micro Course',
+        desc: '接纳不完美，给自己一个拥抱',
+        actionText: '开启心灵疗愈空间 >',
+        progress: 0,
+        tag: '情绪疗愈',
+        isFree: false
+      },
+      {
+        id: 'growth',
+        title: '成长型思维',
+        subtitle: 'Micro Course',
+        desc: '激发潜能，看见成长的力量',
+        actionText: '探索无限可能未来 >',
+        progress: 0,
+        tag: '能力培养',
+        isFree: false
+      }
+    ],
+    dailyQuote: '',
     dailyDate: '',
     lastReadLesson: ''
   },
 
   onLoad: function() {
     console.log('阅见页面加载中...');
-    this.loadAlbums();
+    this.checkProStatus();
     this.setDailyDate();
     this.loadLastRead();
+    this.refreshQuote(); // 初始加载一个随机金句
+  },
+
+  onShow: function() {
+    this.checkProStatus();
+  },
+
+  // 检查会员状态并更新列表显示
+  checkProStatus: function() {
+    const isPro = getApp().globalData.isMember;
+    const albums = this.data.albums.map(album => {
+      return {
+        ...album,
+        isLocked: !album.isFree && !isPro
+      };
+    });
+    this.setData({
+      isPro,
+      albums
+    });
+  },
+
+  // 刷新金句逻辑
+  refreshQuote: function() {
+    if (quotesData && quotesData.length > 0) {
+      const randomQuote = quotesData[Math.floor(Math.random() * quotesData.length)];
+      this.setData({
+        dailyQuote: randomQuote
+      });
+    }
   },
 
   // 设置每日日期
@@ -41,75 +114,41 @@ Page({
     }
   },
 
-  loadAlbums: function() {
-    var albums = [
-      {
-        id: 'nvc',
-        title: '非暴力沟通',
-        subtitle: '100句',
-        desc: '马歇尔博士的爱的语言',
-        progress: 12,
-        tag: '沟通技巧',
-        locked: false
-      },
-      {
-        id: 'adler',
-        title: '课题分离',
-        subtitle: '100句',
-        desc: '阿德勒心理学边界指南',
-        progress: 0,
-        tag: '边界感',
-        locked: true
-      },
-      {
-        id: 'self',
-        title: '自我关怀',
-        subtitle: '100句',
-        desc: '接纳不完美的自己',
-        progress: 0,
-        tag: '情绪疗愈',
-        locked: true
-      },
-      {
-        id: 'growth',
-        title: '成长型思维',
-        subtitle: '100句',
-        desc: '鼓励孩子激发内在动力',
-        progress: 0,
-        tag: '能力培养',
-        locked: true
-      }
-    ];
-
-    this.setData({ albums: albums });
-  },
-
   onAlbumTap: function(e) {
-    var id = e.currentTarget.dataset.id;
-    var locked = e.currentTarget.dataset.locked;
-    console.log('点击专辑，ID:', id, '锁定状态:', locked);
+    const { id, index } = e.currentTarget.dataset;
+    const album = this.data.albums[index];
+    const isPro = getApp().globalData.isMember;
+
+    console.log('点击专辑，ID:', id, 'Pro状态:', isPro);
     wx.vibrateShort();
+
+    // 检查权限
+    if (album && !album.isFree && !isPro) {
+      wx.showModal({
+        title: 'Pro 专属课程',
+        content: '该专题课程为 Pro 会员专属深度学习内容，开通后即可解锁全站所有主题。',
+        confirmText: '去开通',
+        confirmColor: '#D4AF37',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/pro/pro' });
+          }
+        }
+      });
+      return;
+    }
 
     if (!id) {
       console.error('专辑ID为空');
       return;
     }
 
-    if (locked) {
-      wx.showToast({
-        title: 'Coming Soon',
-        icon: 'none',
-        duration: 2000
-      });
-      return;
-    }
-
     // 保存最近在读记录
     this.saveLastRead('第1章 · 区分观察与评论');
 
-    // 跳转到章节列表页（chapter页面）
+    // 跳转到专辑详情页（展示10个章节列表）
     wx.navigateTo({
-      url: '/pages/chapter/chapter?albumId=' + id + '&chapterId=1',
+      url: '/pages/album/album?id=' + id,
       fail: function(err) {
         console.error('页面跳转失败:', err);
         wx.showToast({
@@ -134,26 +173,7 @@ Page({
 
   onDailyTap: function() {
     wx.vibrateShort();
-
-    // 随机切换金句
-    const quotes = [
-      '我观察到你不高兴，而不是你在闹脾气。',
-      '感受没有对错，只有存在。',
-      '需要是普遍的，我们都渴望被理解。',
-      '倾听本身就是疗愈。',
-      '愤怒是受伤的呐喊，需要未被满足。',
-      '感激是关系的燃料，让爱流动。',
-      '先照顾好自己，才能照顾好孩子。',
-      '温和而坚定，是边界最美的样子。',
-      '请求是邀请，命令是控制。',
-      '热情不是直线，是循环。'
-    ];
-
-    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-    this.setData({
-      dailyQuote: randomQuote
-    });
-
+    this.refreshQuote();
     wx.showToast({
       title: '金句已刷新',
       icon: 'none'

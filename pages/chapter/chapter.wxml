@@ -1,6 +1,6 @@
 <!--pages/chapter/chapter.wxml - 章节详情页（微课模式）-->
 <view class="container">
-  <!-- ========== �oidagem头部 ========== -->
+  <!-- ========== 章节头部 ========== -->
   <view class="chapter-header">
     <view class="chapter-meta">
       <text class="chapter-number">第 {{chapter.id}} 章</text>
@@ -13,10 +13,10 @@
 
   <!-- ========== 每日微课列表 ========== -->
   <view class="lessons-section">
-    <view class="lesson-card" wx:for="{{lessons}}" wx:key="id" bindtap="onLessonTap" data-id="{{item.id}}">
+    <view class="lesson-card {{item.locked && !isPro ? 'is-locked' : ''}}" wx:for="{{lessons}}" wx:key="id" bindtap="onLessonTap" data-id="{{item.id}}">
       <!-- 微课序号 -->
       <view class="lesson-number {{item.completed ? 'completed' : ''}}">
-        <text class="number-text">{{item.id}}</text>
+        <text class="number-text">{{item.locked && !isPro ? '🔒' : item.id}}</text>
       </view>
 
       <!-- 微课内容 -->

@@ -1,78 +1,66 @@
 // pages/login/login.js
+const app = getApp();
+
 Page({
   data: {
-    canIUseGetUserProfile: false
+    loading: false
   },
 
   onLoad() {
-    // 检查是否支持 getUserProfile
-    if (wx.getUserProfile) {
-      this.setData({ canIUseGetUserProfile: true });
-    }
-
-    // 检查是否已登录
+    // 检查是否已经登录
     const openid = wx.getStorageSync('openid');
     if (openid) {
-      // 已登录，直接跳转首页
       wx.reLaunch({
         url: '/pages/index/index'
       });
     }
   },
 
-  // 获取用户信息并登录
-  async onGetUserInfo(e) {
-    // 用户拒绝授权
-    if (!e.detail.userInfo) {
-      wx.showToast({
-        title: '需要授权才能使用',
-        icon: 'none',
-        duration: 2000
-      });
-      return;
-    }
-
-    wx.showLoading({ title: '登录中...', mask: true });
+  // 处理一键登录
+  async handleQuickLogin() {
+    if (this.data.loading) return;
+    
+    this.setData({ loading: true });
+    wx.showLoading({ title: '正在开启...', mask: true });
 
     try {
-      // 1. 获取微信登录code
-      const loginRes = await wx.login();
-
-      // 2. 调用云函数进行登录
-      const cloudRes = await wx.cloud.callFunction({
-        name: 'login',
-        data: {
-          code: loginRes.code
-        }
+      // 1. 调用云函数获取 OpenID (静默登录)
+      const loginRes = await wx.cloud.callFunction({
+        name: 'login'
       });
 
-      if (cloudRes.result.error) {
-        throw new Error(cloudRes.result.error);
+      if (!loginRes.result || !loginRes.result.openid) {
+        throw new Error('登录失败，请重试');
       }
 
-      const { openid } = cloudRes.result;
+      const { openid } = loginRes.result;
 
-      // 3. 保存openid
+      // 2. 将 OpenID 存入本地缓存
       wx.setStorageSync('openid', openid);
+      app.globalData.openid = openid;
 
-      // 4. 保存用户信息到数据库
-      const saveRes = await wx.cloud.callFunction({
-        name: 'saveUserInfo',
+      // 3. 同步用户信息 (由于目前 getUserProfile 限制，先注册静默账号)
+      const syncRes = await wx.cloud.callFunction({
+        name: 'syncUserProfile',
         data: {
-          openid,
-          userInfo: e.detail.userInfo
+          userInfo: {
+            nickname: '正念家长',
+            avatarUrl: ''
+          }
         }
       });
 
-      if (saveRes.result.error) {
-        throw new Error(saveRes.result.error);
+      if (syncRes.result && syncRes.result.success) {
+        app.globalData.userInfo = syncRes.result.user;
+        app.globalData.isMember = syncRes.result.user.is_vip || false;
       }
 
       wx.hideLoading();
+      this.setData({ loading: false });
 
-      // 5. 登录成功，跳转首页
+      // 4. 成功跳转
       wx.showToast({
-        title: '登录成功',
+        title: '欢迎回来',
         icon: 'success',
         duration: 1500
       });
@@ -84,12 +72,12 @@ Page({
       }, 1500);
 
     } catch (err) {
-      console.error('登录失败', err);
       wx.hideLoading();
+      this.setData({ loading: false });
+      console.error('登录流程出错', err);
       wx.showToast({
-        title: err.message || '登录失败，请重试',
-        icon: 'none',
-        duration: 2000
+        title: err.message || '开启失败，请重试',
+        icon: 'none'
       });
     }
   }

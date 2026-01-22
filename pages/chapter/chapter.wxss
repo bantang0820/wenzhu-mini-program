@@ -100,6 +100,14 @@
 }
 
 /* 微课序号 */
+.lesson-card.is-locked {
+  opacity: 0.7;
+}
+
+.lesson-card.is-locked .lesson-number {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 .lesson-number {
   width: 56rpx;
   height: 56rpx;

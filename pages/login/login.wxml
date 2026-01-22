@@ -1,32 +1,31 @@
-<!--pages/login/login.wxml - 登录页面-->
-<view class="login-container">
-  <!-- Logo区域 -->
-  <view class="logo-section">
-    <text class="logo-text title-serif">稳住</text>
-    <text class="logo-subtitle">正念育儿，从稳住开始</text>
+<!--pages/login/login.wxml - 登录/注册-->
+<view class="container">
+  <view class="login-content">
+    <view class="logo-section">
+      <view class="logo-orb"></view>
+      <text class="logo-title">稳住</text>
+      <text class="logo-subtitle">做不焦虑的父母，给孩子更好的爱</text>
+    </view>
+
+    <view class="auth-section">
+      <view class="welcome-text">
+        <text class="greeting">你好，亲爱的家长</text>
+        <text class="sub-greeting">邀请你开启这段正念育儿之旅</text>
+      </view>
+
+      <!-- 快速登录按钮 -->
+      <button class="login-btn primary" bindtap="handleQuickLogin">
+        一键开启
+      </button>
+
+      <view class="privacy-note">
+        登录即表示同意 <text class="link">《服务协议》</text> 与 <text class="link">《隐私政策》</text>
+      </view>
+    </view>
   </view>
 
-  <!-- 授权按钮 -->
-  <view class="auth-section">
-    <view class="auth-info">
-      <text class="info-title">欢迎使用稳住</text>
-      <text class="info-desc">请授权微信登录，开启你的正念育儿之旅</text>
-    </view>
-
-    <button
-      class="auth-btn"
-      bindtap="onGetUserInfo"
-      open-type="getUserInfo"
-      get-user-info="onGetUserInfo"
-    >
-      <text class="auth-btn-text">微信授权登录</text>
-    </button>
-
-    <view class="privacy-note">
-      <text>登录即表示同意</text>
-      <text class="privacy-link">《用户协议》</text>
-      <text>和</text>
-      <text class="privacy-link">《隐私政策》</text>
-    </view>
+  <!-- 底部装饰 -->
+  <view class="bottom-decoration">
+    <view class="mist"></view>
   </view>
 </view>

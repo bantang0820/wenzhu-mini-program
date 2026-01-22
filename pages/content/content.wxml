@@ -1,11 +1,8 @@
-<!--pages/content/content.wxml - 阅见页面（心灵工位版）-->
+<!--pages/content/content.wxml - 阅见页面（极简修习版）-->
 <view class="page-container">
-  <!-- ========== 顶部：灵感便签（撕边日历纸效果）========== -->
+  <!-- ========== 顶部：每日心流便签 ========== -->
   <view class="daily-inspiration" bindtap="onDailyTap">
-    <!-- 图钉装饰 -->
     <view class="pin-decoration"></view>
-
-    <!-- 便签内容 -->
     <view class="inspiration-content">
       <view class="inspiration-date">{{dailyDate}}</view>
       <text class="inspiration-text">{{dailyQuote}}</text>
@@ -15,117 +12,37 @@
     </view>
   </view>
 
-  <!-- ========== 中部：书籍陈列（2列瀑布流）========== -->
+  <!-- ========== 中部：学习路径（2列网格）========== -->
   <view class="books-grid">
-    <!-- 非暴力沟通 - 绿色水彩 -->
     <view
-      class="book-cover book-green"
+      class="book-cover book-{{item.id === 'nvc' ? 'green' : (item.id === 'adler' ? 'blue' : (item.id === 'self' ? 'pink' : 'purple'))}}"
       bindtap="onAlbumTap"
-      data-id="{{albums[0].id}}"
-      data-locked="{{albums[0].locked}}"
+      data-id="{{item.id}}"
+      data-index="{{index}}"
+      wx:for="{{albums}}"
+      wx:key="id"
     >
-      <!-- 水彩装饰 -->
-      <view class="book-illustration">{{albums[0].icon}}</view>
-
-      <!-- 封面内容 -->
       <view class="book-info">
-        <view class="book-tag">{{albums[0].tag}}</view>
-        <text class="book-title">{{albums[0].title}}</text>
-        <text class="book-subtitle">{{albums[0].subtitle}}</text>
-        <text class="book-desc">{{albums[0].desc}}</text>
+        <view class="book-tag">{{item.tag}}</view>
+        <text class="book-title">{{item.title}}</text>
+        <text class="book-subtitle">Micro Course</text>
+        <text class="book-desc">{{item.desc}}</text>
+        <text class="book-action">{{item.actionText}}</text>
       </view>
 
-      <!-- 封条（锁定状态） -->
-      <view class="book-seal" wx:if="{{albums[0].locked}}">
-        <text class="seal-icon">🔒</text>
-        <text class="seal-text">Coming Soon</text>
+      <view class="book-lock-overlay" wx:if="{{item.isLocked}}">
+        <text class="lock-icon">🔒</text>
       </view>
 
-      <!-- 进度标签 -->
-      <view class="progress-label" wx:if="{{!albums[0].locked}}">
-        <text class="progress-text">{{albums[0].progress}}%</text>
-      </view>
-    </view>
-
-    <!-- 课题分离 - 蓝色水彩 -->
-    <view
-      class="book-cover book-blue"
-      bindtap="onAlbumTap"
-      data-id="{{albums[1].id}}"
-      data-locked="{{albums[1].locked}}"
-    >
-      <view class="book-illustration">{{albums[1].icon}}</view>
-
-      <view class="book-info">
-        <view class="book-tag">{{albums[1].tag}}</view>
-        <text class="book-title">{{albums[1].title}}</text>
-        <text class="book-subtitle">{{albums[1].subtitle}}</text>
-        <text class="book-desc">{{albums[1].desc}}</text>
-      </view>
-
-      <view class="book-seal" wx:if="{{albums[1].locked}}">
-        <text class="seal-text">Coming Soon</text>
-      </view>
-
-      <view class="progress-label" wx:if="{{!albums[1].locked}}">
-        <text class="progress-text">{{albums[1].progress}}%</text>
-      </view>
-    </view>
-
-    <!-- 自我关怀 - 粉色水彩 -->
-    <view
-      class="book-cover book-pink"
-      bindtap="onAlbumTap"
-      data-id="{{albums[2].id}}"
-      data-locked="{{albums[2].locked}}"
-    >
-      <view class="book-illustration">{{albums[2].icon}}</view>
-
-      <view class="book-info">
-        <view class="book-tag">{{albums[2].tag}}</view>
-        <text class="book-title">{{albums[2].title}}</text>
-        <text class="book-subtitle">{{albums[2].subtitle}}</text>
-        <text class="book-desc">{{albums[2].desc}}</text>
-      </view>
-
-      <view class="book-seal" wx:if="{{albums[2].locked}}">
-        <text class="seal-text">Coming Soon</text>
-      </view>
-
-      <view class="progress-label" wx:if="{{!albums[2].locked}}">
-        <text class="progress-text">{{albums[2].progress}}%</text>
-      </view>
-    </view>
-
-    <!-- 成长型思维 - 紫色水彩 -->
-    <view
-      class="book-cover book-purple"
-      bindtap="onAlbumTap"
-      data-id="{{albums[3].id}}"
-      data-locked="{{albums[3].locked}}"
-    >
-      <view class="book-illustration">{{albums[3].icon}}</view>
-
-      <view class="book-info">
-        <view class="book-tag">{{albums[3].tag}}</view>
-        <text class="book-title">{{albums[3].title}}</text>
-        <text class="book-subtitle">{{albums[3].subtitle}}</text>
-        <text class="book-desc">{{albums[3].desc}}</text>
-      </view>
-
-      <view class="book-seal" wx:if="{{albums[3].locked}}">
-        <text class="seal-text">Coming Soon</text>
-      </view>
-
-      <view class="progress-label" wx:if="{{!albums[3].locked}}">
-        <text class="progress-text">{{albums[3].progress}}%</text>
+      <view class="progress-label" wx:if="{{!item.isLocked}}">
+        <text class="progress-text">{{item.progress}}%</text>
       </view>
     </view>
   </view>
 </view>
 
 <!-- ========== 底部：正在修习（玻璃拟态胶囊）========== -->
-<view class="reading-capsule">
+<view class="reading-capsule" bindtap="onAlbumTap" data-id="nvc" data-index="0">
   <view class="capsule-content">
     <view class="capsule-icon">📖</view>
     <view class="capsule-text">{{lastReadLesson ? '正在修习' : '开始学习'}}</view>

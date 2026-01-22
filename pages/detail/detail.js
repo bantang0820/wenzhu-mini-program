@@ -90,6 +90,7 @@ Page({
 
     this.setCurrentDate();
     this.loadEnergyData();
+    this.checkAccessLimit();
 
     // 记录风暴时刻（进入页面的时间）
     this.setData({
@@ -125,6 +126,34 @@ Page({
     this.setData({
       currentDate: `${month}月${day}日`
     });
+  },
+
+  // 检查免费用户权限限制
+  checkAccessLimit() {
+    const isPro = getApp().globalData.isMember;
+    if (isPro) return;
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const checkInMap = wx.getStorageSync('checkInMap') || {};
+
+    // 如果今天已经打过卡（checkInMap中有记录），且不是会员
+    if (checkInMap[dateStr]) {
+      wx.showModal({
+        title: '每日练习已达上限',
+        content: '免费用户每日可进行 1 次正念练习。开通 Pro 会员即可享受无限次练习，随时随地稳住情绪。',
+        confirmText: '去开通',
+        confirmColor: '#D4AF37',
+        cancelText: '返回',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({ url: '/pages/pro/pro' });
+          } else {
+            wx.navigateBack();
+          }
+        }
+      });
+    }
   },
 
   // 获取当前轮次的引导语
@@ -637,6 +666,9 @@ Page({
         anchorTime: new Date()
       });
 
+      // 更新打卡记录
+      this.updateCheckIn();
+
       // 延迟跳转到卡片页面
       setTimeout(() => {
         this.navigateToCardWithoutAI();
@@ -649,6 +681,32 @@ Page({
       setTimeout(() => {
         this.nextRound();
       }, 500);
+    }
+  },
+
+  // 更新打卡记录
+  updateCheckIn() {
+    try {
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      
+      // 2. 更新总天数 (如果是今天第一次打卡)
+      const checkInMap = wx.getStorageSync('checkInMap') || {};
+      if (!checkInMap[dateStr]) {
+        checkInMap[dateStr] = true;
+        wx.setStorageSync('checkInMap', checkInMap);
+        
+        const totalDays = (wx.getStorageSync('totalDays') || 0) + 1;
+        wx.setStorageSync('totalDays', totalDays);
+      }
+      
+      // 3. 更新总次数
+      const totalCount = (wx.getStorageSync('totalCount') || 0) + 1;
+      wx.setStorageSync('totalCount', totalCount);
+      
+      console.log('首页呼吸练习打卡成功:', dateStr);
+    } catch (e) {
+      console.error('更新打卡记录失败', e);
     }
   },
 

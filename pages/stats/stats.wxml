@@ -1,106 +1,105 @@
-<!--pages/stats/stats.wxml - 觉察（心灵花园 + 岁月相册 + 宝藏抽屉）-->
+<!--pages/stats/stats.wxml - 觉察-->
 <view class="container">
-  <!-- Loading 状态 -->
-  <view class="loading-mask" wx:if="{{loading}}">
-    <view class="loading-spinner"></view>
+  <!-- ========== 顶部：核心数据 ========== -->
+  <view class="hero-section">
+    <text class="hero-label">已 稳 住</text>
+    <text class="hero-number">{{totalDays}}</text>
+    <text class="hero-unit">天</text>
+
+    <view class="hero-stats">
+      <text class="stats-text">累计获得 {{totalEnergy}} 能量 | 击败了 {{beatPercent}}% 的焦虑</text>
+    </view>
   </view>
-  <!-- ========== A. 顶部：心灵花园 (35%) ========== -->
-  <view class="hero-garden">
-    <!-- 水彩树背景 -->
-    <view class="tree-background">
-      <!-- 使用 CSS 绘制水彩风格的树 -->
-      <view class="watercolor-tree">
-        <view class="tree-trunk"></view>
-        <view class="tree-crown">
-          <view class="leaf leaf-1"></view>
-          <view class="leaf leaf-2"></view>
-          <view class="leaf leaf-3"></view>
-          <view class="leaf leaf-4"></view>
-          <view class="leaf leaf-5"></view>
-          <view class="leaf leaf-6"></view>
-        </view>
+
+  <!-- ========== 心灵状态（原等级进度） ========== -->
+  <view class="state-section">
+    <view class="state-header">
+      <text class="state-current">{{userInfo.levelName}}</text>
+    </view>
+
+    <view class="state-progress-box">
+      <view class="state-progress-bar">
+        <view class="state-progress-fill" style="width: {{userInfo.progress}}%;"></view>
+        <!-- 呼吸感的光点 -->
+        <view class="progress-glow" style="left: {{userInfo.progress}}%;"></view>
+      </view>
+      
+      <view class="state-hint" wx:if="{{userInfo.nextLevelName}}">
+        再修习 <text class="highlight">{{userInfo.remainingDays}}</text> 天，遇见 <text class="highlight">{{userInfo.nextLevelName}}</text>
+      </view>
+      <view class="state-hint" wx:else>
+        您已达到最平和安稳的状态
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 中部：修习日历 ========== -->
+  <view class="calendar-section">
+    <view class="section-header">
+      <text class="section-title">{{currentYear}}年{{currentMonth}}月</text>
+    </view>
+
+    <view class="calendar-grid">
+      <view
+        class="calendar-day {{item.isToday ? 'today' : ''}} {{item.isCheckedIn ? 'checked' : ''}}"
+        wx:for="{{calendarDays}}"
+        wx:key="dateStr"
+        bindtap="onDateTap"
+        data-date-str="{{item.dateStr}}"
+        data-is-checked-in="{{item.isCheckedIn}}"
+      >
+        <text class="day-number">{{item.day}}</text>
+        <view class="golden-energy-ball" wx:if="{{item.isCheckedIn}}"></view>
       </view>
     </view>
 
-    <!-- 悬浮宝物层 - 树的精灵 -->
-    <view class="floating-treasures">
-      <!-- 树冠周围（天空）- 轻盈物品，上下浮动 -->
+    <view class="calendar-legend">
+      <view class="legend-item">
+        <view class="legend-dot"></view>
+        <text class="legend-text">未打卡</text>
+      </view>
+      <view class="legend-item">
+        <view class="golden-energy-ball legend-marker"></view>
+        <text class="legend-text">已修习</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 底部：勋章墙 ========== -->
+  <view class="medal-section">
+    <view class="section-header">
+      <text class="section-title">获得的勋章</text>
+    </view>
+
+    <!-- 已获得的勋章 -->
+    <view class="medal-grid" wx:if="{{medals.length > 0}}">
       <view
-        class="treasure-item sky-item floating"
-        wx:for="{{skyTreasures}}"
+        class="medal-item unlocked"
+        wx:for="{{medals}}"
         wx:key="id"
-        style="left: {{item.position.left}}; top: {{item.position.top}};"
-        bindtap="onTreasureTap"
-        data-treasure="{{item}}"
       >
-        <text class="treasure-icon">{{item.icon}}</text>
+        <text class="medal-icon">{{item.icon}}</text>
+        <text class="medal-name">{{item.name}}</text>
       </view>
+    </view>
 
-      <!-- 树根处（大地）- 厚重物品，静态 -->
+    <view class="empty-medals" wx:else>
+      <text class="empty-text">还没有获得勋章，继续坚持吧</text>
+    </view>
+
+    <!-- 未获得的勋章 -->
+    <view class="medal-grid locked" wx:if="{{lockedMedals.length > 0}}">
       <view
-        class="treasure-item ground-item"
-        wx:for="{{groundTreasures}}"
+        class="medal-item locked"
+        wx:for="{{lockedMedals}}"
         wx:key="id"
-        style="left: {{item.position.left}}; top: {{item.position.top}};"
-        bindtap="onTreasureTap"
-        data-treasure="{{item}}"
+        bindtap="onMedalTap"
+        data-locked="{{true}}"
       >
-        <text class="treasure-icon">{{item.icon}}</text>
-      </view>
-
-      <!-- 树洞入口 - 查看全部 -->
-      <view
-        class="tree-hole"
-        wx:if="{{hasMoreTreasures}}"
-        bindtap="onTreeHoleTap"
-      >
-        <text class="tree-hole-icon">🍄</text>
-      </view>
-    </view>
-
-    <!-- 悬浮文字数据 -->
-    <view class="hero-text-overlay">
-      <text class="hero-main-text font-serif">已正念育儿</text>
-      <text class="hero-number font-serif">{{totalDays}}</text>
-      <text class="hero-unit font-serif">天</text>
-      <text class="hero-sub-text">击退焦虑 {{totalCount}} 次</text>
-    </view>
-  </view>
-
-  <!-- ========== B. 中部：岁月相册 (45%) ========== -->
-  <view class="calendar-card-section">
-    <!-- 悬浮白色卡片 -->
-    <view class="calendar-card neumorphism-elevated">
-      <!-- 卡片标题 -->
-      <view class="card-header">
-        <view class="month-nav">
-          <text class="nav-btn" bindtap="onPrevMonth">‹</text>
-          <text class="month-title font-serif">{{monthDisplay}} 的花园</text>
-          <text class="nav-btn" bindtap="onNextMonth">›</text>
-        </view>
-      </view>
-
-      <!-- 日历内容 -->
-      <view class="calendar-content">
-        <!-- 星期标题 -->
-        <view class="weekday-header">
-          <text class="weekday" wx:for="{{['日', '一', '二', '三', '四', '五', '六']}}" wx:key="*this">{{item}}</text>
-        </view>
-
-        <!-- 日历网格 -->
-        <view class="calendar-grid">
-          <view
-            class="calendar-day {{item.isEmpty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}} {{item.isCheckedIn ? 'checked' : ''}}"
-            wx:for="{{calendarDays}}"
-            wx:key="index"
-          >
-            <text class="day-number" wx:if="{{!item.isEmpty}}">{{item.day}}</text>
-            <!-- 花朵图标 -->
-            <text class="flower-icon" wx:if="{{item.isCheckedIn && !item.isEmpty}}">🌸</text>
-          </view>
-        </view>
+        <text class="medal-icon locked-icon">◑</text>
+        <text class="medal-name">{{item.name}}</text>
+        <text class="medal-desc">{{item.desc}}</text>
       </view>
     </view>
   </view>
-
 </view>
