@@ -1,0 +1,24 @@
+<!--pages/scenarios/scenarios.wxml - 深海矩阵-->
+<view class="container">
+  <!-- 顶部引导 -->
+  <view class="header">
+    <text class="header-text">此刻，你想修习的是？</text>
+  </view>
+
+  <!-- 场景矩阵 -->
+  <scroll-view class="scenarios-scroll" scroll-y>
+    <view class="scenarios-grid">
+      <view
+        class="tag-item {{item.isDaily ? 'daily' : ''}}"
+        wx:for="{{scenarios}}"
+        wx:key="id"
+        bindtap="onScenarioTap"
+        data-id="{{item.id}}"
+        data-is-free="{{item.is_free}}"
+      >
+        <text class="tag-icon">{{item.icon}}</text>
+        <text class="tag-label">{{item.title}}</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>
