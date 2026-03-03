@@ -1,0 +1,464 @@
+/* pages/journal/journal.wxss - 心力觉察周报 */
+
+.container {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  padding: 40rpx;
+}
+
+/* 页面标题 */
+.page-header {
+  text-align: center;
+  margin-bottom: 60rpx;
+}
+
+.page-title {
+  display: block;
+  font-size: 48rpx;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 16rpx;
+}
+
+.page-subtitle {
+  display: block;
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+}
+
+/* ========== 未付费视图 ========== */
+.locked-view {
+  min-height: 80vh;
+}
+
+/* 紧凑型模糊预览（首屏可见） */
+.blur-preview-compact {
+  margin-bottom: 32rpx;
+}
+
+.heatmap-blur-compact {
+  display: flex;
+  justify-content: space-between;
+  height: 100rpx;
+  background: var(--color-surface);
+  border-radius: 12rpx;
+  padding: 30rpx 24rpx;
+  filter: blur(3rpx);
+  opacity: 0.4;
+}
+
+.heatmap-blur-compact .blur-bar {
+  width: 40rpx;
+  height: 100%;
+  background: linear-gradient(180deg, #D4AF37 0%, #C49B2A 100%);
+  border-radius: 6rpx;
+  box-shadow: 0 4rpx 8rpx rgba(212, 175, 55, 0.3);
+}
+
+/* 完整模糊预览（滚动可见） */
+.blur-preview-full {
+  margin-top: 60rpx;
+  padding-top: 40rpx;
+  border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.blur-module {
+  margin-bottom: 40rpx;
+}
+
+.blur-title {
+  width: 60%;
+  height: 32rpx;
+  background: var(--color-surface);
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+  filter: blur(2rpx);
+  opacity: 0.3;
+}
+
+.heatmap-blur {
+  display: flex;
+  justify-content: space-between;
+  height: 200rpx;
+  background: var(--color-surface);
+  border-radius: 16rpx;
+  padding: 40rpx 20rpx;
+  filter: blur(4rpx);
+  opacity: 0.4;
+}
+
+.blur-bar {
+  width: 40rpx;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.6) 0%, rgba(196, 155, 42, 0.6) 100%);
+  border-radius: 8rpx;
+}
+
+.blur-card {
+  width: 100%;
+  height: 240rpx;
+  background: linear-gradient(135deg, #EBEAE6 0%, #E5E4E0 100%);
+  border-radius: 16rpx;
+  filter: blur(4rpx);
+  opacity: 0.4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.blur-card::before {
+  content: '🎭';
+  font-size: 80rpx;
+  filter: blur(8rpx);
+}
+
+.blur-tree {
+  text-align: center;
+  font-size: 120rpx;
+  filter: blur(5rpx);
+  opacity: 0.5;
+}
+
+/* 解锁提示 */
+.unlock-cta {
+  text-align: center;
+  padding: 32rpx 0;
+}
+
+.lock-icon {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+
+.unlock-title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 12rpx;
+}
+
+.unlock-desc {
+  display: block;
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  margin-bottom: 32rpx;
+}
+
+.features {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 48rpx;
+}
+
+.feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.feature-icon {
+  font-size: 48rpx;
+}
+
+.feature-text {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+}
+
+.subscribe-btn {
+  background: linear-gradient(135deg, #D4AF37 0%, #C49B2A 100%);
+  box-shadow:
+    8rpx 8rpx 16rpx rgba(212, 175, 55, 0.3),
+    -8rpx -8rpx 16rpx rgba(255, 255, 255, 0.8);
+  border-radius: 48rpx;
+  padding: 32rpx 48rpx;
+  display: inline-block;
+}
+
+.subscribe-label {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 8rpx;
+}
+
+.subscribe-note {
+  display: block;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ========== 付费视图 ========== */
+.pro-view {
+  padding-bottom: 80rpx;
+}
+
+.module {
+  background: var(--color-surface);
+  border-radius: 24rpx;
+  padding: 40rpx;
+  box-shadow: var(--shadow-convex);
+  margin-bottom: 32rpx;
+}
+
+.module-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 32rpx;
+}
+
+.module-icon {
+  font-size: 40rpx;
+}
+
+.module-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.module-subtitle {
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  margin-left: auto;
+}
+
+/* 模块A: 情绪热力图 */
+.heatmap-container {
+  margin-bottom: 32rpx;
+}
+
+.heatmap-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.time-label {
+  width: 100rpx;
+  font-size: 24rpx;
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+
+.heatmap-bar-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.heatmap-bar {
+  height: 32rpx;
+  border-radius: 16rpx;
+  transition: all 0.6s ease;
+  position: relative;
+}
+
+.heatmap-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 100%);
+  border-radius: 16rpx;
+}
+
+.count-label {
+  width: 40rpx;
+  font-size: 24rpx;
+  color: var(--color-text-primary);
+  font-weight: 600;
+  text-align: right;
+}
+
+.insight-box {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  display: flex;
+  gap: 16rpx;
+  align-items: flex-start;
+  border: 1rpx solid rgba(212, 175, 55, 0.3);
+}
+
+.insight-icon {
+  font-size: 32rpx;
+  flex-shrink: 0;
+}
+
+.insight-text {
+  font-size: 26rpx;
+  line-height: 1.8;
+  color: var(--color-text-primary);
+}
+
+/* 模块B: 阴影原型分析（翻转卡片） */
+.flip-card-container {
+  perspective: 1000rpx;
+}
+
+.flip-card {
+  position: relative;
+  width: 100%;
+  height: 400rpx;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flip-card.flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-front,
+.flip-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  border-radius: 16rpx;
+  box-shadow: var(--shadow-convex);
+}
+
+.flip-front {
+  background: linear-gradient(135deg, #EBEAE6 0%, #E5E4E0 100%);
+}
+
+.flip-back {
+  background: linear-gradient(135deg, var(--color-accent) 0%, #C49B2A 100%);
+  transform: rotateY(180deg);
+}
+
+.flip-emoji {
+  font-size: 96rpx;
+  margin-bottom: 24rpx;
+}
+
+.flip-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: 16rpx;
+}
+
+.flip-hint {
+  font-size: 22rpx;
+  color: var(--color-text-secondary);
+  margin-top: 16rpx;
+}
+
+.flip-analysis {
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: #FFFFFF;
+  text-align: center;
+}
+
+.flip-hint-back {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 24rpx;
+}
+
+/* 模块C: 能量生长树 */
+.tree-container {
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.tree-emoji {
+  display: block;
+  font-size: 160rpx;
+  margin-bottom: 24rpx;
+  animation: treeGrow 0.8s ease-out;
+}
+
+@keyframes treeGrow {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.tree-level-bar {
+  width: 80%;
+  height: 16rpx;
+  background: rgba(140, 140, 136, 0.2);
+  border-radius: 8rpx;
+  margin: 0 auto 20rpx;
+  overflow: hidden;
+}
+
+.level-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D4AF37 0%, #C49B2A 100%);
+  border-radius: 8rpx;
+  transition: width 1s ease-out;
+}
+
+.tree-text {
+  font-size: 28rpx;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.milestones {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.milestone-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  opacity: 0.3;
+  transition: opacity 0.3s ease;
+}
+
+.milestone-item.reached {
+  opacity: 1;
+}
+
+.milestone-dot {
+  font-size: 32rpx;
+  color: var(--color-accent);
+}
+
+.milestone-label {
+  font-size: 24rpx;
+  color: var(--color-text-primary);
+}
+
+.footer-note {
+  text-align: center;
+  margin-top: 40rpx;
+  padding: 24rpx;
+}
+
+.footer-note text {
+  display: block;
+  font-size: 22rpx;
+  color: var(--color-text-secondary);
+  margin-bottom: 8rpx;
+}

@@ -1,0 +1,51 @@
+<!--pages/content/content.wxml - 阅见页面（极简修习版）-->
+<view class="page-container">
+  <!-- ========== 顶部：每日心流便签 ========== -->
+  <view class="daily-inspiration" bindtap="onDailyTap">
+    <view class="pin-decoration"></view>
+    <view class="inspiration-content">
+      <view class="inspiration-date">{{dailyDate}}</view>
+      <text class="inspiration-text">{{dailyQuote}}</text>
+      <view class="inspiration-footer">
+        <view class="tape-decoration"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ========== 中部：学习路径（2列网格）========== -->
+  <view class="books-grid">
+    <view
+      class="book-cover book-{{item.id === 'nvc' ? 'green' : (item.id === 'adler' ? 'blue' : (item.id === 'self' ? 'pink' : 'purple'))}}"
+      bindtap="onAlbumTap"
+      data-id="{{item.id}}"
+      data-index="{{index}}"
+      wx:for="{{albums}}"
+      wx:key="id"
+    >
+      <view class="book-info">
+        <view class="book-tag">{{item.tag}}</view>
+        <text class="book-title">{{item.title}}</text>
+        <text class="book-subtitle">Micro Course</text>
+        <text class="book-desc">{{item.desc}}</text>
+        <text class="book-action">{{item.actionText}}</text>
+      </view>
+
+      <view class="book-lock-overlay" wx:if="{{item.isLocked}}">
+        <text class="lock-icon">🔒</text>
+      </view>
+
+      <view class="progress-label" wx:if="{{!item.isLocked}}">
+        <text class="progress-text">{{item.progress}}%</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- ========== 底部：正在修习（玻璃拟态胶囊）========== -->
+<view class="reading-capsule" bindtap="onAlbumTap" data-id="nvc" data-index="0">
+  <view class="capsule-content">
+    <view class="capsule-icon">📖</view>
+    <view class="capsule-text">{{lastReadLesson ? '正在修习' : '开始学习'}}</view>
+    <view class="capsule-lesson">{{lastReadLesson || '第1章 · 区分观察与评论'}}</view>
+  </view>
+</view>
