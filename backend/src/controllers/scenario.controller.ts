@@ -231,6 +231,36 @@ export class ScenarioController {
       } as ApiResponse);
     }
   }
+
+  /**
+   * 获取用户核心统计信息（4个核心指标）
+   */
+  async getUserCoreStatistics(req: Request, res: Response): Promise<void> {
+    try {
+      const openid = req.user?.openid;
+
+      if (!openid) {
+        res.status(401).json({
+          success: false,
+          error: '未授权'
+        } as ApiResponse);
+        return;
+      }
+
+      const statistics = await ScenarioService.getUserCoreStatistics(openid);
+
+      res.json({
+        success: true,
+        data: statistics
+      } as ApiResponse);
+    } catch (error) {
+      logger.error('获取核心统计信息失败:', error);
+      res.status(500).json({
+        success: false,
+        error: '获取核心统计信息失败'
+      } as ApiResponse);
+    }
+  }
 }
 
 export default new ScenarioController();

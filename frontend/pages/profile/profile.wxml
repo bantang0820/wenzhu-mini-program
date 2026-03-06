@@ -47,6 +47,46 @@
     </view>
   </view>
 
+  <!-- ========== 核心统计卡片 ========== -->
+  <view class="stats-card">
+    <view class="stats-header">
+      <text class="stats-title">练习数据</text>
+      <text class="stats-subtitle">坚持就是力量</text>
+    </view>
+
+    <view class="stats-grid">
+      <!-- 总练习次数 -->
+      <view class="stat-item">
+        <text class="stat-icon">📅</text>
+        <text class="stat-value">{{stats.totalCount || 0}}</text>
+        <text class="stat-label">总练习次数</text>
+      </view>
+
+      <!-- 连续练习天数 -->
+      <view class="stat-item">
+        <text class="stat-icon">🔥</text>
+        <text class="stat-value">{{stats.continuousDays || 0}}</text>
+        <text class="stat-label">连续练习天数</text>
+      </view>
+    </view>
+
+    <!-- 最常练的场景Top3 -->
+    <view class="top-scenarios" wx:if="{{stats.topScenarios && stats.topScenarios.length > 0}}">
+      <text class="top-scenarios-title">最常练习的场景</text>
+      <view class="top-scenarios-list">
+        <view
+          class="top-scenario-item"
+          wx:for="{{stats.topScenarios}}"
+          wx:key="scenarioId"
+        >
+          <text class="scenario-rank">{{index + 1}}</text>
+          <text class="scenario-name">{{item.title || item.scenarioId}}</text>
+          <text class="scenario-count">{{item.count}}次</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <!-- ========== 功能列表 ========== -->
   <view class="menu-section">
     <view

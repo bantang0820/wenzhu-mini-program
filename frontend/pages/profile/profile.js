@@ -112,7 +112,45 @@ Page({
   },
 
   // ========== 加载用户数据 ==========
-  loadUserData() {
+  async loadUserData() {
+    try {
+      // 从后端API获取核心统计数据
+      const api = app.globalData.api || require('../../utils/api.js');
+      const response = await api.get('/scenarios/core-statistics');
+
+      if (response.success && response.data) {
+        const { totalCount, continuousDays, topScenarios, churnRisk } = response.data;
+
+        // 更新统计数据
+        this.setData({
+          stats: {
+            totalCount: totalCount || 0,
+            continuousDays: continuousDays || 0,
+            topScenarios: topScenarios || [],
+            churnRisk: churnRisk || { hasRisk: false }
+          }
+        });
+
+        // 计算等级（基于连续天数）
+        this.calculateLevel(continuousDays || 0);
+
+        // 流失预警提醒
+        if (churnRisk && churnRisk.hasRisk) {
+          this.showChurnWarning(churnRisk.daysSinceLastPractice);
+        }
+      } else {
+        // 如果API调用失败，降级到本地存储
+        this.loadLocalUserData();
+      }
+    } catch (error) {
+      console.error('加载统计数据失败:', error);
+      // 降级到本地存储
+      this.loadLocalUserData();
+    }
+  },
+
+  // 降级方案：从本地存储加载用户数据
+  loadLocalUserData() {
     const totalDays = wx.getStorageSync('totalDays') || 0;
     const totalEnergy = wx.getStorageSync('totalEnergy') || 0;
     const totalScenarios = wx.getStorageSync('totalScenarios') || 0;
@@ -129,6 +167,36 @@ Page({
 
     // 计算等级
     this.calculateLevel(totalDays);
+  },
+
+  // 显示流失预警提醒
+  showChurnWarning(daysSinceLastPractice) {
+    if (!daysSinceLastPractice) return;
+
+    const messages = [
+      '3天没练了，回来练习一下吧',
+      '已经4天了，要不要练一个？',
+      '5天了，正念练习需要坚持哦',
+      `已经${daysSinceLastPractice}天没练习了，期待你回来`
+    ];
+
+    const message = daysSinceLastPractice <= 5
+      ? messages[daysSinceLastPractice - 3]
+      : messages[3];
+
+    wx.showModal({
+      title: '练习提醒',
+      content: message,
+      confirmText: '去练习',
+      cancelText: '稍后',
+      success: (res) => {
+        if (res.confirm) {
+          wx.switchTab({
+            url: '/pages/index/index'
+          });
+        }
+      }
+    });
   },
 
   // 计算用户等级

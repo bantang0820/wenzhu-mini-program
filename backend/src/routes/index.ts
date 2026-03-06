@@ -5,6 +5,7 @@ import scenarioController from '../controllers/scenario.controller';
 import aiController from '../controllers/ai.controller';
 import feedbackController from '../controllers/feedback.controller';
 import courseController from '../controllers/course.controller';
+import shareController from '../controllers/share.controller';
 import { authMiddleware, optionalAuth } from '../middlewares/auth';
 import { validate, validationSchemas } from '../middlewares/validate';
 
@@ -48,6 +49,9 @@ router.get('/scenarios/calendar', authMiddleware, scenarioController.getCheckInC
 // 获取用户统计信息（需要认证）- 必须在 /:id 之前
 router.get('/scenarios/statistics', authMiddleware, scenarioController.getUserStatistics);
 
+// 获取用户核心统计信息（需要认证）- 必须在 /:id 之前
+router.get('/scenarios/core-statistics', authMiddleware, scenarioController.getUserCoreStatistics);
+
 // 获取场景详情 - 必须放在最后，因为 :id 会匹配任何路径
 router.get('/scenarios/:id', scenarioController.getScenarioById);
 
@@ -89,5 +93,18 @@ router.post('/chapters/:chapterId/complete', authMiddleware, courseController.ma
 
 // 获取用户的学习进度（需要认证）
 router.get('/courses/progress', authMiddleware, courseController.getUserProgress);
+
+// ========== 分享相关 ==========
+// 检查练习状态（需要认证）
+router.get('/share/check-status', authMiddleware, shareController.checkPracticeStatus);
+
+// 记录分享并解锁（需要认证）
+router.post('/share/record', authMiddleware, shareController.recordShare);
+
+// 处理好友通过分享链接进入（需要认证）
+router.post('/share/handle-invite', authMiddleware, shareController.handleInviteShare);
+
+// 消耗练习次数（需要认证）
+router.post('/share/consume', authMiddleware, shareController.consumePractice);
 
 export default router;

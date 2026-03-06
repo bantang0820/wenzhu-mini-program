@@ -124,38 +124,35 @@ export class ScenarioService {
       const user = users[0];
       const practiceDate = moment().format('YYYY-MM-DD');
 
-      // 检查今天是否已经练习过
+      // 检查今天是否已经练习过（用于判断是否增加总天数）
       const [existingRows] = await pool.execute(
         'SELECT * FROM practice_records WHERE user_id = ? AND practice_date = ?',
         [user.id, practiceDate]
       );
 
       const existing = existingRows as any[];
+      const isFirstToday = existing.length === 0;
 
-      if (existing.length > 0) {
-        // 今天已练习过，更新记录
-        await pool.execute(
-          `UPDATE practice_records
-           SET energy = energy + ?,
-               mood_before = ?,
-               mood_after = ?,
-               duration = duration + ?
-           WHERE user_id = ? AND practice_date = ?`,
-          [energy, moodBefore, moodAfter, duration, user.id, practiceDate]
-        );
-      } else {
-        // 今天首次练习，插入记录
-        await pool.execute(
-          `INSERT INTO practice_records (user_id, scenario_id, practice_date, energy, mood_before, mood_after, duration)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [user.id, scenarioId, practiceDate, energy, moodBefore, moodAfter, duration]
-        );
+      // 插入新的练习记录（每次练习都插入）
+      await pool.execute(
+        `INSERT INTO practice_records (user_id, scenario_id, practice_date, energy, mood_before, mood_after, duration)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [user.id, scenarioId, practiceDate, energy, moodBefore, moodAfter, duration]
+      );
 
-        // 更新用户总次数和总天数
+      // 更新用户总次数
+      await pool.execute(
+        `UPDATE users
+         SET total_count = total_count + 1
+         WHERE id = ?`,
+        [user.id]
+      );
+
+      // 如果是今天首次练习，增加总天数
+      if (isFirstToday) {
         await pool.execute(
           `UPDATE users
-           SET total_count = total_count + 1,
-               total_days = total_days + 1
+           SET total_days = total_days + 1
            WHERE id = ?`,
           [user.id]
         );
@@ -316,6 +313,119 @@ export class ScenarioService {
     } catch (error) {
       logger.error('获取统计信息失败:', error);
       throw new AppError('获取统计信息失败');
+    }
+  }
+
+  /**
+   * 获取用户核心统计信息（4个核心指标）
+   * @param openid 用户OpenID
+   * @returns 核心统计信息
+   */
+  async getUserCoreStatistics(openid: string): Promise<{
+    totalCount: number;
+    continuousDays: number;
+    topScenarios: Array<{ scenarioId: string; count: number; title?: string }>;
+    churnRisk: { hasRisk: boolean; daysSinceLastPractice?: number };
+  }> {
+    try {
+      const [userRows] = await pool.execute(
+        'SELECT * FROM users WHERE openid = ?',
+        [openid]
+      );
+
+      const users = userRows as any[];
+      if (users.length === 0) {
+        return {
+          totalCount: 0,
+          continuousDays: 0,
+          topScenarios: [],
+          churnRisk: { hasRisk: false }
+        };
+      }
+
+      const user = users[0];
+
+      // 1. 获取总练习次数
+      const totalCount = user.total_count || 0;
+
+      // 2. 计算连续练习天数
+      const [checkinRows] = await pool.execute(
+        'SELECT DISTINCT practice_date FROM practice_records WHERE user_id = ? ORDER BY practice_date DESC',
+        [user.id]
+      );
+
+      const checkins = checkinRows as any[];
+      let continuousDays = 0;
+
+      if (checkins.length > 0) {
+        let checkDate = moment();
+
+        for (const checkin of checkins) {
+          const practiceDate = moment(checkin.practice_date).format('YYYY-MM-DD');
+
+          if (practiceDate === checkDate.format('YYYY-MM-DD')) {
+            continuousDays++;
+            checkDate.subtract(1, 'day');
+          } else {
+            break;
+          }
+        }
+      }
+
+      // 3. 获取最常练的场景Top3
+      const [scenarioRows] = await pool.execute(
+        `SELECT scenario_id, COUNT(*) as count
+         FROM practice_records
+         WHERE user_id = ?
+         GROUP BY scenario_id
+         ORDER BY count DESC
+         LIMIT 3`,
+        [user.id]
+      );
+
+      const topScenarios = scenarioRows as any[];
+
+      // 获取场景标题
+      const scenariosWithTitles = await Promise.all(
+        topScenarios.map(async (scenario) => {
+          const [scenarioInfo] = await pool.execute(
+            'SELECT title FROM scenarios WHERE id = ?',
+            [scenario.scenario_id]
+          );
+          const info = scenarioInfo as any[];
+          return {
+            scenarioId: scenario.scenario_id,
+            count: scenario.count,
+            title: info.length > 0 ? info[0].title : undefined
+          };
+        })
+      );
+
+      // 4. 流失预警（3天未练习）
+      let daysSinceLastPractice = 0;
+      let hasRisk = false;
+
+      if (checkins.length > 0) {
+        const lastPracticeDate = moment(checkins[0].practice_date);
+        const today = moment().startOf('day');
+        daysSinceLastPractice = today.diff(lastPracticeDate, 'days');
+
+        // 超过3天未练习，有流失风险
+        hasRisk = daysSinceLastPractice >= 3;
+      }
+
+      return {
+        totalCount,
+        continuousDays,
+        topScenarios: scenariosWithTitles,
+        churnRisk: {
+          hasRisk,
+          daysSinceLastPractice: hasRisk ? daysSinceLastPractice : undefined
+        }
+      };
+    } catch (error) {
+      logger.error('获取核心统计信息失败:', error);
+      throw new AppError('获取核心统计信息失败');
     }
   }
 }

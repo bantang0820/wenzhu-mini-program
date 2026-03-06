@@ -560,3 +560,113 @@
   opacity: 0.9;
   transform: scale(0.98);
 }
+
+/* ========== 核心统计卡片 ========== */
+.stats-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  border: 2rpx solid rgba(212, 175, 55, 0.2);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+.stats-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+
+.stats-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #2B303A;
+  margin-bottom: 8rpx;
+}
+
+.stats-subtitle {
+  font-size: 24rpx;
+  color: rgba(140, 134, 128, 0.6);
+}
+
+.stats-grid {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 32rpx;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stat-icon {
+  font-size: 48rpx;
+  margin-bottom: 12rpx;
+}
+
+.stat-value {
+  font-size: 44rpx;
+  font-weight: 600;
+  color: #D4AF37;
+  margin-bottom: 8rpx;
+  font-family: "DIN Alternate", "SF Pro Display", sans-serif;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: rgba(140, 134, 128, 0.6);
+  text-align: center;
+}
+
+.top-scenarios {
+  border-top: 2rpx solid rgba(0, 0, 0, 0.05);
+  padding-top: 24rpx;
+}
+
+.top-scenarios-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #2B303A;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.top-scenarios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.top-scenario-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 24rpx;
+  background: rgba(212, 175, 55, 0.05);
+  border-radius: 12rpx;
+}
+
+.scenario-rank {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #D4AF37;
+  min-width: 40rpx;
+}
+
+.scenario-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #2B303A;
+  margin: 0 16rpx;
+}
+
+.scenario-count {
+  font-size: 24rpx;
+  color: rgba(140, 134, 128, 0.6);
+}
+
