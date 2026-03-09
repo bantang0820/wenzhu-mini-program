@@ -1,0 +1,15 @@
+[
+  {
+    "_id": "example_log_id",
+    "user_id": "example_user_id",
+    "scenario_id": "001",
+    "scenario_title": "孩子磨蹭",
+    "timestamp": {
+      "$date": "2025-01-15T10:30:00.000Z"
+    },
+    "weekday": 3,
+    "duration": 15000,
+    "mood_before": 3,
+    "mood_after": 4
+  }
+]

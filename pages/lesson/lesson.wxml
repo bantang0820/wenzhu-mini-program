@@ -1,0 +1,74 @@
+<!--pages/lesson/lesson.wxml - 微课详情页-->
+<view class="container">
+  <!-- ========== 返回按钮 ========== -->
+  <view class="back-btn" bindtap="onBack">
+    <text class="back-icon">←</text>
+    <text class="back-text">返回章节</text>
+  </view>
+
+  <!-- ========== 微课卡片 ========== -->
+  <view class="lesson-card">
+    <!-- 微课序号 -->
+    <view class="lesson-badge">
+      <text class="badge-text">第{{lessonId}}小节</text>
+    </view>
+
+    <!-- 标题 -->
+    <view class="lesson-title">
+      <text class="title-text">{{lesson.breakthrough}}</text>
+    </view>
+
+    <!-- 核心内容 -->
+    <view class="lesson-content">
+      <text class="content-text">{{lesson.insight}}</text>
+    </view>
+
+    <!-- 实践动作 -->
+    <view class="lesson-action">
+      <view class="action-label">实践</view>
+      <text class="action-text">{{lesson.action}}</text>
+    </view>
+  </view>
+
+  <!-- ========== 朗读按钮区 ========== -->
+  <view class="reading-section">
+    <!-- 录音状态提示 -->
+    <view class="recording-status" wx:if="{{isRecording}}">
+      <text class="status-text">正在录音...</text>
+    </view>
+
+    <!-- 录音按钮 -->
+    <view class="record-btn-wrapper">
+      <!-- 能量光晕 -->
+      <view class="energy-halo" style="transform: scale({{energyScale}}); opacity: {{isRecording ? 1 : 0}}"></view>
+
+      <!-- 录音按钮 -->
+      <view
+        class="record-btn-main {{isRecording ? 'recording' : ''}}"
+        bindtap="onRecordClick"
+      >
+        <text class="record-btn-icon">{{isRecording ? '🔴' : '🎙️'}}</text>
+        <text class="record-btn-text">{{isRecording ? '点击停止' : '点击朗读'}}</text>
+      </view>
+    </view>
+
+    <!-- 回放按钮（录音完成后显示） -->
+    <view class="playback-section" wx:if="{{hasRecorded && !isRecording}}" bindtap="onPlayRecord">
+      <text class="playback-icon">{{isPlaying ? '⏸' : '▶️'}}</text>
+      <text class="playback-text">{{isPlaying ? '暂停' : '回放录音'}}</text>
+    </view>
+  </view>
+
+  <!-- ========== 底部按钮区 ========== -->
+  <view class="bottom-actions {{lessonId >= totalLessons ? 'single-btn' : ''}}">
+    <view class="bottom-btn mark-btn" bindtap="onMarkComplete">
+      <text class="bottom-icon">{{lesson.completed ? '✓' : '○'}}</text>
+      <text class="bottom-text">标记完成</text>
+    </view>
+
+    <view class="bottom-btn next-btn" bindtap="onNextLesson" wx:if="{{lessonId < totalLessons}}">
+      <text class="bottom-icon">→</text>
+      <text class="bottom-text">学习下一节 ({{lessonId + 1}}/{{totalLessons}})</text>
+    </view>
+  </view>
+</view>

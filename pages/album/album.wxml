@@ -1,0 +1,64 @@
+<!--pages/album/album.wxml - 专辑详情页-->
+<view class="container">
+  <!-- 专辑封面卡片 -->
+  <view class="album-hero" style="background: linear-gradient(135deg, {{album.colorStart}} 0%, {{album.colorEnd}} 100%);">
+    <!-- 背景水印 -->
+    <text class="hero-watermark">{{album.icon}}</text>
+
+    <!-- 专辑信息 -->
+    <view class="album-hero-content">
+      <view class="album-tag">{{album.tag}}</view>
+      <text class="album-title">{{album.title}}</text>
+      <text class="album-subtitle">{{album.subtitle}} - {{album.shortDesc}}</text>
+
+      <!-- 进度条 -->
+      <view class="hero-progress">
+        <view class="progress-bar-bg">
+          <view class="progress-bar-fill" style="width: {{album.progress}}%;"></view>
+        </view>
+        <view class="progress-info">
+          <text class="progress-text">已完成 {{album.progress}}%</text>
+          <text class="progress-detail">{{completedCount}}/{{totalCount}} 修</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 章节列表 -->
+  <view class="chapters-section">
+    <view class="section-header">
+      <text class="section-title">修习章节</text>
+      <text class="section-subtitle">循序渐进，深度练习</text>
+    </view>
+
+    <view class="chapter-list">
+      <view
+        class="chapter-card"
+        wx:for="{{album.chapters}}"
+        wx:key="id"
+        bindtap="onChapterTap"
+        data-id="{{item.id}}"
+        data-locked="{{item.locked}}"
+      >
+        <!-- 章节序号 -->
+        <view class="chapter-number {{item.locked ? 'locked' : ''}}">
+          <text class="number-text">{{item.id}}</text>
+        </view>
+
+        <!-- 章节信息 -->
+        <view class="chapter-info">
+          <text class="chapter-title">{{item.title}}</text>
+          <text class="chapter-subtitle">{{item.subtitle}}</text>
+        </view>
+
+        <!-- 章节状态 -->
+        <view class="chapter-status">
+          <text class="status-icon" wx:if="{{item.locked}}">🔒</text>
+          <view class="status-progress" wx:else>
+            <text class="progress-mini-text">{{item.completedCount}}/10修</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

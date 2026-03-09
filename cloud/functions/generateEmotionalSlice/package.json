@@ -1,0 +1,9 @@
+{
+  "name": "generateEmotionalSlice",
+  "version": "1.0.0",
+  "description": "AI生成情绪切片文案",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
