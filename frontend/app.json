@@ -5,6 +5,7 @@
     "pages/stats/stats",
     "pages/profile/profile",
     "pages/login/login",
+    "pages/account/account",
     "pages/detail/detail",
     "pages/card/card",
     "pages/journal/journal",

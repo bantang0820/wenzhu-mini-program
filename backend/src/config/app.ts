@@ -23,6 +23,12 @@ export const config = {
     apiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions'
   },
 
+  zhipu: {
+    apiKey: process.env.ZHIPU_API_KEY || '',
+    apiUrl: process.env.ZHIPU_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    model: process.env.ZHIPU_MODEL || 'glm-4-flash'
+  },
+
   log: {
     level: process.env.LOG_LEVEL || 'info',
     dir: process.env.LOG_DIR || 'logs'

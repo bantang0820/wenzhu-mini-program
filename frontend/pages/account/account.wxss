@@ -1,0 +1,135 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #F5F3F0 0%, #ECE9E3 100%);
+  padding: 32rpx 24rpx 120rpx;
+  box-sizing: border-box;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 24rpx;
+  padding: 32rpx 28rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid rgba(255, 255, 255, 0.8);
+}
+
+.section + .section {
+  margin-top: 28rpx;
+}
+
+.label {
+  display: block;
+  font-size: 24rpx;
+  color: #6A615A;
+  margin-bottom: 14rpx;
+}
+
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.avatar-picker {
+  width: 120rpx;
+  height: 120rpx;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-picker::after {
+  border: none;
+}
+
+.avatar-img {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+}
+
+.avatar-fallback {
+  font-size: 52rpx;
+}
+
+.secondary-btn {
+  min-width: 200rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  font-size: 24rpx;
+  border-radius: 36rpx;
+  color: #5D534A;
+  background: #FFF9EE;
+  border: 1rpx solid rgba(212, 175, 55, 0.4);
+  padding: 0 26rpx;
+}
+
+.nickname-input {
+  height: 86rpx;
+  border-radius: 16rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid rgba(0, 0, 0, 0.08);
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  color: #2B303A;
+}
+
+.openid {
+  display: block;
+  font-size: 22rpx;
+  color: rgba(106, 97, 90, 0.8);
+  word-break: break-all;
+  line-height: 1.6;
+}
+
+.save-btn {
+  margin-top: 36rpx;
+  height: 86rpx;
+  line-height: 86rpx;
+  border-radius: 43rpx;
+  border: none;
+  font-size: 28rpx;
+  font-weight: 600;
+  background: linear-gradient(135deg, #D4AF37 0%, #E8C65A 100%);
+  color: #FFFFFF;
+}
+
+.save-btn::after {
+  border: none;
+}
+
+.logout-btn {
+  margin-top: 30rpx;
+  height: 82rpx;
+  line-height: 82rpx;
+  border-radius: 41rpx;
+  border: 1rpx solid rgba(212, 106, 106, 0.35);
+  background: rgba(255, 255, 255, 0.75);
+  color: #D46A6A;
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+.empty {
+  text-align: center;
+  padding: 48rpx 28rpx;
+}
+
+.empty-title {
+  display: block;
+  font-size: 32rpx;
+  color: #2B303A;
+  font-weight: 600;
+}
+
+.empty-desc {
+  display: block;
+  margin-top: 12rpx;
+  color: rgba(106, 97, 90, 0.85);
+  font-size: 24rpx;
+}

@@ -168,6 +168,49 @@ export interface EmotionSliceResponse {
   };
 }
 
+// 每句复述反馈类型
+export interface RetellFeedbackRequest {
+  scenarioTitle: string;
+  readingRound: number;
+  totalRounds: number;
+  mantraText: string;
+  retellText: string;
+}
+
+export interface RetellFeedbackResponse {
+  success: boolean;
+  data?: {
+    feedback: string;
+  };
+  error?: string;
+  fallback?: {
+    feedback: string;
+  };
+}
+
+// 最终日记生成类型
+export interface MindfulDiaryRequest {
+  scenarioTitle: string;
+  allMantras: string[];
+  roundRetells: string[];
+  finalState: string;
+  finalStateLabel: string;
+  stormTime: Date;
+  shiftTime: Date;
+  anchorTime: Date;
+}
+
+export interface MindfulDiaryResponse {
+  success: boolean;
+  data?: {
+    diaryContent: string;
+  };
+  error?: string;
+  fallback?: {
+    diaryContent: string;
+  };
+}
+
 // JWT Payload类型
 export interface JwtPayload {
   userId: number;

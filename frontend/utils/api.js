@@ -2,6 +2,38 @@
 const apiConfig = require('../config/api.js');
 
 /**
+ * 将后端统一响应格式转换为 callFunction 兼容格式
+ * 让页面既可以读到 success，也可以直接读到 data 内字段
+ * @param {object} response - 后端响应
+ * @returns {object}
+ */
+function normalizeCallFunctionResult(response = {}) {
+  const normalized = {
+    success: response.success !== false
+  };
+
+  if (Object.prototype.hasOwnProperty.call(response, 'data')) {
+    const { data } = response;
+
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      Object.assign(normalized, data);
+    } else if (data !== undefined) {
+      normalized.data = data;
+    }
+  }
+
+  if (response.message) {
+    normalized.message = response.message;
+  }
+
+  if (response.error) {
+    normalized.error = response.error;
+  }
+
+  return normalized;
+}
+
+/**
  * 发起 HTTP 请求
  * @param {string} endpoint - API 端点
  * @param {object} options - 请求选项
@@ -9,66 +41,80 @@ const apiConfig = require('../config/api.js');
  */
 function request(endpoint, options = {}) {
   const { method = 'GET', data = null, needAuth = false } = options;
-
-  // 构建完整 URL
-  const url = `${apiConfig.baseURL}${endpoint}`;
-
-  if (apiConfig.debug) {
-    console.log(`[API] ${method} ${url}`, data);
-  }
+  const baseURLs = [apiConfig.baseURL].concat(apiConfig.fallbackBaseURLs || []);
 
   return new Promise((resolve, reject) => {
-    // 获取 token
-    const token = wx.getStorageSync('token');
+    const attemptRequest = (index) => {
+      const baseURL = baseURLs[index];
+      const url = `${baseURL}${endpoint}`;
 
-    // 构建请求头
-    const header = {
-      'Content-Type': 'application/json'
-    };
+      if (apiConfig.debug) {
+        console.log(`[API] ${method} ${url}`, data);
+      }
 
-    if (needAuth && token) {
-      header['Authorization'] = `Bearer ${token}`;
-    }
+      // 获取 token
+      const token = wx.getStorageSync('token');
 
-    // 发起请求
-    wx.request({
-      url,
-      method: method.toUpperCase(),
-      data,
-      header,
-      timeout: apiConfig.timeout,
-      success: (res) => {
-        if (apiConfig.debug) {
-          console.log(`[API] 响应:`, res.data);
-        }
+      // 构建请求头
+      const header = {
+        'Content-Type': 'application/json'
+      };
 
-        // 检查业务状态码
-        if (res.data.success === false) {
-          // 业务错误
+      if (needAuth && token) {
+        header['Authorization'] = `Bearer ${token}`;
+      }
+
+      // 发起请求
+      wx.request({
+        url,
+        method: method.toUpperCase(),
+        data,
+        header,
+        timeout: apiConfig.timeout,
+        success: (res) => {
+          if (apiConfig.debug) {
+            console.log(`[API] 响应:`, res.data);
+          }
+
+          // 检查业务状态码
+          if (res.data.success === false) {
+            // 业务错误
+            wx.showToast({
+              title: res.data.error || '请求失败',
+              icon: 'none',
+              duration: 2000
+            });
+            reject(new Error(res.data.error || '请求失败'));
+            return;
+          }
+
+          // 成功
+          resolve(res.data);
+        },
+        fail: (err) => {
+          console.error(`[API] 请求失败(${url}):`, err);
+
+          // 存在备用地址时自动重试
+          if (index < baseURLs.length - 1) {
+            if (apiConfig.debug) {
+              console.warn(`[API] 主地址失败，切换备用地址重试: ${baseURLs[index + 1]}`);
+            }
+            attemptRequest(index + 1);
+            return;
+          }
+
           wx.showToast({
-            title: res.data.error || '请求失败',
+            title: '网络请求失败',
             icon: 'none',
             duration: 2000
           });
-          reject(new Error(res.data.error || '请求失败'));
-          return;
+
+          reject(err);
         }
+      });
+    };
 
-        // 成功
-        resolve(res.data);
-      },
-      fail: (err) => {
-        console.error('[API] 请求失败:', err);
-
-        wx.showToast({
-          title: '网络请求失败',
-          icon: 'none',
-          duration: 2000
-        });
-
-        reject(err);
-      }
-    });
+    attemptRequest(0);
   });
 }
 
@@ -138,6 +184,11 @@ function callFunction(options) {
       method: 'POST',
       needAuth: true
     },
+    'getUserInfo': {
+      endpoint: '/auth/user-info',
+      method: 'GET',
+      needAuth: true
+    },
 
     // 会员相关
     'checkMembership': {
@@ -193,16 +244,21 @@ function callFunction(options) {
     method: mapping.method,
     data,
     needAuth: mapping.needAuth
-  }).then(result => {
+  }).then(response => {
+    const result = normalizeCallFunctionResult(response);
+
     // 转换为云函数返回格式
     return {
-      result: result.data,
+      result,
       errMsg: 'cloud.callFunction:ok'
     };
   }).catch(error => {
     // 转换为云函数错误格式
     return {
-      result: { error: error.message },
+      result: {
+        success: false,
+        error: error.message || '请求失败'
+      },
       errMsg: 'cloud.callFunction:fail'
     };
   });

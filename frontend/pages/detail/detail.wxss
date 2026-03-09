@@ -581,6 +581,286 @@
   text-shadow: 0 0 10rpx rgba(255, 255, 255, 0.5); /* 文字自带微光 */
 }
 
+/* ========== 朗读后复盘流程 ========== */
+.phase-reflection {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 100rpx;
+  padding-bottom: 80rpx;
+  z-index: 5;
+}
+
+.reflection-card {
+  width: 100%;
+  max-width: 640rpx;
+  background: rgba(21, 27, 34, 0.9);
+  border: 2rpx solid rgba(232, 208, 169, 0.25);
+  border-radius: 32rpx;
+  padding: 48rpx 40rpx;
+  box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.reflection-head {
+  margin-bottom: 32rpx;
+}
+
+.reflection-tag {
+  font-size: 22rpx;
+  color: rgba(232, 208, 169, 0.75);
+  letter-spacing: 0.2em;
+}
+
+.reflection-title {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 40rpx;
+  line-height: 1.6;
+  color: #E8D0A9;
+}
+
+.reflection-block {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.retell-sketch-header {
+  text-align: center;
+  margin-bottom: 8rpx;
+}
+
+.retell-sketch-title {
+  font-size: 34rpx;
+  color: #F3E4C8;
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+.retell-sketch-round {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: rgba(232, 208, 169, 0.72);
+  letter-spacing: 0.1em;
+}
+
+.retell-circle-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 20rpx 0 10rpx;
+}
+
+.retell-circle {
+  width: 240rpx;
+  height: 240rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 4rpx solid rgba(232, 208, 169, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 16rpx 34rpx rgba(0, 0, 0, 0.28);
+  transition: transform 0.2s ease;
+}
+
+.retell-circle.recording {
+  border-color: #E8D0A9;
+  box-shadow: 0 0 0 16rpx rgba(232, 208, 169, 0.16);
+}
+
+.retell-circle:active {
+  transform: scale(0.97);
+}
+
+.retell-circle-text {
+  font-size: 56rpx;
+  color: #F7E9CD;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.retell-pill-hint {
+  align-self: center;
+  max-width: 560rpx;
+  min-height: 58rpx;
+  border-radius: 999rpx;
+  background: rgba(232, 208, 169, 0.16);
+  border: 2rpx solid rgba(232, 208, 169, 0.36);
+  padding: 10rpx 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.retell-pill-hint text {
+  font-size: 24rpx;
+  color: #F3E4C8;
+}
+
+.retell-transcript {
+  margin-top: 8rpx;
+}
+
+.feedback-mini-title {
+  text-align: center;
+  font-size: 24rpx;
+  color: rgba(232, 208, 169, 0.75);
+  letter-spacing: 0.08em;
+}
+
+.feedback-mini-hint {
+  text-align: center;
+  font-size: 22rpx;
+  color: rgba(232, 208, 169, 0.66);
+}
+
+.chat-item {
+  display: flex;
+}
+
+.chat-item.ai {
+  justify-content: flex-start;
+}
+
+.chat-item.user {
+  justify-content: flex-end;
+}
+
+.chat-bubble {
+  max-width: 90%;
+  border-radius: 22rpx;
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+  line-height: 1.7;
+  word-break: break-word;
+  white-space: pre-line;
+}
+
+.chat-bubble.ai {
+  color: #F4E7D0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2rpx solid rgba(232, 208, 169, 0.25);
+  border-top-left-radius: 8rpx;
+}
+
+.chat-bubble.user {
+  color: #1D2630;
+  background: #E8D0A9;
+  border-top-right-radius: 8rpx;
+}
+
+.voice-section {
+  margin-top: 8rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.voice-btn {
+  height: 96rpx;
+  border-radius: 48rpx;
+  border: 2rpx solid rgba(232, 208, 169, 0.45);
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  color: #F3E4C8;
+}
+
+.voice-btn.recording {
+  border-color: #E8D0A9;
+  box-shadow: 0 0 0 10rpx rgba(232, 208, 169, 0.12);
+}
+
+.voice-btn:active {
+  transform: scale(0.98);
+}
+
+.voice-btn.disabled {
+  opacity: 0.55;
+}
+
+.voice-icon {
+  font-size: 34rpx;
+  line-height: 1;
+}
+
+.voice-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.voice-hint {
+  text-align: center;
+  font-size: 22rpx;
+  color: rgba(232, 208, 169, 0.68);
+}
+
+.state-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.state-option {
+  min-height: 96rpx;
+  border-radius: 18rpx;
+  border: 2rpx solid rgba(232, 208, 169, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16rpx;
+  text-align: center;
+  color: #EFDDBE;
+  font-size: 25rpx;
+  line-height: 1.4;
+}
+
+.state-option.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.28) 0%, rgba(196, 155, 42, 0.22) 100%);
+  border-color: rgba(232, 208, 169, 0.75);
+  color: #FFF8EA;
+}
+
+.state-option:active {
+  transform: scale(0.98);
+}
+
+.reflection-btn {
+  height: 88rpx;
+  border-radius: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #D4AF37 0%, #C49B2A 100%);
+  box-shadow: 0 8rpx 20rpx rgba(212, 175, 55, 0.28);
+  color: #FFFFFF;
+  font-size: 26rpx;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.reflection-btn.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+  border: 2rpx solid rgba(232, 208, 169, 0.35);
+  color: #E8D0A9;
+}
+
+.reflection-btn.disabled {
+  opacity: 0.6;
+}
+
+.reflection-btn:active {
+  transform: scale(0.98);
+}
+
 /* ========== 治愈分享卡片 ========== */
 .healing-card-modal {
   position: fixed;

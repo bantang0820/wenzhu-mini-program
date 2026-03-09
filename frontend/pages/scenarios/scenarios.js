@@ -85,7 +85,7 @@ Page({
     // 检查练习状态
     try {
       const api = require('../../utils/api.js');
-      const result = await api.get('/share/check-status');
+      const result = await api.get('/share/check-status', null, true);
 
       if (result.success && result.data) {
         const status = result.data;
@@ -117,7 +117,7 @@ Page({
   async consumePracticeAndEnter(scenarioId) {
     try {
       const api = require('../../utils/api.js');
-      await api.post('/share/consume', {});
+      await api.post('/share/consume', {}, true);
 
       // 跳转到详情页
       wx.navigateTo({
@@ -196,7 +196,7 @@ Page({
   async recordShareAndUnlock() {
     try {
       const api = require('../../utils/api.js');
-      const result = await api.post('/share/record', {});
+      const result = await api.post('/share/record', {}, true);
 
       if (result.success) {
         wx.showToast({

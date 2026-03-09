@@ -22,13 +22,19 @@ Page({
 
     const app = getApp();
     const openid = wx.getStorageSync('openid');
+    const token = wx.getStorageSync('token');
     console.log('当前 openid:', openid);
 
-    if (!openid) {
+    if (!openid || !token) {
       wx.showToast({
         title: '请先登录',
         icon: 'none'
       });
+      setTimeout(() => {
+        wx.navigateTo({
+          url: '/pages/login/login'
+        });
+      }, 400);
       return;
     }
 
@@ -38,7 +44,7 @@ Page({
       wx.showLoading({ title: '创建订单...' });
 
       // 1. 生成订单号
-      const orderRes = await api.get('/payment/generate-order-no');
+      const orderRes = await api.get('/payment/generate-order-no', null, true);
       if (!orderRes.success) {
         throw new Error('生成订单号失败');
       }
@@ -51,7 +57,7 @@ Page({
         description: '稳住Pro年卡会员',
         totalAmount: 19900, // 199元 = 19900分
         orderNo: orderNo
-      });
+      }, true);
 
       wx.hideLoading();
 
@@ -112,7 +118,7 @@ Page({
     try {
       const res = await api.post('/payment/query', {
         orderNo: orderNo
-      });
+      }, true);
 
       if (res.success && res.data.trade_state === 'SUCCESS') {
         // 支付成功，更新会员状态

@@ -1,4 +1,5 @@
 // utils/membership.js - 会员检查工具函数
+const api = require('./api.js');
 
 /**
  * 检查用户是否是会员
@@ -12,12 +13,12 @@ async function checkMembership() {
   }
 
   try {
-    const res = await wx.cloud.callFunction({
+    const res = await api.callFunction({
       name: 'checkMembership',
       data: { openid }
     });
 
-    return res.result.isMember || false;
+    return !!(res.result && res.result.success && res.result.isMember);
   } catch (err) {
     console.error('检查会员状态失败', err);
     return false;
@@ -55,12 +56,25 @@ async function getMembershipInfo() {
   }
 
   try {
-    const res = await wx.cloud.callFunction({
+    const res = await api.callFunction({
       name: 'getMembershipInfo',
       data: { openid }
     });
 
-    return res.result.membership || null;
+    if (!res.result || !res.result.success) {
+      return null;
+    }
+
+    if (res.result.membership) {
+      return res.result.membership;
+    }
+
+    if (res.result.data) {
+      return res.result.data;
+    }
+
+    const { success, message, error, ...membership } = res.result;
+    return Object.keys(membership).length > 0 ? membership : null;
   } catch (err) {
     console.error('获取会员信息失败', err);
     return null;

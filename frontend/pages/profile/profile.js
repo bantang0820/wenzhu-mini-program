@@ -1,15 +1,66 @@
 // pages/profile/profile.js - 本心（个人中心）
 const app = getApp();
+const api = require('../../utils/api.js');
+
+const DEFAULT_USER_INFO = {
+  avatar: '',
+  nickname: '',
+  level: 1,
+  levelName: '觉察者'
+};
+
+function createMenuList(isLoggedIn) {
+  return [
+    {
+      id: 'account',
+      icon: isLoggedIn ? '👤' : '🔐',
+      title: isLoggedIn ? '个人信息' : '登录 / 注册',
+      desc: isLoggedIn ? '设置昵称、头像与账号' : '新用户从这里进入',
+      arrow: true
+    },
+    {
+      id: 'redeem',
+      icon: '🎁',
+      title: '兑换中心',
+      desc: '输入兑换码，领取权益',
+      arrow: true
+    },
+    {
+      id: 'settings',
+      icon: '⚙️',
+      title: '朗读设置',
+      desc: '背景音量、人声大小',
+      arrow: true
+    },
+    {
+      id: 'reminder',
+      icon: '🔔',
+      title: '提醒设置',
+      desc: '每天提醒我稳住',
+      arrow: true
+    },
+    {
+      id: 'feedback',
+      icon: '💌',
+      title: '意见反馈',
+      desc: '告诉开发者',
+      arrow: true
+    },
+    {
+      id: 'about',
+      icon: '📜',
+      title: '关于稳住',
+      desc: '初心故事',
+      arrow: true
+    }
+  ];
+}
 
 Page({
   data: {
     // ========== 用户信息 ==========
-    userInfo: {
-      avatar: '',
-      nickname: '正念家长',
-      level: 1,
-      levelName: '觉察者'
-    },
+    userInfo: DEFAULT_USER_INFO,
+    isLoggedIn: false,
 
     // ========== 等级系统 ==========
     levelSystem: [
@@ -28,43 +79,7 @@ Page({
     },
 
     // ========== 功能列表 ==========
-    menuList: [
-      {
-        id: 'redeem',
-        icon: '🎁',
-        title: '兑换中心',
-        desc: '输入兑换码，领取权益',
-        arrow: true
-      },
-      {
-        id: 'settings',
-        icon: '⚙️',
-        title: '朗读设置',
-        desc: '背景音量、人声大小',
-        arrow: true
-      },
-      {
-        id: 'reminder',
-        icon: '🔔',
-        title: '提醒设置',
-        desc: '每天提醒我稳住',
-        arrow: true
-      },
-      {
-        id: 'feedback',
-        icon: '💌',
-        title: '意见反馈',
-        desc: '告诉开发者',
-        arrow: true
-      },
-      {
-        id: 'about',
-        icon: '📜',
-        title: '关于稳住',
-        desc: '初心故事',
-        arrow: true
-      }
-    ],
+    menuList: createMenuList(false),
 
     // ========== Pro 状态 ==========
     isPro: false,
@@ -93,15 +108,37 @@ Page({
   },
 
   onShow() {
-    // 每次显示时刷新数据
-    this.loadUserData();
+    // 每次显示时刷新数据与登录态
+    this.initData();
   },
 
   initData() {
+    this.refreshAuthState();
     this.loadUserData();
     this.loadUserInfo();
     this.checkProStatus();
     this.setData({ loading: false });
+  },
+
+  refreshAuthState() {
+    const token = wx.getStorageSync('token');
+    const openid = wx.getStorageSync('openid');
+    const isLoggedIn = !!(token && openid);
+
+    this.setData({
+      isLoggedIn,
+      menuList: createMenuList(isLoggedIn)
+    });
+
+    if (!isLoggedIn) {
+      this.setData({
+        userInfo: { ...DEFAULT_USER_INFO },
+        isPro: false,
+        proExpireDays: 0,
+        expireDate: '',
+        isExpiring: false
+      });
+    }
   },
 
   // 加载本地保存的设置
@@ -113,10 +150,15 @@ Page({
 
   // ========== 加载用户数据 ==========
   async loadUserData() {
+    if (!this.data.isLoggedIn) {
+      this.loadLocalUserData();
+      return;
+    }
+
     try {
       // 从后端API获取核心统计数据
-      const api = app.globalData.api || require('../../utils/api.js');
-      const response = await api.get('/scenarios/core-statistics');
+      const apiClient = app.globalData.api || api;
+      const response = await apiClient.get('/scenarios/core-statistics', null, true);
 
       if (response.success && response.data) {
         const { totalCount, continuousDays, topScenarios, churnRisk } = response.data;
@@ -223,16 +265,32 @@ Page({
 
   // ========== 加载用户信息 ==========
   loadUserInfo() {
-    // 从本地存储读取用户信息
-    const userInfo = wx.getStorageSync('userInfo');
+    const cachedUserInfo = app.globalData.userInfo || wx.getStorageSync('userInfo');
 
-    if (userInfo) {
-      this.setData({ userInfo });
+    if (!cachedUserInfo) {
+      this.setData({ userInfo: { ...DEFAULT_USER_INFO } });
+      return;
     }
+
+    const normalizedUser = typeof app.normalizeUserProfile === 'function'
+      ? app.normalizeUserProfile(cachedUserInfo)
+      : cachedUserInfo;
+
+    this.setData({ userInfo: normalizedUser });
   },
 
   // ========== 检查 Pro 状态 ==========
   checkProStatus() {
+    if (!this.data.isLoggedIn) {
+      this.setData({
+        isPro: false,
+        proExpireDays: 0,
+        expireDate: '',
+        isExpiring: false
+      });
+      return;
+    }
+
     const isPro = app.globalData.isMember || false;
     const proExpireTime = (app.globalData.userInfo && app.globalData.userInfo.vip_expire_time) 
       ? new Date(app.globalData.userInfo.vip_expire_time).getTime() 
@@ -271,6 +329,14 @@ Page({
   // 点击会员卡
   onMemberCardTap() {
     wx.vibrateShort({ type: 'light' });
+
+    if (!this.data.isLoggedIn) {
+      wx.navigateTo({
+        url: '/pages/login/login'
+      });
+      return;
+    }
+
     wx.navigateTo({
       url: '/pages/pro/pro'
     });
@@ -282,7 +348,25 @@ Page({
     wx.vibrateShort({ type: 'light' });
 
     switch (id) {
+      case 'account':
+        this.handleAccountTap();
+        break;
+
       case 'redeem':
+        if (!this.data.isLoggedIn) {
+          wx.showModal({
+            title: '请先登录',
+            content: '登录后可使用兑换码领取会员权益',
+            confirmText: '去登录',
+            success: (res) => {
+              if (res.confirm) {
+                wx.navigateTo({ url: '/pages/login/login' });
+              }
+            }
+          });
+          return;
+        }
+
         wx.showModal({
           title: '兑换中心',
           placeholderText: '请输入 12 位兑换码',
@@ -380,7 +464,7 @@ Page({
     wx.showLoading({ title: '正在兑换...', mask: true });
 
     try {
-      const res = await wx.cloud.callFunction({
+      const res = await api.callFunction({
         name: 'redeemMembership',
         data: { code }
       });
@@ -392,6 +476,7 @@ Page({
         app.globalData.isMember = true;
         if (app.globalData.userInfo) {
           app.globalData.userInfo.is_vip = true;
+          app.globalData.userInfo.isVip = true;
           // 这里的过期时间建议从接口返回的 expireDate 处理，或者直接刷新登录状态
         }
         
@@ -474,15 +559,10 @@ Page({
     wx.showLoading({ title: '提交中...', mask: true });
 
     try {
-      const db = wx.cloud.database();
-      await db.collection('feedbacks').add({
-        data: {
-          content: feedbackContent,
-          contact: contactInfo,
-          create_time: db.serverDate(),
-          userInfo: this.data.userInfo || {}
-        }
-      });
+      await api.post('/feedbacks', {
+        content: feedbackContent,
+        contact: contactInfo
+      }, true);
 
       wx.hideLoading();
       wx.showToast({ title: '感谢您的反馈', icon: 'success' });
@@ -518,19 +598,27 @@ Page({
     this.closeSettings();
   },
 
+  handleAccountTap() {
+    if (!this.data.isLoggedIn) {
+      wx.navigateTo({
+        url: '/pages/login/login'
+      });
+      return;
+    }
+
+    wx.navigateTo({
+      url: '/pages/account/account'
+    });
+  },
+
   // 处理用户区域点击（登录/同步）
   handleUserClick() {
-    const openid = wx.getStorageSync('openid');
-    if (!openid) {
+    if (!this.data.isLoggedIn) {
       wx.navigateTo({
         url: '/pages/login/login'
       });
     } else {
-      // 已经登录了，可以提示同步信息或查看详情
-      wx.showToast({
-        title: '个人信息已同步',
-        icon: 'none'
-      });
+      this.handleAccountTap();
     }
   },
 

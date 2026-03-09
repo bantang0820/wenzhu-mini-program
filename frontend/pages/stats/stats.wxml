@@ -7,7 +7,7 @@
     <text class="hero-unit">天</text>
 
     <view class="hero-stats">
-      <text class="stats-text">累计获得 {{totalEnergy}} 能量 | 击败了 {{beatPercent}}% 的焦虑</text>
+      <text class="stats-text">累计获得 {{totalEnergy}} 能量 | 连续练习 {{continuousDays}} 天</text>
     </view>
   </view>
 

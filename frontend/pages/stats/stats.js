@@ -1,12 +1,13 @@
 // pages/stats/stats.js - 觉察（日历+雷达图）
 const app = getApp();
+const api = require('../../utils/api.js');
 
 Page({
   data: {
     // ========== 核心数据 ==========
     totalDays: 0, // 已稳住天数
     totalEnergy: 0, // 累计能量
-    beatPercent: 0, // 击败百分比
+    continuousDays: 0, // 连续练习天数（与本心页一致）
 
     // ========== 用户内心状态 ==========
     userInfo: {
@@ -53,17 +54,37 @@ Page({
   },
 
   // ========== 加载用户数据 ==========
-  loadUserData() {
-    // 从本地存储读取
+  async loadUserData() {
+    // 先读取本地数据兜底
     const totalDays = wx.getStorageSync('totalDays') || 0;
     const totalEnergy = wx.getStorageSync('totalEnergy') || 0;
-    const beatPercent = Math.min(99, Math.floor(totalDays * 2 + 10)); // 简单算法
+    const localContinuousDays = wx.getStorageSync('currentStreak') || 0;
 
     this.setData({
       totalDays,
       totalEnergy,
-      beatPercent
+      continuousDays: localContinuousDays
     });
+
+    // 登录状态下使用后端核心统计，保持与本心页数据一致
+    try {
+      const isLoggedIn = typeof app.isLoggedIn === 'function'
+        ? app.isLoggedIn()
+        : !!(wx.getStorageSync('token') && wx.getStorageSync('openid'));
+
+      if (isLoggedIn) {
+        const apiClient = app.globalData.api || api;
+        const response = await apiClient.get('/scenarios/core-statistics', null, true);
+
+        if (response.success && response.data) {
+          this.setData({
+            continuousDays: response.data.continuousDays || 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('加载连续练习天数失败，已使用本地数据:', error);
+    }
 
     // 计算等级
     this.calculateLevel(totalDays);

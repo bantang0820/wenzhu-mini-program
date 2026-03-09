@@ -37,7 +37,7 @@ Page({
       }
 
       // 获取章节列表
-      const chaptersResult = await api.get(`/albums/${albumId}/chapters`, null, false);
+      const chaptersResult = await api.get(`/albums/${albumId}/chapters`, null, true);
 
       if (!chaptersResult.success) {
         throw new Error('获取章节列表失败');

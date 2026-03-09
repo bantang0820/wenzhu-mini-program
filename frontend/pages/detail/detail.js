@@ -1,5 +1,6 @@
 // pages/detail/detail.js - 原研哉式极简主义完整版
 const scenariosData = require('../../data/scenarios.js');
+const api = require('../../utils/api.js');
 
 Page({
   data: {
@@ -10,6 +11,7 @@ Page({
 
     // 阶段管理
     currentPhase: 'holding', // holding | reading | completed
+    roundSteps: [1, 2, 3, 4, 5], // 轮次点位
 
     // 第一阶段：长按止颤
     isDarkMode: false,
@@ -20,7 +22,7 @@ Page({
     holdTimer: null,
     progressTimer: null,
 
-    // 第二阶段：三轮朗读
+    // 第二阶段：五句朗读
     readingRound: 1, // 当前第几轮（1-5）
     totalRounds: 5, // 总轮数（改为5句）
     allMantras: [], // 所有轮次的文案
@@ -58,6 +60,33 @@ Page({
     // 治愈卡片
     showHealingCard: false, // 显示治愈分享卡片
     healingQuote: '', // 治愈的话
+
+    // 复盘流程（仅场景001启用：每句朗读后复述）
+    isRoundRetellMode: false, // 仅“没忍住吼了”先启用
+    postReadingStep: '', // '' | retell | feedback | state
+    currentReflectionRound: 0,
+    currentReflectionMantra: '',
+    retellText: '',
+    retellFeedback: '',
+    roundRetells: [],
+    roundFeedbacks: [],
+    selectedFinalState: '',
+    finalStateOptions: [
+      { value: 'calmer', label: '平静下来了' },
+      { value: 'more_patient', label: '更有耐心了' },
+      { value: 'still_tight', label: '还有点紧绷' },
+      { value: 'need_support', label: '还想再练练' }
+    ],
+
+    // 兼容卡片透传字段
+    feelingText: '',
+    mindfulJournal: '',
+    isGeneratingFeedback: false,
+    isGeneratingJournal: false,
+    speechAvailable: false,
+    isSpeechRecording: false,
+    speechTarget: 'retell', // retell | feeling
+    hasRecordPermission: false,
 
     // 第四阶段：完成
     showCompleted: false,
@@ -103,9 +132,13 @@ Page({
       // 直接进入朗读阶段，跳过长按止颤
       this.transitionToReading();
     }
+
+    this.initSpeechRecognition();
+    this.checkRecordPermission();
   },
 
   onUnload() {
+    this.stopSpeechInput();
     this.clearAllTimers();
   },
 
@@ -116,6 +149,199 @@ Page({
     if (this.data.typewriterTimer) clearInterval(this.data.typewriterTimer);
     if (this.data.readingTimer) clearTimeout(this.data.readingTimer);
     if (this.data.vadTimer) clearInterval(this.data.vadTimer);
+    if (this.feedbackAutoTimer) clearTimeout(this.feedbackAutoTimer);
+    this.stopMockSpeechTyping();
+  },
+
+  // 初始化语音输入（演示转写版，无需插件授权）
+  initSpeechRecognition() {
+    this.speechRecorder = wx.getRecorderManager();
+    this.speechTypingTimer = null;
+    this.currentSpeechScript = '';
+    this.currentSpeechCursor = 0;
+    this.setData({ speechAvailable: true });
+  },
+
+  // 检查麦克风权限（仅首次需要授权）
+  checkRecordPermission() {
+    return new Promise((resolve) => {
+      wx.getSetting({
+        success: (res) => {
+          const granted = !!res.authSetting['scope.record'];
+          this.setData({ hasRecordPermission: granted });
+          resolve(granted);
+        },
+        fail: () => {
+          this.setData({ hasRecordPermission: false });
+          resolve(false);
+        }
+      });
+    });
+  },
+
+  // 确保麦克风权限：已授权则直接通过；未授权时才触发一次申请
+  async ensureRecordPermission() {
+    if (this.data.hasRecordPermission) return true;
+
+    const grantedBySetting = await this.checkRecordPermission();
+    if (grantedBySetting) return true;
+
+    return new Promise((resolve) => {
+      wx.authorize({
+        scope: 'scope.record',
+        success: () => {
+          this.setData({ hasRecordPermission: true });
+          resolve(true);
+        },
+        fail: () => {
+          wx.showModal({
+            title: '需要麦克风权限',
+            content: '首次授权后，后续就不会重复弹窗了。请在设置中开启麦克风权限。',
+            confirmText: '去设置',
+            success: (modalRes) => {
+              if (!modalRes.confirm) {
+                resolve(false);
+                return;
+              }
+
+              wx.openSetting({
+                success: (settingRes) => {
+                  const granted = !!settingRes.authSetting['scope.record'];
+                  this.setData({ hasRecordPermission: granted });
+                  resolve(granted);
+                },
+                fail: () => resolve(false)
+              });
+            }
+          });
+        }
+      });
+    });
+  },
+
+  updateSpeechText(text) {
+    if (this.data.speechTarget === 'retell') {
+      this.setData({
+        retellText: text
+      });
+      return;
+    }
+
+    this.setData({
+      feelingText: text
+    });
+  },
+
+  onToggleSpeechInput() {
+    if (this.data.isGeneratingFeedback || this.data.isGeneratingJournal) return;
+
+    if (this.data.isSpeechRecording) {
+      this.stopSpeechInput();
+    } else {
+      this.startSpeechInput();
+    }
+  },
+
+  async startSpeechInput() {
+    if (!this.speechRecorder) {
+      this.initSpeechRecognition();
+    }
+
+    if (!this.speechRecorder) {
+      wx.showToast({
+        title: '录音能力不可用',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const hasPermission = await this.ensureRecordPermission();
+    if (!hasPermission) return;
+
+    const speechTarget = this.data.postReadingStep === 'retell' ? 'retell' : 'feeling';
+    this.currentSpeechScript = this.getMockSpeechScript(speechTarget);
+    this.currentSpeechCursor = 0;
+
+    this.setData({
+      isSpeechRecording: true,
+      speechTarget
+    });
+    this.updateSpeechText('');
+
+    wx.vibrateShort({ type: 'light' });
+
+    this.speechRecorder.onStop((res) => {
+      this.stopMockSpeechTyping();
+      this.updateSpeechText(this.currentSpeechScript);
+      this.setData({
+        isSpeechRecording: false,
+        speechAvailable: true
+      });
+      this.speechAudioPath = res && res.tempFilePath ? res.tempFilePath : '';
+    });
+
+    this.speechRecorder.onError((err) => {
+      console.error('录音失败', err);
+      this.stopMockSpeechTyping();
+      this.setData({
+        isSpeechRecording: false,
+        speechAvailable: false
+      });
+      wx.showToast({
+        title: '录音失败，请检查麦克风权限',
+        icon: 'none'
+      });
+    });
+
+    this.speechRecorder.start({
+      duration: 60000
+    });
+
+    this.startMockSpeechTyping();
+  },
+
+  stopSpeechInput() {
+    if (this.speechRecorder && this.data.isSpeechRecording) {
+      this.speechRecorder.stop();
+    }
+    this.stopMockSpeechTyping();
+    this.setData({
+      isSpeechRecording: false
+    });
+  },
+
+  // 模拟实时转写：录音过程中逐字显示
+  startMockSpeechTyping() {
+    this.stopMockSpeechTyping();
+
+    this.speechTypingTimer = setInterval(() => {
+      if (!this.data.isSpeechRecording) return;
+      const script = this.currentSpeechScript || '';
+      if (!script) return;
+
+      const step = Math.floor(Math.random() * 3) + 1;
+      this.currentSpeechCursor = Math.min(script.length, this.currentSpeechCursor + step);
+      this.updateSpeechText(script.slice(0, this.currentSpeechCursor));
+    }, 140);
+  },
+
+  stopMockSpeechTyping() {
+    if (this.speechTypingTimer) {
+      clearInterval(this.speechTypingTimer);
+      this.speechTypingTimer = null;
+    }
+  },
+
+  getMockSpeechScript(target) {
+    const sceneTitle = this.data.scenario && this.data.scenario.title ? this.data.scenario.title : '刚刚这个场景';
+    if (target === 'retell') {
+      const mantra = (this.data.currentReflectionMantra || '').replace(/\s+/g, '').slice(0, 24);
+      if (mantra) {
+        return `第${this.data.currentReflectionRound}句我记住的是：${mantra}。我先稳住自己，再去理解孩子。`;
+      }
+      return `刚才在${sceneTitle}这个情境里，我先提醒自己停下来，先稳住呼吸，再去理解孩子当下的状态。`;
+    }
+    return '我现在呼吸慢下来了，心里更安定，也更有力量去和孩子好好说话。';
   },
 
   // 设置当前日期
@@ -283,12 +509,21 @@ Page({
       }
     };
 
+    const isRoundRetellMode = scenario.id === '001' || scenario.title === '没忍住吼了';
+
     this.setData({
       scenario: scenario,
       currentText: scenario.stabilizeText, // 第一阶段：稳住引导语
       displayText: scenario.stabilizeText, // 直接显示完整文字
       allMantras: finalMantras, // 保存所有轮次的文案（从5个模块各选1句）
-      healingQuote: scenario.healingQuote // 保存治愈的话
+      healingQuote: scenario.healingQuote, // 保存治愈的话
+      isRoundRetellMode: isRoundRetellMode,
+      roundRetells: [],
+      roundFeedbacks: [],
+      selectedFinalState: '',
+      currentReflectionRound: 0,
+      currentReflectionMantra: '',
+      postReadingStep: ''
     });
   },
 
@@ -400,7 +635,21 @@ Page({
       displayText: '',
       guideText: this.getGuideText(1),
       hasRecorded: false,
-      recordedFilePath: ''
+      recordedFilePath: '',
+      postReadingStep: '',
+      currentReflectionRound: 0,
+      currentReflectionMantra: '',
+      retellText: '',
+      retellFeedback: '',
+      roundRetells: [],
+      roundFeedbacks: [],
+      selectedFinalState: '',
+      feelingText: '',
+      mindfulJournal: '',
+      isGeneratingFeedback: false,
+      isGeneratingJournal: false,
+      isSpeechRecording: false,
+      speechTarget: 'retell'
     });
 
     // 启动打字机效果
@@ -493,7 +742,7 @@ Page({
     this.transitionToReveal();
   },
 
-  // ========== 第二阶段：三轮朗读 ==========
+  // ========== 第二阶段：五句朗读 ==========
 
   transitionToReveal() {
     const firstMantra = this.data.allMantras[0];
@@ -511,7 +760,21 @@ Page({
       displayText: '', // 清空，等待打字机效果
       guideText: this.getGuideText(1), // 第一轮引导语
       hasRecorded: false, // 重置录音状态
-      recordedFilePath: ''
+      recordedFilePath: '',
+      postReadingStep: '',
+      currentReflectionRound: 0,
+      currentReflectionMantra: '',
+      retellText: '',
+      retellFeedback: '',
+      roundRetells: [],
+      roundFeedbacks: [],
+      selectedFinalState: '',
+      feelingText: '',
+      mindfulJournal: '',
+      isGeneratingFeedback: false,
+      isGeneratingJournal: false,
+      isSpeechRecording: false,
+      speechTarget: 'retell'
     });
 
     // 启动打字机效果
@@ -545,7 +808,10 @@ Page({
   // ========== 录音功能 ==========
 
   // 开始录音
-  onRecordStart() {
+  async onRecordStart() {
+    const hasPermission = await this.ensureRecordPermission();
+    if (!hasPermission) return;
+
     const recorderManager = wx.getRecorderManager();
 
     this.setData({
@@ -575,6 +841,8 @@ Page({
 
   // 结束录音
   onRecordEnd() {
+    if (!this.data.isRecording) return;
+
     const recorderManager = wx.getRecorderManager();
     recorderManager.stop();
 
@@ -655,9 +923,29 @@ Page({
   // 确认录音，进入下一轮或完成
   onConfirmRecord() {
     wx.vibrateShort({ type: 'heavy' });
+    const { readingRound, totalRounds, isRoundRetellMode } = this.data;
+
+    // 仅“没忍住吼了”场景：每句后进入复述流程
+    if (isRoundRetellMode) {
+      if (readingRound >= totalRounds) {
+        this.addEnergy(60, true);
+        this.setData({ anchorTime: new Date() });
+        this.updateCheckIn();
+
+        setTimeout(() => {
+          this.startPostReadingFlow(readingRound);
+        }, 1000);
+      } else {
+        this.addEnergy(10);
+        setTimeout(() => {
+          this.startPostReadingFlow(readingRound);
+        }, 400);
+      }
+      return;
+    }
 
     // 判断是否是最后一轮（第5句）
-    if (this.data.readingRound >= this.data.totalRounds) {
+    if (readingRound >= totalRounds) {
       // 第五句完成：+10能量 +50每日奖励 = +60能量
       this.addEnergy(60, true); // isDailyBonus=true显示特殊提示
 
@@ -669,10 +957,10 @@ Page({
       // 更新打卡记录
       this.updateCheckIn();
 
-      // 延迟跳转到卡片页面
+      // 其他场景保持原逻辑：直接进入日记卡片
       setTimeout(() => {
         this.navigateToCardWithoutAI();
-      }, 1500);
+      }, 1200);
     } else {
       // 普通句子：+10能量
       this.addEnergy(10);
@@ -682,6 +970,265 @@ Page({
         this.nextRound();
       }, 500);
     }
+  },
+
+  // ========== 朗读后快速复盘 ==========
+
+  // 每句朗读后进入复述流程
+  startPostReadingFlow(round = this.data.readingRound) {
+    const currentReflectionMantra = this.data.allMantras[round - 1] || this.data.currentText || '';
+
+    this.setData({
+      currentPhase: 'reading',
+      showStamp: false,
+      hasRecorded: false,
+      isPlaying: false,
+      postReadingStep: 'retell',
+      currentReflectionRound: round,
+      currentReflectionMantra: currentReflectionMantra,
+      retellText: '',
+      retellFeedback: '',
+      selectedFinalState: '',
+      isGeneratingFeedback: false,
+      isSpeechRecording: false,
+      speechTarget: 'retell'
+    });
+  },
+
+  // 提交快速复述并生成鼓励反馈（目前为 mock，后续可替换真实 AI）
+  async onSubmitRetell() {
+    if (this.data.isGeneratingFeedback) return;
+
+    const currentReflectionRound = this.data.currentReflectionRound || this.data.readingRound;
+    const mantraText = this.data.allMantras[currentReflectionRound - 1] || this.data.currentText || '';
+    const retellText = (this.data.retellText || '').trim();
+    if (!retellText) {
+      wx.showToast({
+        title: '先按按钮说一句复述',
+        icon: 'none'
+      });
+      return;
+    }
+
+    this.stopSpeechInput();
+    this.setData({ isGeneratingFeedback: true });
+    try {
+      const retellFeedback = await this.generateRetellFeedback({
+        scenarioTitle: this.data.scenario.title || '',
+        readingRound: currentReflectionRound,
+        totalRounds: this.data.totalRounds,
+        mantraText,
+        retellText
+      });
+
+      const roundRetells = [...this.data.roundRetells];
+      roundRetells[currentReflectionRound - 1] = retellText;
+      const roundFeedbacks = [...this.data.roundFeedbacks];
+      roundFeedbacks[currentReflectionRound - 1] = retellFeedback;
+
+      this.setData({
+        roundRetells,
+        roundFeedbacks,
+        retellFeedback,
+        postReadingStep: 'feedback'
+      });
+
+      this.scheduleAutoContinueAfterFeedback();
+    } catch (error) {
+      console.error('生成复述反馈失败', error);
+      wx.showToast({
+        title: '反馈生成失败，请重试',
+        icon: 'none'
+      });
+    } finally {
+      this.setData({ isGeneratingFeedback: false });
+    }
+  },
+
+  onContinueAfterFeedback() {
+    if (this.feedbackAutoTimer) {
+      clearTimeout(this.feedbackAutoTimer);
+      this.feedbackAutoTimer = null;
+    }
+    this.stopSpeechInput();
+    const { currentReflectionRound, totalRounds } = this.data;
+
+    if (currentReflectionRound >= totalRounds) {
+      this.setData({
+        postReadingStep: 'state',
+        selectedFinalState: ''
+      });
+      return;
+    }
+
+    this.setData({
+      postReadingStep: '',
+      currentReflectionMantra: '',
+      retellText: '',
+      retellFeedback: '',
+      isSpeechRecording: false
+    });
+
+    setTimeout(() => {
+      this.nextRound();
+    }, 200);
+  },
+
+  // 反馈展示短暂停留后自动进入下一句（第5句后自动进入状态选择）
+  scheduleAutoContinueAfterFeedback() {
+    if (this.feedbackAutoTimer) {
+      clearTimeout(this.feedbackAutoTimer);
+      this.feedbackAutoTimer = null;
+    }
+
+    this.feedbackAutoTimer = setTimeout(() => {
+      this.onContinueAfterFeedback();
+    }, 1800);
+  },
+
+  onSelectFinalState(e) {
+    const value = e.currentTarget.dataset.value;
+    if (!value) return;
+    this.setData({
+      selectedFinalState: value
+    });
+  },
+
+  getFinalStateLabel() {
+    const selected = this.data.selectedFinalState;
+    const option = (this.data.finalStateOptions || []).find((item) => item.value === selected);
+    return option ? option.label : '';
+  },
+
+  // 第5句复述完成后：选择状态并生成卡片
+  async onGenerateDiaryFromState() {
+    if (this.data.isGeneratingJournal) return;
+
+    const selectedFinalState = this.data.selectedFinalState;
+    if (!selectedFinalState) {
+      wx.showToast({
+        title: '请选择你此刻的状态',
+        icon: 'none'
+      });
+      return;
+    }
+
+    this.stopSpeechInput();
+    const finalStateLabel = this.getFinalStateLabel();
+    const cleanRoundRetells = (this.data.roundRetells || []).map((item) => (typeof item === 'string' ? item : ''));
+    const cleanAllMantras = (this.data.allMantras || []).map((item) => (typeof item === 'string' ? item : ''));
+
+    this.setData({ isGeneratingJournal: true });
+    wx.showLoading({
+      title: '生成日记卡片中...',
+      mask: true
+    });
+
+    try {
+      const mindfulJournal = await this.generateMindfulJournal({
+        scenarioTitle: this.data.scenario.title || '',
+        allMantras: cleanAllMantras,
+        roundRetells: cleanRoundRetells,
+        finalState: selectedFinalState,
+        finalStateLabel: finalStateLabel,
+        stormTime: this.data.stormTime,
+        shiftTime: this.data.shiftTime,
+        anchorTime: this.data.anchorTime
+      });
+
+      this.setData({
+        mindfulJournal,
+        feelingText: finalStateLabel
+      });
+
+      wx.hideLoading();
+      this.navigateToCardWithoutAI();
+    } catch (error) {
+      console.error('生成日记失败', error);
+      wx.hideLoading();
+      wx.showToast({
+        title: '日记生成失败，请重试',
+        icon: 'none'
+      });
+    } finally {
+      this.setData({ isGeneratingJournal: false });
+    }
+  },
+
+  // 优先调用后端AI接口，失败时回退本地兜底
+  async generateRetellFeedback(payload) {
+    try {
+      const response = await api.post('/ai/retell-feedback', payload, false);
+      const feedback = response && response.data && response.data.feedback;
+      if (feedback) return feedback;
+      throw new Error('AI反馈为空');
+    } catch (error) {
+      console.warn('调用AI复述反馈失败，使用本地兜底:', error);
+      return this.mockEvaluateRetell(payload);
+    }
+  },
+
+  async generateMindfulJournal(payload) {
+    try {
+      const response = await api.post('/ai/mindful-diary', payload, false);
+      const diaryContent = response && response.data && response.data.diaryContent;
+      if (diaryContent) return diaryContent;
+      throw new Error('AI日记为空');
+    } catch (error) {
+      console.warn('调用AI日记失败，使用本地兜底:', error);
+      return this.mockGenerateJournal(payload);
+    }
+  },
+
+  // mock：复述评价（鼓励与抱持）
+  mockEvaluateRetell({ scenarioTitle, retellText }) {
+    const contentLength = retellText.replace(/\s/g, '').length;
+    const sceneTitle = scenarioTitle || '刚刚这个场景';
+    const levelText = contentLength > 80
+      ? '你把关键细节抓得很完整，这说明你真的在用心练习。'
+      : contentLength > 30
+        ? '你已经抓住了重点，复述得很有力量。'
+        : '你愿意马上复述，本身就是很强的心力行动。';
+
+    const finalText = `在“${sceneTitle}”里，${levelText}你没有被情绪推着走，而是主动把注意力带回当下，这就是心力在变强。你每一次愿意停下来、说出来、再选择一次，都会让家里的空气更柔和、更有希望。你已经在把“稳住”变成家庭里的真实力量了。`;
+
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(finalText), 900);
+    });
+  },
+
+  // mock：正念育儿日记
+  mockGenerateJournal({ scenarioTitle, roundRetells, finalStateLabel, stormTime, shiftTime, anchorTime }) {
+    const sceneTitle = scenarioTitle || '日常育儿时刻';
+    const retellSummary = (roundRetells || []).filter(Boolean).slice(0, 2).join('；').trim().slice(0, 80);
+    const feelingSummary = finalStateLabel || '平静下来了';
+    const stormLabel = stormTime ? this.formatTime(stormTime) : '--:--';
+    const shiftLabel = shiftTime ? this.formatTime(shiftTime) : '--:--';
+    const anchorLabel = anchorTime ? this.formatTime(anchorTime) : '--:--';
+
+    const journal = [
+      `刚刚在“${sceneTitle}”这个时刻里，我先经历了情绪上涌。`,
+      `从 ${stormLabel} 到 ${shiftLabel} 再到 ${anchorLabel}，我看见自己不是只能爆发，我也可以慢慢稳住。`,
+      '',
+      `我复述给自己的那句话是：${retellSummary || '我愿意先稳住，再去回应孩子。'}`,
+      `现在我的感觉是：${feelingSummary || '身体在慢慢放松，心也回来了。'}`,
+      '',
+      '我想肯定自己：今天的我没有追求完美，而是做了一个更有力量的选择。',
+      '当我先安顿好自己，孩子就更容易感到被理解，家里的希望也会一点点亮起来。',
+      '',
+      '下一次遇到类似时刻，我会先呼吸三次，再开口说话。'
+    ].join('\n');
+
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(journal), 1000);
+    });
+  },
+
+  formatTime(timeValue) {
+    const date = timeValue instanceof Date ? timeValue : new Date(timeValue);
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    return `${hour}:${minute}`;
   },
 
   // 更新打卡记录
@@ -714,8 +1261,9 @@ Page({
   nextRound() {
     const nextRound = this.data.readingRound + 1;
 
-    // 计算新的背景亮度（30 -> 65 -> 100）
-    const newBrightness = 30 + ((nextRound - 1) * 35);
+    // 按总轮数线性提亮背景（30 -> 100）
+    const stepRatio = (nextRound - 1) / Math.max(1, this.data.totalRounds - 1);
+    const newBrightness = Math.round(30 + (stepRatio * 70));
     const nextMantra = this.data.allMantras[nextRound - 1];
 
     this.setData({
@@ -735,7 +1283,17 @@ Page({
 
   // 跳转到卡片页面（不需要AI生成文案）
   navigateToCardWithoutAI() {
-    const { scenario, stormTime, shiftTime, anchorTime, allMantras } = this.data;
+    const {
+      scenario,
+      stormTime,
+      shiftTime,
+      anchorTime,
+      allMantras,
+      retellText,
+      retellFeedback,
+      feelingText,
+      mindfulJournal
+    } = this.data;
 
     wx.navigateTo({
       url: '/pages/card/card',
@@ -745,7 +1303,14 @@ Page({
           stormTime: stormTime,
           shiftTime: shiftTime,
           anchorTime: anchorTime,
-          allMantras: allMantras  // 传递5层朗读的句子
+          allMantras: allMantras,  // 传递5层朗读的句子
+          generatedDiaryContent: mindfulJournal || '',
+          reflectionData: {
+            retellText,
+            retellFeedback,
+            feelingText,
+            mindfulJournal
+          }
         });
       },
       fail: (err) => {
@@ -825,6 +1390,7 @@ Page({
   },
 
   onBack() {
+    this.stopSpeechInput();
     if (this.data.isCompleted) {
       this.onBackHome();
     } else {

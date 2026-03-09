@@ -70,6 +70,27 @@ export const validationSchemas = {
     anchorTime: Joi.date().required()
   }),
 
+  // 每句复述反馈
+  generateRetellFeedback: Joi.object({
+    scenarioTitle: Joi.string().required(),
+    readingRound: Joi.number().integer().min(1).max(5).required(),
+    totalRounds: Joi.number().integer().min(1).max(10).required(),
+    mantraText: Joi.string().allow('').max(3000),
+    retellText: Joi.string().min(1).max(3000).required()
+  }),
+
+  // 生成正念日记
+  generateMindfulDiary: Joi.object({
+    scenarioTitle: Joi.string().required(),
+    allMantras: Joi.array().items(Joi.string()).required(),
+    roundRetells: Joi.array().items(Joi.string().allow('')).required(),
+    finalState: Joi.string().required(),
+    finalStateLabel: Joi.string().required(),
+    stormTime: Joi.date().required(),
+    shiftTime: Joi.date().required(),
+    anchorTime: Joi.date().required()
+  }),
+
   // 提交反馈
   submitFeedback: Joi.object({
     content: Joi.string().min(1).max(1000).required().messages({

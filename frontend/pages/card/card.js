@@ -22,10 +22,19 @@ Page({
       eventChannel.on('acceptData', (data) => {
         console.log('接收到的数据:', data);
 
-        const { scenario, stormTime, shiftTime, anchorTime, allMantras } = data;
+        const {
+          scenario,
+          stormTime,
+          shiftTime,
+          anchorTime,
+          allMantras,
+          generatedDiaryContent
+        } = data;
 
-        // 将5句话整合成一篇连贯的日记
-        const diaryContent = this.transformToDiary(allMantras, scenario);
+        // 优先使用上游已生成的日记内容；否则回退到本地拼接
+        const diaryContent = (generatedDiaryContent || '').trim()
+          ? generatedDiaryContent
+          : this.transformToDiary(allMantras, scenario);
 
         this.setData({
           scenario: scenario,

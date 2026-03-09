@@ -1,12 +1,12 @@
 <!--pages/detail/detail.wxml - 原研哉式极简主义完整版-->
-<view class="container {{isDarkMode ? 'dark-mode' : ''}} {{currentPhase === 'reading' ? 'reading-mode' : ''}}" style="background-color: rgba(235, 234, 230, {{backgroundBrightness / 100}})">
+<view class="container {{isDarkMode ? 'dark-mode' : ''}} {{currentPhase === 'reading' || postReadingStep ? 'reading-mode' : ''}}" style="background-color: rgba(235, 234, 230, {{backgroundBrightness / 100}})">
   <!-- 能量提示（顶部，不遮挡文字） -->
   <view class="energy-toast {{showEnergyToast ? 'show' : ''}}" wx:if="{{showEnergyToast}}">
     <text class="energy-toast-text">{{energyToastText}}</text>
   </view>
 
   <!-- 萤火虫粒子效果 -->
-  <view class="fireflies-container" wx:if="{{currentPhase === 'reading'}}">
+  <view class="fireflies-container" wx:if="{{currentPhase === 'reading' || postReadingStep}}">
     <view class="firefly" style="top: 10%; left: 15%;"></view>
     <view class="firefly" style="top: 20%; left: 80%;"></view>
     <view class="firefly" style="top: 35%; left: 25%;"></view>
@@ -65,12 +65,12 @@
     </view>
   </view>
 
-  <!-- 第二阶段：三轮朗读 -->
-  <view class="phase-reveal {{showGuide ? 'show' : ''}}" wx:if="{{currentPhase === 'reading'}}">
+  <!-- 第二阶段：五句朗读 -->
+  <view class="phase-reveal {{showGuide ? 'show' : ''}}" wx:if="{{currentPhase === 'reading' && !postReadingStep}}">
     <!-- 轮次进度环 -->
     <view class="round-progress">
       <view class="progress-ring">
-        <view class="progress-dot" wx:for="{{[1,2,3]}}" wx:key="index" style="opacity: {{index <= readingRound ? 1 : 0.3}}"></view>
+        <view class="progress-dot" wx:for="{{roundSteps}}" wx:key="index" style="opacity: {{item <= readingRound ? 1 : 0.3}}"></view>
       </view>
       <text class="round-label">0{{readingRound}}</text>
     </view>
@@ -82,7 +82,7 @@
   </view>
 
   <!-- 录音按钮（延迟显示）- 移出 phase-reveal 以实现真正的底部固定 -->
-  <view class="stamp-section" wx:if="{{currentPhase === 'reading' && showStamp}}">
+  <view class="stamp-section" wx:if="{{currentPhase === 'reading' && !postReadingStep && showStamp}}">
     <!-- 录音按钮 -->
     <view class="stamp-wrapper">
       <!-- 未录音状态：显示录音按钮 -->
@@ -118,6 +118,88 @@
     <!-- 引导语（录音按钮下方） -->
     <view class="guide-text-container" wx:if="{{showGuide && !hasRecorded}}">
       <text class="guide-text">{{guideText}}</text>
+    </view>
+  </view>
+
+  <!-- 朗读后复盘流程 -->
+  <view class="phase-reflection" wx:if="{{postReadingStep}}">
+    <view class="reflection-card">
+      <view class="reflection-head">
+        <text class="reflection-tag">本心对话</text>
+        <text class="reflection-title title-serif">把刚刚的力量，留在身体里</text>
+      </view>
+
+      <!-- 第1步：AI邀请复述 -->
+      <view wx:if="{{postReadingStep === 'retell'}}" class="reflection-block">
+        <view class="retell-sketch-header">
+          <text class="retell-sketch-title">请你帮忙复述一下刚刚朗读完的这一句吧！</text>
+          <text class="retell-sketch-round">第{{currentReflectionRound}}句</text>
+        </view>
+
+        <view class="retell-circle-wrapper">
+          <view class="retell-circle {{isSpeechRecording ? 'recording' : ''}}" bindtap="onToggleSpeechInput">
+            <text class="retell-circle-text">{{isSpeechRecording ? '结束' : '复述'}}</text>
+          </view>
+        </view>
+
+        <view class="retell-pill-hint">
+          <text>不完整也没关系，不必追求一次说全</text>
+        </view>
+
+        <view class="retell-transcript" wx:if="{{retellText}}">
+          <view class="chat-item user">
+            <view class="chat-bubble user">
+              <text>{{retellText}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="voice-section">
+          <view class="reflection-btn {{isGeneratingFeedback ? 'disabled' : ''}}" bindtap="onSubmitRetell">
+            <text>{{isGeneratingFeedback ? 'AI正在回应你...' : '提交复述'}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 第2步：AI抱持反馈 -->
+      <view wx:if="{{postReadingStep === 'feedback'}}" class="reflection-block">
+        <view class="feedback-mini-title">
+          <text>AI正在抱持你</text>
+        </view>
+        <view class="chat-item ai">
+          <view class="chat-bubble ai">
+            <text>{{retellFeedback}}</text>
+          </view>
+        </view>
+        <view class="feedback-mini-hint">
+          <text>{{currentReflectionRound >= totalRounds ? '即将进入状态选择...' : '即将进入下一句朗读...'}}</text>
+        </view>
+      </view>
+
+      <!-- 第5句后：状态选择并生成卡片 -->
+      <view wx:if="{{postReadingStep === 'state'}}" class="reflection-block">
+        <view class="chat-item ai">
+          <view class="chat-bubble ai">
+            <text>最后一步：请选择你此刻最接近的状态，我们马上为你生成正念日记卡片。</text>
+          </view>
+        </view>
+
+        <view class="state-options">
+          <view
+            wx:for="{{finalStateOptions}}"
+            wx:key="value"
+            class="state-option {{selectedFinalState === item.value ? 'active' : ''}}"
+            bindtap="onSelectFinalState"
+            data-value="{{item.value}}"
+          >
+            <text>{{item.label}}</text>
+          </view>
+        </view>
+
+        <view class="reflection-btn {{isGeneratingJournal ? 'disabled' : ''}}" bindtap="onGenerateDiaryFromState">
+          <text>{{isGeneratingJournal ? '正在生成正念日记卡片...' : '生成正念日记卡片'}}</text>
+        </view>
+      </view>
     </view>
   </view>
 

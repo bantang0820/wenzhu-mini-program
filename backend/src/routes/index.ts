@@ -69,6 +69,12 @@ router.post('/scenarios/emotion-log', authMiddleware, scenarioController.logEmot
 // 生成情绪切片文案（需要认证）
 router.post('/ai/emotion-slice', authMiddleware, validate(validationSchemas.generateEmotionSlice), aiController.generateEmotionSlice);
 
+// 每句复述反馈（无强制登录，便于练习流畅使用）
+router.post('/ai/retell-feedback', validate(validationSchemas.generateRetellFeedback), aiController.generateRetellFeedback);
+
+// 生成正念育儿日记（无强制登录，便于练习流畅使用）
+router.post('/ai/mindful-diary', validate(validationSchemas.generateMindfulDiary), aiController.generateMindfulDiary);
+
 // ========== 反馈相关 ==========
 // 提交反馈（需要认证）
 router.post('/feedbacks', authMiddleware, validate(validationSchemas.submitFeedback), feedbackController.submitFeedback);
