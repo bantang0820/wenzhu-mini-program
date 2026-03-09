@@ -61,10 +61,10 @@
       </view>
     </view>
 
-    <view class="tip-text">当前支持：通过兑换码免费兑换</view>
-    
-    <button class="pay-btn" bindtap="onPayTap">
-      立即开通
+    <view class="tip-text">开通即表示同意《会员服务协议》和《隐私政策》</view>
+
+    <button class="pay-btn" bindtap="onPayTap" disabled="{{loading}}">
+      {{loading ? '处理中...' : '立即开通'}}
     </button>
     <text class="cancel-text" bindtap="onBack">先看看再说</text>
   </view>

@@ -161,6 +161,23 @@ function callFunction(options) {
       endpoint: '/ai/emotion-slice',
       method: 'POST',
       needAuth: true
+    },
+
+    // 支付相关
+    'generateOrderNo': {
+      endpoint: '/payment/generate-order-no',
+      method: 'GET',
+      needAuth: true
+    },
+    'createPayment': {
+      endpoint: '/payment/create',
+      method: 'POST',
+      needAuth: true
+    },
+    'queryPayment': {
+      endpoint: '/payment/query',
+      method: 'POST',
+      needAuth: true
     }
   };
 
