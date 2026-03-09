@@ -1,0 +1,178 @@
+/* app.wxss - 原研哉式极简主义设计系统 */
+
+/* ========== CSS 变量系统 ========== */
+page {
+  /* 配色系统 - 原研哉"空"与"触感"哲学 */
+  --color-bg: #EBEAE6; /* Warm Cement / 暖水泥灰 */
+  --color-surface: #F5F5F2; /* Off-white / 素白 */
+  --color-text-primary: #2B303A; /* Deep Ink / 深墨色 */
+  --color-text-secondary: #8C8C88; /* Stone Gray / 石灰灰 */
+  --color-accent: #D4AF37; /* Amber Light / 琥珀微光 */
+
+  /* 新拟态阴影系统 - 陶土与岩石质感 */
+  --shadow-convex: 8rpx 8rpx 16rpx #d1d0cc, -8rpx -8rpx 16rpx #ffffff;
+  --shadow-concave: inset 8rpx 8rpx 16rpx #d1d0cc, inset -8rpx -8rpx 16rpx #ffffff;
+  --shadow-elevated: 12rpx 12rpx 24rpx #c5c4c0, -12rpx -12rpx 24rpx #ffffff;
+
+  /* 应用到页面 */
+  background-color: var(--color-bg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  min-height: 100vh;
+  color: var(--color-text-primary);
+}
+
+/* ========== 字体系统 ========== */
+
+/* 宋体标题 - 像石刻一样有力量感 */
+.font-serif {
+  font-family: 'Times New Roman', 'Songti SC', 'SimSun', serif;
+}
+
+/* 标题样式 - 深墨色，粗体 */
+.title-serif {
+  font-family: 'Times New Roman', 'Songti SC', 'SimSun', serif;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: 0.1em;
+}
+
+/* ========== 通用容器 ========== */
+.container {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  padding: 40rpx;
+  box-sizing: border-box;
+}
+
+/* ========== 新拟态卡片系统 ========== */
+
+/* 凸起效果 - 像石头一样隆起 */
+.neumorphism-convex {
+  background: var(--color-surface);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-convex);
+}
+
+/* 凹陷效果 - 像在石头上刻出来的凹槽 */
+.neumorphism-concave {
+  background: var(--color-surface);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-concave);
+}
+
+/* 悬浮效果 - 更立体 */
+.neumorphism-elevated {
+  background: var(--color-surface);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-elevated);
+}
+
+/* 按下效果 - "按进泥土里"的解压质感 */
+.neumorphism-pressed {
+  background: var(--color-surface);
+  border-radius: 24rpx;
+  box-shadow: var(--shadow-concave);
+  transform: scale(0.98);
+}
+
+/* ========== 琥珀按钮 - 核心交互 ========== */
+.accent-button {
+  background: linear-gradient(135deg, var(--color-accent) 0%, #C9A227 100%);
+  border-radius: 50%;
+  box-shadow:
+    8rpx 8rpx 16rpx rgba(212, 175, 55, 0.3),
+    -8rpx -8rpx 16rpx rgba(255, 255, 255, 0.8);
+  color: var(--color-bg);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.accent-button:active {
+  box-shadow:
+    inset 4rpx 4rpx 8rpx rgba(0, 0, 0, 0.2),
+    inset -4rpx -4rpx 8rpx rgba(255, 255, 255, 0.3);
+  transform: scale(0.95);
+}
+
+/* ========== 动画系统 ========== */
+
+/* 颤抖动画 - 模拟烦躁心情 */
+@keyframes shake {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translate(-2rpx, 0);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translate(2rpx, 0);
+  }
+}
+
+.shake-animation {
+  animation: shake 0.1s infinite;
+}
+
+/* 稳定动画 - 从颤抖到平静 */
+@keyframes stabilize {
+  0% {
+    animation: shake 0.1s infinite;
+    filter: blur(2rpx);
+  }
+  50% {
+    animation: shake 0.2s infinite;
+    filter: blur(1rpx);
+  }
+  100% {
+    animation: none;
+    filter: blur(0);
+  }
+}
+
+/* 涟漪动画 - 石头砸在水面上 */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* 落地动画 - 石头"掉"下来 */
+@keyframes dropFromTop {
+  0% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(20rpx);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(-10rpx);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.drop-animation {
+  animation: dropFromTop 0.8s cubic-bezier(0.28, 0.84, 0.42, 1);
+}
+
+/* 光芒脉动 - 稳住后的柔和光芒 */
+@keyframes softGlow {
+  0%, 100% {
+    text-shadow: 0 0 20rpx rgba(212, 175, 55, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 40rpx rgba(212, 175, 55, 0.6);
+  }
+}
+
+.glow-animation {
+  animation: softGlow 2s ease-in-out infinite;
+}

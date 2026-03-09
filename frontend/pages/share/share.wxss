@@ -1,0 +1,295 @@
+/* pages/share/share.wxss */
+
+.container {
+  min-height: 100vh;
+  background-color: #F5F3EF;
+  padding: 40rpx;
+  box-sizing: border-box;
+}
+
+/* 返回按钮 */
+.back-btn {
+  position: fixed;
+  top: 60rpx;
+  left: 40rpx;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.back-icon {
+  font-size: 48rpx;
+  color: #3D3D3D;
+  font-weight: 300;
+}
+
+/* 标题 */
+.header {
+  text-align: center;
+  margin-top: 120rpx;
+  margin-bottom: 60rpx;
+}
+
+.title {
+  display: block;
+  font-size: 48rpx;
+  font-weight: 600;
+  color: #3D3D3D;
+  margin-bottom: 16rpx;
+}
+
+.subtitle {
+  display: block;
+  font-size: 28rpx;
+  color: #8B7E74;
+  font-weight: 300;
+}
+
+/* 卡片预览 */
+.card-preview {
+  margin-bottom: 60rpx;
+}
+
+.share-card {
+  width: 100%;
+  border-radius: 32rpx;
+  overflow: hidden;
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.08);
+}
+
+/* 插画区域 */
+.illustration-area {
+  position: relative;
+  height: 500rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 100%);
+  overflow: hidden;
+}
+
+.illustration-emoji {
+  position: absolute;
+  top: 40rpx;
+  left: 40rpx;
+  font-size: 96rpx;
+  opacity: 0.3;
+}
+
+/* 临时CSS图形 */
+.illustration-graphic {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+}
+
+.graphic-shape {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.3) 100%);
+}
+
+.shape-1 {
+  width: 300rpx;
+  height: 300rpx;
+  top: 50rpx;
+  left: 50rpx;
+  animation: float 6s ease-in-out infinite;
+}
+
+.shape-2 {
+  width: 200rpx;
+  height: 200rpx;
+  bottom: 80rpx;
+  right: 60rpx;
+  animation: float 8s ease-in-out infinite reverse;
+}
+
+.shape-3 {
+  width: 120rpx;
+  height: 120rpx;
+  top: 120rpx;
+  right: 100rpx;
+  animation: float 10s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-30rpx);
+  }
+}
+
+/* 真实插画图片 */
+.illustration-image {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+
+/* 占位提示 */
+.illustration-placeholder {
+  text-align: center;
+  padding: 60rpx;
+  border: 4rpx dashed rgba(0, 0, 0, 0.1);
+  border-radius: 24rpx;
+  background-color: rgba(255, 255, 255, 0.5);
+  z-index: 1;
+}
+
+.placeholder-text {
+  display: block;
+  font-size: 32rpx;
+  color: #8B7E74;
+  margin-bottom: 16rpx;
+  font-weight: 500;
+}
+
+.placeholder-sub {
+  display: block;
+  font-size: 24rpx;
+  color: #C4BEB8;
+  line-height: 1.6;
+}
+
+/* 文案区域 */
+.content-area {
+  padding: 48rpx;
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.card-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 600;
+  color: #3D3D3D;
+  margin-bottom: 32rpx;
+  line-height: 1.4;
+}
+
+.card-content {
+  display: block;
+  font-size: 28rpx;
+  color: #5A5A5A;
+  line-height: 1.8;
+  white-space: pre-line;
+  margin-bottom: 40rpx;
+}
+
+/* 小程序码 */
+.qrcode-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32rpx;
+  background-color: #F5F3EF;
+  border-radius: 16rpx;
+}
+
+.qrcode {
+  width: 200rpx;
+  height: 200rpx;
+  background-color: #FFFFFF;
+  border-radius: 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.qrcode-text {
+  font-size: 24rpx;
+  color: #8B7E74;
+}
+
+/* 奖励提示 */
+.reward-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  padding: 24rpx 48rpx;
+  background: linear-gradient(135deg, #E8DFDF 0%, #DFE8E8 100%);
+  border-radius: 48rpx;
+  margin-bottom: 60rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
+}
+
+.tip-icon {
+  font-size: 48rpx;
+}
+
+.tip-text {
+  font-size: 28rpx;
+  color: #3D3D3D;
+  font-weight: 500;
+}
+
+/* 分享按钮 */
+.share-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-bottom: 40rpx;
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  padding: 32rpx;
+  border-radius: 60rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.share-btn.primary {
+  background: linear-gradient(135deg, #B5A8A8 0%, #A8B5B5 100%);
+}
+
+.share-btn.secondary {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-icon {
+  font-size: 36rpx;
+}
+
+.btn-text {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+
+.share-btn.secondary .btn-text {
+  color: #8B7E74;
+}
+
+.share-btn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* 底部说明 */
+.footer-note {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.note-text {
+  font-size: 24rpx;
+  color: #C4BEB8;
+  line-height: 1.6;
+}
