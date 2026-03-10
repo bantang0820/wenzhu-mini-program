@@ -43,6 +43,20 @@ function request(endpoint, options = {}) {
   const { method = 'GET', data = null, needAuth = false, silent = false } = options;
   const baseURLs = [apiConfig.baseURL].concat(apiConfig.fallbackBaseURLs || []);
 
+  const formatRequestError = (err, url) => {
+    const rawMessage = err?.message || err?.errMsg || '请求失败';
+
+    if (rawMessage.includes('url not in domain list')) {
+      return new Error('当前接口域名未加入小程序 request 合法域名');
+    }
+
+    if (rawMessage.includes('ERR_EMPTY_RESPONSE') || rawMessage.includes('request:fail')) {
+      return new Error(`接口服务暂时不可用：${url}`);
+    }
+
+    return new Error(rawMessage);
+  };
+
   return new Promise((resolve, reject) => {
     const attemptRequest = (index) => {
       const baseURL = baseURLs[index];
@@ -74,6 +88,11 @@ function request(endpoint, options = {}) {
         success: (res) => {
           if (apiConfig.debug) {
             console.log(`[API] 响应:`, res.data);
+          }
+
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            reject(new Error(`接口响应异常(${res.statusCode})：${url}`));
+            return;
           }
 
           // 检查业务状态码
@@ -115,7 +134,7 @@ function request(endpoint, options = {}) {
             });
           }
 
-          reject(err);
+          reject(formatRequestError(err, url));
         }
       });
     };
@@ -263,7 +282,7 @@ function callFunction(options) {
     return {
       result: {
         success: false,
-        error: error.message || '请求失败'
+        error: error.message || error.errMsg || '请求失败'
       },
       errMsg: 'cloud.callFunction:fail'
     };

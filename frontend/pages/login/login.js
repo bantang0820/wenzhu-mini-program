@@ -4,11 +4,21 @@ const api = require('../../utils/api.js');
 
 Page({
   data: {
-    loading: false
+    loading: false,
+    needPrivacyAuthorization: false,
+    privacyContractName: '《隐私政策》'
   },
 
   onLoad() {
-    // 检查是否已经登录
+    this.redirectIfLoggedIn();
+    this.initPrivacySetting();
+  },
+
+  onShow() {
+    this.redirectIfLoggedIn();
+  },
+
+  redirectIfLoggedIn() {
     const token = wx.getStorageSync('token');
     const openid = wx.getStorageSync('openid');
     if (token && openid) {
@@ -16,6 +26,42 @@ Page({
         url: '/pages/index/index'
       });
     }
+  },
+
+  initPrivacySetting() {
+    if (typeof wx.getPrivacySetting !== 'function') return;
+
+    wx.getPrivacySetting({
+      success: (res) => {
+        this.setData({
+          needPrivacyAuthorization: !!res.needAuthorization,
+          privacyContractName: res.privacyContractName || '《隐私政策》'
+        });
+      },
+      fail: (error) => {
+        console.warn('获取隐私设置失败', error);
+      }
+    });
+  },
+
+  openPrivacyContract() {
+    if (typeof wx.openPrivacyContract !== 'function') {
+      wx.showToast({
+        title: '当前微信版本过低',
+        icon: 'none'
+      });
+      return;
+    }
+
+    wx.openPrivacyContract({
+      fail: (error) => {
+        console.error('打开隐私协议失败', error);
+        wx.showToast({
+          title: '暂时无法打开隐私协议',
+          icon: 'none'
+        });
+      }
+    });
   },
 
   // 获取微信登录 code
@@ -29,11 +75,21 @@ Page({
           }
           resolve(res.code);
         },
-        fail: () => {
-          reject(new Error('微信登录失败，请重试'));
+        fail: (error) => {
+          reject(new Error(error.errMsg || '微信登录失败，请重试'));
         }
       });
     });
+  },
+
+  onQuickLoginTap() {
+    if (this.data.loading || this.data.needPrivacyAuthorization) return;
+    this.handleQuickLogin();
+  },
+
+  onAgreePrivacyAuthorization() {
+    this.setData({ needPrivacyAuthorization: false });
+    this.handleQuickLogin();
   },
 
   // 处理一键登录
@@ -78,34 +134,37 @@ Page({
         app.globalData.openid = openid;
       }
 
-      // 4. 同步用户信息（补齐昵称/头像）
-      const syncRes = await api.callFunction({
-        name: 'syncUserProfile',
-        data: {
-          userInfo: {
-            nickname: loginUser.nickname || '正念家长',
-            avatarUrl: loginUser.avatarUrl || loginUser.avatar_url || ''
+      // 4. 非阻塞同步用户信息（不影响主登录流程）
+      try {
+        const syncRes = await api.callFunction({
+          name: 'syncUserProfile',
+          data: {
+            userInfo: {
+              nickname: loginUser.nickname || '正念家长',
+              avatarUrl: loginUser.avatarUrl || loginUser.avatar_url || ''
+            }
+          }
+        });
+
+        if (syncRes.result && syncRes.result.success && syncRes.result.user) {
+          const syncedUser = typeof app.normalizeUserProfile === 'function'
+            ? app.normalizeUserProfile(syncRes.result.user)
+            : syncRes.result.user;
+
+          if (typeof app.setAuthSession === 'function') {
+            app.setAuthSession({
+              token,
+              openid,
+              user: syncedUser
+            });
+          } else {
+            app.globalData.userInfo = syncedUser;
+            app.globalData.isMember = !!(syncedUser.isVip || syncedUser.is_vip);
           }
         }
-      });
-
-      if (syncRes.result && syncRes.result.success && syncRes.result.user) {
-        const syncedUser = typeof app.normalizeUserProfile === 'function'
-          ? app.normalizeUserProfile(syncRes.result.user)
-          : syncRes.result.user;
-
-        if (typeof app.setAuthSession === 'function') {
-          app.setAuthSession({
-            token,
-            openid,
-            user: syncedUser
-          });
-        } else {
-          app.globalData.userInfo = syncedUser;
-          app.globalData.isMember = !!(syncedUser.isVip || syncedUser.is_vip);
-        }
+      } catch (syncError) {
+        console.warn('同步用户资料失败，但登录已成功', syncError);
       }
-      this.setData({ loading: false });
 
       // 5. 成功跳转
       wx.showToast({
@@ -121,13 +180,13 @@ Page({
       }, 1500);
 
     } catch (err) {
-      this.setData({ loading: false });
       console.error('登录流程出错', err);
       wx.showToast({
         title: err.message || '开启失败，请重试',
         icon: 'none'
       });
     } finally {
+      this.setData({ loading: false });
       wx.hideLoading();
     }
   }

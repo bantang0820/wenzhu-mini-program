@@ -135,7 +135,7 @@ Page({
   onScenarioTap(e) {
     const { id } = e.currentTarget.dataset;
     // 直接从全局获取最新的会员状态
-    const isMember = app.globalData.isMember;
+    const isMember = true; // 强制设为 true，放开测试限制
 
     // 震动反馈
     wx.vibrateShort({ type: 'light' });

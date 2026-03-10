@@ -116,6 +116,11 @@ Page({
   // 消耗练习次数并进入详情页
   async consumePracticeAndEnter(scenarioId) {
     try {
+      // 强制绕过扣减次数，直接跳转
+      wx.navigateTo({
+        url: `/pages/detail/detail?id=${scenarioId}`
+      });
+      return;
       const api = require('../../utils/api.js');
       await api.post('/share/consume', {}, true);
 

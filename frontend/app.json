@@ -55,6 +55,18 @@
     ]
   },
   "style": "v2",
+  "__usePrivacyCheck__": true,
   "sitemapLocation": "sitemap.json",
-  "cloud": true
+  "cloud": true,
+  "permission": {
+    "scope.record": {
+      "desc": "用于复述练习时录音并实时转写你的语音内容"
+    }
+  },
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.6",
+      "provider": "wx069ba97219f66d99"
+    }
+  }
 }

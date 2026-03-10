@@ -31,7 +31,7 @@ App({
   globalData: {
     userInfo: null,
     openid: null,
-    isMember: false,
+    isMember: true, // 强制给测试号开通会员权限
     api: null
   },
 

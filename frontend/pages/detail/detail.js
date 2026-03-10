@@ -153,13 +153,60 @@ Page({
     this.stopMockSpeechTyping();
   },
 
-  // 初始化语音输入（演示转写版，无需插件授权）
+  // 初始化语音识别（接入微信同声传译插件）
   initSpeechRecognition() {
-    this.speechRecorder = wx.getRecorderManager();
-    this.speechTypingTimer = null;
-    this.currentSpeechScript = '';
-    this.currentSpeechCursor = 0;
-    this.setData({ speechAvailable: true });
+    try {
+      const plugin = requirePlugin("WechatSI");
+      this.speechManager = plugin.getRecordRecognitionManager();
+
+      this.speechManager.onStart = () => {
+        console.log('语音识别开始');
+      };
+      
+      this.speechManager.onRecognize = (res) => {
+        // 实时转写
+        if (res.result) {
+          this.updateSpeechText(res.result);
+        }
+      };
+
+      this.speechManager.onStop = (res) => {
+        // 录音结束，获取最终结果
+        if (res.result) {
+          this.updateSpeechText(res.result);
+        } else {
+          wx.showToast({
+            title: '没有识别到内容，请重试',
+            icon: 'none'
+          });
+        }
+
+        this.setData({
+          isSpeechRecording: false,
+          speechAvailable: true
+        });
+        this.speechAudioPath = res.tempFilePath;
+      };
+
+      this.speechManager.onError = (res) => {
+        console.error('录音识别失败', res.msg);
+        this.setData({
+          isSpeechRecording: false,
+          speechAvailable: false
+        });
+        wx.showToast({
+          title: res.msg || '识别失败，请重试',
+          icon: 'none'
+        });
+      };
+
+      this.setData({ speechAvailable: true });
+    } catch (e) {
+      console.error('同声传译插件初始化失败', e);
+      this.speechManager = null;
+      this.speechRecorder = null;
+      this.setData({ speechAvailable: false });
+    }
   },
 
   // 检查麦克风权限（仅首次需要授权）
@@ -234,34 +281,46 @@ Page({
 
   onSpeechRecordStart() {
     if (this.data.isGeneratingFeedback || this.data.isGeneratingJournal) return;
+    this.isPressingRecordBtn = true;
     this.startSpeechInput();
   },
 
   onSpeechRecordEnd() {
+    this.isPressingRecordBtn = false;
     if (this.data.isSpeechRecording) {
       this.stopSpeechInput();
+    } else {
+      // 防止因为权限请求等异步操作导致还没开始录音就松手，进而无法触发 stop
+      // 如果还没开始（isSpeechRecording = false），但已经执行了 end，那么在 start 里面会判断 this.isPressingRecordBtn 拦截
     }
   },
 
   async startSpeechInput() {
-    if (!this.speechRecorder) {
+    if (!this.speechManager && !this.speechRecorder) {
       this.initSpeechRecognition();
     }
 
-    if (!this.speechRecorder) {
-      wx.showToast({
-        title: '录音能力不可用',
-        icon: 'none'
+    if (!this.speechManager && !this.speechRecorder) {
+      wx.showModal({
+        title: '语音识别不可用',
+        content: '当前环境没有成功加载微信同声传译插件，请使用真机预览，并确认插件已在小程序后台启用。',
+        showCancel: false
       });
       return;
     }
 
     const hasPermission = await this.ensureRecordPermission();
     if (!hasPermission) return;
+    // 如果在请求权限期间用户已经松手了，就提示重新长按一次
+    if (!this.isPressingRecordBtn) {
+      wx.showToast({
+        title: '已获得权限，请重新长按',
+        icon: 'none'
+      });
+      return;
+    }
 
     const speechTarget = this.data.postReadingStep === 'retell' ? 'retell' : 'feeling';
-    this.currentSpeechScript = this.getMockSpeechScript(speechTarget);
-    this.currentSpeechCursor = 0;
 
     this.setData({
       isSpeechRecording: true,
@@ -271,78 +330,22 @@ Page({
 
     wx.vibrateShort({ type: 'light' });
 
-    this.speechRecorder.onStop((res) => {
-      this.stopMockSpeechTyping();
-      this.updateSpeechText(this.currentSpeechScript);
-      this.setData({
-        isSpeechRecording: false,
-        speechAvailable: true
+    if (this.speechManager) {
+      // 真实录音（使用同声传译）
+      this.speechManager.start({
+        duration: 60000,
+        lang: "zh_CN"
       });
-      this.speechAudioPath = res && res.tempFilePath ? res.tempFilePath : '';
-    });
-
-    this.speechRecorder.onError((err) => {
-      console.error('录音失败', err);
-      this.stopMockSpeechTyping();
-      this.setData({
-        isSpeechRecording: false,
-        speechAvailable: false
-      });
-      wx.showToast({
-        title: '录音失败，请检查麦克风权限',
-        icon: 'none'
-      });
-    });
-
-    this.speechRecorder.start({
-      duration: 60000
-    });
-
-    this.startMockSpeechTyping();
+    }
   },
 
   stopSpeechInput() {
-    if (this.speechRecorder && this.data.isSpeechRecording) {
+    if (this.speechManager && this.data.isSpeechRecording) {
+      this.speechManager.stop();
+    } else if (this.speechRecorder && this.data.isSpeechRecording) {
       this.speechRecorder.stop();
     }
-    this.stopMockSpeechTyping();
-    this.setData({
-      isSpeechRecording: false
-    });
-  },
-
-  // 模拟实时转写：录音过程中逐字显示
-  startMockSpeechTyping() {
-    this.stopMockSpeechTyping();
-
-    this.speechTypingTimer = setInterval(() => {
-      if (!this.data.isSpeechRecording) return;
-      const script = this.currentSpeechScript || '';
-      if (!script) return;
-
-      const step = Math.floor(Math.random() * 3) + 1;
-      this.currentSpeechCursor = Math.min(script.length, this.currentSpeechCursor + step);
-      this.updateSpeechText(script.slice(0, this.currentSpeechCursor));
-    }, 140);
-  },
-
-  stopMockSpeechTyping() {
-    if (this.speechTypingTimer) {
-      clearInterval(this.speechTypingTimer);
-      this.speechTypingTimer = null;
-    }
-  },
-
-  getMockSpeechScript(target) {
-    const sceneTitle = this.data.scenario && this.data.scenario.title ? this.data.scenario.title : '刚刚这个场景';
-    if (target === 'retell') {
-      const mantra = (this.data.currentReflectionMantra || '').replace(/\s+/g, '').slice(0, 24);
-      if (mantra) {
-        return `第${this.data.currentReflectionRound}句我记住的是：${mantra}。我先稳住自己，再去理解孩子。`;
-      }
-      return `刚才在${sceneTitle}这个情境里，我先提醒自己停下来，先稳住呼吸，再去理解孩子当下的状态。`;
-    }
-    return '我现在呼吸慢下来了，心里更安定，也更有力量去和孩子好好说话。';
+    // 注意：不再手动 setData isSpeechRecording: false，交由 onStop 回调处理，以防止截断最后一次识别结果
   },
 
   // 设置当前日期
@@ -357,6 +360,7 @@ Page({
 
   // 检查免费用户权限限制
   checkAccessLimit() {
+    return; // 强制移除免费用户权限限制
     const isPro = getApp().globalData.isMember;
     if (isPro) return;
 

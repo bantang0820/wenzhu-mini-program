@@ -14,12 +14,22 @@
       </view>
 
       <!-- 快速登录按钮 -->
-      <button class="login-btn primary" bindtap="handleQuickLogin">
-        一键开启
+      <button
+        class="login-btn primary"
+        loading="{{loading}}"
+        disabled="{{loading}}"
+        open-type="agreePrivacyAuthorization"
+        bindtap="onQuickLoginTap"
+        bindagreeprivacyauthorization="onAgreePrivacyAuthorization"
+      >
+        {{loading ? '开启中...' : '一键开启'}}
       </button>
 
       <view class="privacy-note">
-        登录即表示同意 <text class="link">《服务协议》</text> 与 <text class="link">《隐私政策》</text>
+        登录即表示同意 <text class="link">《服务协议》</text> 与 <text class="link" bindtap="openPrivacyContract">{{privacyContractName}}</text>
+      </view>
+      <view class="privacy-note" wx:if="{{needPrivacyAuthorization}}">
+        <text>首次登录前需先同意隐私保护指引</text>
       </view>
     </view>
   </view>
