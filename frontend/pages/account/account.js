@@ -124,7 +124,7 @@ Page({
       sizeType: ['compressed'],
       sourceType: ['album', 'camera'],
       success: (res) => {
-        const avatarUrl = (res.tempFilePaths && res.tempFilePaths[0]) || '';
+        const avatarUrl = (res.tempFilePaths && res.tempFilePaths.length > 0 && res.tempFilePaths[0]) || '';
         if (!avatarUrl) return;
         this.setData({
           'form.avatarUrl': avatarUrl

@@ -88,12 +88,17 @@
       <!-- 未录音状态：显示录音按钮 -->
       <view
         wx:if="{{!hasRecorded}}"
-        class="record-button {{isRecording ? 'recording' : ''}}"
+        class="record-button {{isRecording ? 'recording is-recording' : ''}}"
         bindtouchstart="onRecordStart"
         bindtouchend="onRecordEnd"
+        bindtouchcancel="onRecordEnd"
       >
-        <text class="record-icon">{{isRecording ? '🔴' : '🎤'}}</text>
-        <text class="record-label">{{isRecording ? '按住朗读' : '按住朗读'}}</text>
+        <view class="retell-mic-icon-wrapper" style="transform: scale(0.8);">
+          <view class="mic-icon-head"></view>
+          <view class="mic-icon-body"></view>
+          <view class="mic-icon-stand"></view>
+          <view class="mic-icon-base"></view>
+        </view>
       </view>
 
       <!-- 已录音状态：显示回放按钮和确认按钮 -->
@@ -117,51 +122,76 @@
 
     <!-- 引导语（录音按钮下方） -->
     <view class="guide-text-container" wx:if="{{showGuide && !hasRecorded}}">
-      <text class="guide-text">{{guideText}}</text>
+      <text class="guide-text">{{isRecording ? '正在倾听...' : '按住开始朗读，让情绪流过你的身体'}}</text>
     </view>
   </view>
 
-  <!-- 朗读后复盘流程 -->
-  <view class="phase-reflection" wx:if="{{postReadingStep}}">
+  <!-- 第2.5阶段：复述 (与朗读界面UI绝对统一) -->
+  <view class="phase-reveal show" wx:if="{{postReadingStep === 'retell'}}">
+    <!-- 轮次进度环 -->
+    <view class="round-progress">
+      <view class="progress-ring">
+        <view class="progress-dot" wx:for="{{roundSteps}}" wx:key="index" style="opacity: {{item <= currentReflectionRound ? 1 : 0.3}}"></view>
+      </view>
+      <text class="round-label">0{{currentReflectionRound}}</text>
+    </view>
+
+    <!-- 核心：微光能量球背景 -->
+    <view class="retell-ambient-orb {{isSpeechRecording ? 'is-recording' : ''}}" style="top: 40%;"></view>
+
+    <!-- 金句容器 -->
+    <view class="quote-reveal-container" style="flex: 1; display: flex; flex-direction: column; justify-content: center; margin-top: -60rpx;">
+      <view wx:if="{{!retellText && !isSpeechRecording}}" style="width: 100%;">
+        <text class="quote-reveal-text title-serif" style="opacity: 0.9; font-size: 52rpx; color: #F4E7D0; text-shadow: 0 0 20rpx rgba(232, 208, 169, 0.4); display: block; margin-bottom: 60rpx;">请复述刚才朗读的句子</text>
+        <text class="quote-reveal-text title-serif" style="opacity: 0.7; font-size: 38rpx; color: #E8D0A9; display: block; line-height: 2.2;">只说你记得的就好，\n哪怕只有几个字，\n也是你力量的印记。</text>
+      </view>
+      
+      <view class="{{isSpeechRecording ? 'is-recording' : ''}}" wx:if="{{retellText || isSpeechRecording}}" style="width: 100%;">
+        <text class="quote-reveal-text title-serif lyrics-text" style="display: block; margin-top: 60rpx;">{{retellText || '...'}}</text>
+        <view class="lyrics-cursor" wx:if="{{isSpeechRecording}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 复述底部的麦克风和按钮 (与朗读完美重合) -->
+  <view class="stamp-section" wx:if="{{postReadingStep === 'retell'}}" style="pointer-events: auto;">
+    <view class="stamp-wrapper" wx:if="{{!retellText || isSpeechRecording}}">
+      <view class="record-button {{isSpeechRecording ? 'recording is-recording' : ''}}" bindtouchstart="onSpeechRecordStart" bindtouchend="onSpeechRecordEnd" bindtouchcancel="onSpeechRecordEnd">
+        <view class="retell-mic-icon-wrapper" style="transform: scale(0.8);">
+          <view class="mic-icon-head"></view>
+          <view class="mic-icon-body"></view>
+          <view class="mic-icon-stand"></view>
+          <view class="mic-icon-base"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="guide-text-container" wx:if="{{!retellText || isSpeechRecording}}">
+      <text class="guide-text">{{isSpeechRecording ? '正在倾听...' : '按住开始复述'}}</text>
+    </view>
+
+    <!-- 录音完成后的操作按钮组 -->
+    <view class="retell-action-buttons" wx:if="{{retellText && !isSpeechRecording}}" style="width: 100vw; padding: 0 60rpx; box-sizing: border-box; margin-bottom: 20rpx;">
+      <view class="retell-btn-retry" bindtap="onBackToReading">
+        <text class="btn-icon">↺</text>
+        <text>重读上一句</text>
+      </view>
+      <view class="retell-btn-next {{isGeneratingFeedback ? 'disabled' : ''}}" bindtap="onSubmitRetell">
+        <text>{{isGeneratingFeedback ? '感受中...' : (currentReflectionRound >= totalRounds ? '完成复盘' : '阅读下一句')}}</text>
+        <text class="btn-icon" wx:if="{{!isGeneratingFeedback}}">→</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 朗读后复盘流程 (仅保留最后的日记卡片部分) -->
+  <view class="phase-reflection" wx:if="{{postReadingStep === 'state' || postReadingStep === 'feedback'}}">
     <view class="reflection-card">
       <view class="reflection-head">
         <text class="reflection-tag">本心对话</text>
         <text class="reflection-title title-serif">把刚刚的力量，留在身体里</text>
       </view>
 
-      <!-- 第1步：AI邀请复述 -->
-      <view wx:if="{{postReadingStep === 'retell'}}" class="reflection-block">
-        <view class="retell-sketch-header">
-          <text class="retell-sketch-title">请你帮忙复述一下刚刚朗读完的这一句吧！</text>
-          <text class="retell-sketch-round">第{{currentReflectionRound}}句</text>
-        </view>
-
-        <view class="retell-circle-wrapper">
-          <view class="retell-circle {{isSpeechRecording ? 'recording' : ''}}" bindtap="onToggleSpeechInput">
-            <text class="retell-circle-text">{{isSpeechRecording ? '结束' : '复述'}}</text>
-          </view>
-        </view>
-
-        <view class="retell-pill-hint">
-          <text>不完整也没关系，不必追求一次说全</text>
-        </view>
-
-        <view class="retell-transcript" wx:if="{{retellText}}">
-          <view class="chat-item user">
-            <view class="chat-bubble user">
-              <text>{{retellText}}</text>
-            </view>
-          </view>
-        </view>
-
-        <view class="voice-section">
-          <view class="reflection-btn {{isGeneratingFeedback ? 'disabled' : ''}}" bindtap="onSubmitRetell">
-            <text>{{isGeneratingFeedback ? 'AI正在回应你...' : '提交复述'}}</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 第2步：AI抱持反馈 -->
+      <!-- 第2步：AI抱持反馈（虽然由于逻辑跳过，但保留结构防错） -->
       <view wx:if="{{postReadingStep === 'feedback'}}" class="reflection-block">
         <view class="feedback-mini-title">
           <text>AI正在抱持你</text>

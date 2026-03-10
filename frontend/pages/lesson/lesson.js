@@ -55,7 +55,7 @@ Page({
 
     // 如果从上一页获取失败，使用第一节的完整数据作为模拟数据
     const mockLessons = this.getMockLessons();
-    const lesson = mockLessons.find(l => l.id === parseInt(lessonId)) || mockLessons[0];
+    const lesson = mockLessons.find(l => l.id === parseInt(lessonId)) || (mockLessons && mockLessons.length > 0 ? mockLessons[0] : {});
 
     this.setData({ lesson });
     console.log('使用模拟数据:', lesson);

@@ -61,8 +61,8 @@ Page({
     showHealingCard: false, // 显示治愈分享卡片
     healingQuote: '', // 治愈的话
 
-    // 复盘流程（仅场景001启用：每句朗读后复述）
-    isRoundRetellMode: false, // 仅“没忍住吼了”先启用
+    // 复盘流程（已同步至所有场景：每句朗读后复述）
+    isRoundRetellMode: false,
     postReadingStep: '', // '' | retell | feedback | state
     currentReflectionRound: 0,
     currentReflectionMantra: '',
@@ -232,13 +232,14 @@ Page({
     });
   },
 
-  onToggleSpeechInput() {
+  onSpeechRecordStart() {
     if (this.data.isGeneratingFeedback || this.data.isGeneratingJournal) return;
+    this.startSpeechInput();
+  },
 
+  onSpeechRecordEnd() {
     if (this.data.isSpeechRecording) {
       this.stopSpeechInput();
-    } else {
-      this.startSpeechInput();
     }
   },
 
@@ -509,7 +510,7 @@ Page({
       }
     };
 
-    const isRoundRetellMode = scenario.id === '001' || scenario.title === '没忍住吼了';
+    const isRoundRetellMode = true; // 同步到所有场景：统一启用逐句复述模式
 
     this.setData({
       scenario: scenario,
@@ -620,7 +621,9 @@ Page({
   // ========== 直接进入朗读阶段（跳过长按止颤）==========
 
   transitionToReading() {
-    const firstMantra = this.data.allMantras[0];
+    const firstMantra = this.data.allMantras && this.data.allMantras.length > 0 
+      ? this.data.allMantras[0] 
+      : (this.data.currentText || '');
 
     this.setData({
       currentPhase: 'reading',
@@ -745,7 +748,9 @@ Page({
   // ========== 第二阶段：五句朗读 ==========
 
   transitionToReveal() {
-    const firstMantra = this.data.allMantras[0];
+    const firstMantra = this.data.allMantras && this.data.allMantras.length > 0 
+      ? this.data.allMantras[0] 
+      : (this.data.currentText || '');
 
     this.setData({
       currentPhase: 'reading',
@@ -925,7 +930,7 @@ Page({
     wx.vibrateShort({ type: 'heavy' });
     const { readingRound, totalRounds, isRoundRetellMode } = this.data;
 
-    // 仅“没忍住吼了”场景：每句后进入复述流程
+    // 所有场景：每句朗读后进入复述流程
     if (isRoundRetellMode) {
       if (readingRound >= totalRounds) {
         this.addEnergy(60, true);
@@ -976,7 +981,9 @@ Page({
 
   // 每句朗读后进入复述流程
   startPostReadingFlow(round = this.data.readingRound) {
-    const currentReflectionMantra = this.data.allMantras[round - 1] || this.data.currentText || '';
+    const currentReflectionMantra = this.data.allMantras && this.data.allMantras.length > 0
+      ? this.data.allMantras[round - 1] 
+      : (this.data.currentText || '');
 
     this.setData({
       currentPhase: 'reading',
@@ -995,12 +1002,27 @@ Page({
     });
   },
 
+  // 返回朗读阶段（重读上一句）
+  onBackToReading() {
+    this.setData({
+      retellText: '',
+      isSpeechRecording: false,
+      postReadingStep: null,
+      showStamp: true,
+      hasRecorded: false,
+      isPlaying: false,
+      guideText: '按住麦克风，读出这句话'
+    });
+  },
+
   // 提交快速复述并生成鼓励反馈（目前为 mock，后续可替换真实 AI）
   async onSubmitRetell() {
     if (this.data.isGeneratingFeedback) return;
 
     const currentReflectionRound = this.data.currentReflectionRound || this.data.readingRound;
-    const mantraText = this.data.allMantras[currentReflectionRound - 1] || this.data.currentText || '';
+    const mantraText = this.data.allMantras && this.data.allMantras.length > 0
+      ? this.data.allMantras[currentReflectionRound - 1]
+      : (this.data.currentText || '');
     const retellText = (this.data.retellText || '').trim();
     if (!retellText) {
       wx.showToast({
@@ -1021,19 +1043,19 @@ Page({
         retellText
       });
 
-      const roundRetells = [...this.data.roundRetells];
+      const roundRetells = [...(this.data.roundRetells || [])];
       roundRetells[currentReflectionRound - 1] = retellText;
-      const roundFeedbacks = [...this.data.roundFeedbacks];
+      const roundFeedbacks = [...(this.data.roundFeedbacks || [])];
       roundFeedbacks[currentReflectionRound - 1] = retellFeedback;
 
       this.setData({
         roundRetells,
         roundFeedbacks,
-        retellFeedback,
-        postReadingStep: 'feedback'
+        retellFeedback
       });
 
-      this.scheduleAutoContinueAfterFeedback();
+      // 直接进入下一句，跳过反馈页面展示
+      this.onContinueAfterFeedback();
     } catch (error) {
       console.error('生成复述反馈失败', error);
       wx.showToast({
@@ -1158,24 +1180,26 @@ Page({
   // 优先调用后端AI接口，失败时回退本地兜底
   async generateRetellFeedback(payload) {
     try {
-      const response = await api.post('/ai/retell-feedback', payload, false);
+      // 传递 silent: true，防止网络不通时弹出"网络请求失败"的toast
+      const response = await api.post('/ai/retell-feedback', payload, false, true);
       const feedback = response && response.data && response.data.feedback;
       if (feedback) return feedback;
       throw new Error('AI反馈为空');
     } catch (error) {
-      console.warn('调用AI复述反馈失败，使用本地兜底:', error);
+      // 记录一个普通日志即可，不需要 warn，因为目前是预期内的 Mock 行为
+      console.log('调用AI复述反馈失败，使用本地兜底（预期内行为）');
       return this.mockEvaluateRetell(payload);
     }
   },
 
   async generateMindfulJournal(payload) {
     try {
-      const response = await api.post('/ai/mindful-diary', payload, false);
+      const response = await api.post('/ai/mindful-diary', payload, false, true);
       const diaryContent = response && response.data && response.data.diaryContent;
       if (diaryContent) return diaryContent;
       throw new Error('AI日记为空');
     } catch (error) {
-      console.warn('调用AI日记失败，使用本地兜底:', error);
+      console.log('调用AI日记失败，使用本地兜底（预期内行为）');
       return this.mockGenerateJournal(payload);
     }
   },
@@ -1264,7 +1288,9 @@ Page({
     // 按总轮数线性提亮背景（30 -> 100）
     const stepRatio = (nextRound - 1) / Math.max(1, this.data.totalRounds - 1);
     const newBrightness = Math.round(30 + (stepRatio * 70));
-    const nextMantra = this.data.allMantras[nextRound - 1];
+    const nextMantra = this.data.allMantras && this.data.allMantras.length > 0
+      ? this.data.allMantras[nextRound - 1] 
+      : (this.data.currentText || '');
 
     this.setData({
       readingRound: nextRound,

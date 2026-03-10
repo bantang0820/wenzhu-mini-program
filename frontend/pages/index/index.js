@@ -11,6 +11,10 @@ Page({
     unlockedScenarios: [], // 已解锁的场景ID列表
     selectedId: null, // 当前选中的气泡ID
 
+    // 分享解锁相关
+    showShareModal: false, // 是否显示分享解锁弹窗
+    pendingScenarioId: null, // 待解锁的场景ID
+
     // 呼吸动画
     isBreathing: true, // 是否正在呼吸
     isPressed: false, // 是否被按压
@@ -19,8 +23,18 @@ Page({
     holdTimer: null, // 长按定时器
   },
 
-  onLoad() {
-    console.log('首页 onLoad 执行');
+  onLoad(options) {
+    console.log('首页 onLoad 执行', options);
+    // 处理分享进入的新用户奖励（+1次机会）
+    if (options && options.shareBonus) {
+      wx.setStorageSync('hasShareBonus', true);
+      wx.showToast({
+        title: '好友赠送：获得1次免费朗读机会！',
+        icon: 'none',
+        duration: 3000
+      });
+    }
+
     this.loadUnlockedScenarios();
     this.loadScenarios();
     this.checkProStatus();
@@ -123,35 +137,122 @@ Page({
     // 直接从全局获取最新的会员状态
     const isMember = app.globalData.isMember;
 
-    console.log('--- 场景点击拦截检查 (最终加固版) ---');
-    console.log('点击场景 ID:', id);
-    console.log('是否为会员 (app.globalData.isMember):', isMember);
-
     // 震动反馈
     wx.vibrateShort({ type: 'light' });
 
-    // 定义免费场景白名单 (字符串格式)
-    const freeList = ['001', '002', 'daily'];
-    const isFreeScenario = freeList.indexOf(String(id)) !== -1;
-
-    console.log('是否为免费场景:', isFreeScenario);
-
-    // 如果不是免费场景，且不是会员，则拦截
-    if (!isFreeScenario && !isMember) {
-      console.log('！拦截成功：准备跳转到 Pro 页面');
-      wx.navigateTo({
-        url: '/pages/pro/pro',
-        success: () => console.log('跳转 Pro 页面成功'),
-        fail: (err) => console.error('跳转 Pro 页面失败', err)
-      });
-      return; // 必须 return，否则会执行下面的跳转
+    if (isMember) {
+      this.goToDetail(id);
+      return;
     }
 
-    console.log('✓ 放行：进入详情朗读页');
-    // 跳转到详情页
+    // --- 非会员拦截逻辑 ---
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+    const usageKey = `dailyUsage_${dateStr}`;
+    const shareUnlockKey = `dailyShareUnlocks_${dateStr}`;
+    
+    let dailyUsage = wx.getStorageSync(usageKey) || 0;
+    let dailyShareUnlocks = wx.getStorageSync(shareUnlockKey) || 0;
+    
+    // 检查是否有新用户分享福利(+1次)
+    const hasShareBonus = wx.getStorageSync('hasShareBonus') || false;
+    
+    // 今日总可用次数 = 基础3次 + (是否有新用户福利? 1 : 0) + 分享解锁次数
+    const baseAllowed = 3 + (hasShareBonus ? 1 : 0);
+    const totalAllowed = baseAllowed + dailyShareUnlocks;
+
+    if (dailyUsage < totalAllowed) {
+      // 在额度内，直接放行并扣减次数
+      wx.setStorageSync(usageKey, dailyUsage + 1);
+      this.goToDetail(id);
+    } else {
+      // 超出额度
+      if (dailyShareUnlocks < 3) {
+        // 还可以通过分享解锁（最多3次）
+        this.setData({
+          showShareModal: true,
+          pendingScenarioId: id
+        });
+      } else {
+        // 基础3次 + 分享解锁3次 全部用尽（第7次点击），直接去会员页
+        wx.navigateTo({
+          url: '/pages/pro/pro'
+        });
+      }
+    }
+  },
+
+  goToDetail(id) {
     wx.navigateTo({
       url: `/pages/detail/detail?id=${id}&autoStart=true`
     });
+  },
+
+  // 关闭分享解锁弹窗
+  closeShareModal() {
+    this.setData({
+      showShareModal: false,
+      pendingScenarioId: null
+    });
+  },
+
+  // 不想分享，直接购买会员
+  goToPro() {
+    this.closeShareModal();
+    wx.navigateTo({
+      url: '/pages/pro/pro'
+    });
+  },
+
+  // 阻挡事件冒泡
+  catchTouch() {},
+
+  // 微信原生分享配置
+  onShareAppMessage(res) {
+    // 默认分享文案
+    let title = '在觉察中找回内心的力量，送你一次温暖的陪伴。';
+    let path = '/pages/index/index?shareBonus=1';
+
+    if (res.from === 'button' && res.target.id === 'unlockShareBtn') {
+      // 从弹窗解锁按钮发起的分享
+      title = '今天多了一份面对生活的从容，把这份让情绪安定的力量送给你。';
+      
+      // 成功触发分享，发放奖励
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+      const shareUnlockKey = `dailyShareUnlocks_${dateStr}`;
+      let dailyShareUnlocks = wx.getStorageSync(shareUnlockKey) || 0;
+      
+      wx.setStorageSync(shareUnlockKey, dailyShareUnlocks + 1);
+      
+      // 关闭弹窗
+      this.setData({ showShareModal: false });
+      
+      // 显示成功提示
+      wx.showToast({
+        title: '成功解锁 1 次',
+        icon: 'success',
+        duration: 2000
+      });
+      
+      const id = this.data.pendingScenarioId;
+      if (id) {
+        // 解锁后直接消耗一次额度并进入
+        const usageKey = `dailyUsage_${dateStr}`;
+        let dailyUsage = wx.getStorageSync(usageKey) || 0;
+        wx.setStorageSync(usageKey, dailyUsage + 1);
+
+        // 稍微延长一点时间，让用户看到 toast 提示，并在真实手机上无缝衔接
+        setTimeout(() => {
+           this.goToDetail(id);
+        }, 1500);
+      }
+    }
+    
+    return {
+      title: title,
+      path: path
+    };
   },
 
   // ========== 场景加载与管理 ==========

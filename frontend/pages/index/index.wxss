@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
+  /* 去除 overflow: hidden 允许整页滑动 */
 }
 
 /* ========== 天：顶层世界观 Slogan ========== */
@@ -236,7 +236,7 @@
 
 /* ========== 地：场景引导 + 矩阵 ========== */
 .bottom-zone {
-  height: 54vh;
+  min-height: 55vh;
   padding: 0 24rpx 40rpx;
   display: flex;
   flex-direction: column;
@@ -244,8 +244,6 @@
 }
 
 .scenarios-container {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 30rpx;
@@ -369,4 +367,178 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: "Songti SC", "Times New Roman", serif;
+}
+
+/* ========== 分享解锁弹窗 ========== */
+.share-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4); /* 深色半透明遮罩，突出主体 */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.share-modal-mask.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.share-modal-content {
+  width: 80%;
+  max-width: 600rpx;
+  background: #FFFFFF;
+  border-radius: 40rpx;
+  padding: 80rpx 50rpx 70rpx;
+  box-shadow: 0 40rpx 80rpx rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(40rpx) scale(0.95);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.share-modal-mask.show .share-modal-content {
+  transform: translateY(0) scale(1);
+}
+
+.share-modal-header {
+  margin-bottom: 40rpx;
+  position: relative;
+}
+
+.share-modal-icon-wrapper {
+  width: 120rpx;
+  height: 120rpx;
+  background: linear-gradient(135deg, rgba(232, 208, 169, 0.2) 0%, rgba(232, 208, 169, 0.05) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10rpx 30rpx rgba(232, 208, 169, 0.1);
+  position: relative;
+}
+
+.share-modal-icon-wrapper::after {
+  content: '';
+  position: absolute;
+  top: -8rpx;
+  left: -8rpx;
+  right: -8rpx;
+  bottom: -8rpx;
+  border: 2rpx solid rgba(232, 208, 169, 0.4);
+  border-radius: 50%;
+  animation: modalPulse 3s infinite ease-in-out;
+}
+
+@keyframes modalPulse {
+  0% { transform: scale(0.95); opacity: 0; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+
+.share-modal-icon {
+  font-size: 56rpx;
+}
+
+.share-modal-title {
+  font-size: 42rpx;
+  color: #333333;
+  margin-bottom: 30rpx;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.share-modal-desc-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 60rpx;
+  width: 100%;
+}
+
+.share-modal-quote {
+  font-family: "Songti SC", "Times New Roman", serif;
+  font-size: 30rpx;
+  color: #8B7355;
+  margin-bottom: 30rpx;
+  text-align: center;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+}
+
+.share-modal-desc {
+  font-size: 28rpx;
+  color: #666666;
+  line-height: 1.8;
+  text-align: center;
+  padding: 0 10rpx;
+}
+
+.share-modal-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.share-modal-btn {
+  width: 100% !important;
+  height: 96rpx !important;
+  min-height: 96rpx !important;
+  border-radius: 48rpx !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 30rpx !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05em !important;
+  transition: all 0.3s ease;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  line-height: normal !important;
+}
+
+/* 去除原生 button 样式 */
+button.share-modal-btn {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 96rpx !important;
+  background-color: transparent;
+}
+button.share-modal-btn::after {
+  display: none;
+}
+
+button.share-modal-btn.primary-btn {
+  background: #2C2C2C !important;
+  color: #F4E7D0 !important;
+  box-shadow: 0 16rpx 32rpx rgba(0, 0, 0, 0.15) !important;
+  border: none !important;
+}
+
+button.share-modal-btn.primary-btn:active {
+  transform: scale(0.97) !important;
+  box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.1) !important;
+}
+
+.secondary-btn {
+  background: transparent !important;
+  color: #999999 !important;
+  border: 1rpx solid #E5E5E5 !important;
+}
+
+.secondary-btn:active {
+  background: #F8F8F8 !important;
+  transform: scale(0.98) !important;
 }

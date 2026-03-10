@@ -40,7 +40,7 @@ function normalizeCallFunctionResult(response = {}) {
  * @returns {Promise} 返回请求结果
  */
 function request(endpoint, options = {}) {
-  const { method = 'GET', data = null, needAuth = false } = options;
+  const { method = 'GET', data = null, needAuth = false, silent = false } = options;
   const baseURLs = [apiConfig.baseURL].concat(apiConfig.fallbackBaseURLs || []);
 
   return new Promise((resolve, reject) => {
@@ -79,11 +79,13 @@ function request(endpoint, options = {}) {
           // 检查业务状态码
           if (res.data.success === false) {
             // 业务错误
-            wx.showToast({
-              title: res.data.error || '请求失败',
-              icon: 'none',
-              duration: 2000
-            });
+            if (!silent) {
+              wx.showToast({
+                title: res.data.error || '请求失败',
+                icon: 'none',
+                duration: 2000
+              });
+            }
             reject(new Error(res.data.error || '请求失败'));
             return;
           }
@@ -92,22 +94,26 @@ function request(endpoint, options = {}) {
           resolve(res.data);
         },
         fail: (err) => {
-          console.error(`[API] 请求失败(${url}):`, err);
+          if (apiConfig.debug && !silent) {
+            console.error(`[API] 请求失败(${url}):`, err);
+          }
 
           // 存在备用地址时自动重试
           if (index < baseURLs.length - 1) {
-            if (apiConfig.debug) {
+            if (apiConfig.debug && !silent) {
               console.warn(`[API] 主地址失败，切换备用地址重试: ${baseURLs[index + 1]}`);
             }
             attemptRequest(index + 1);
             return;
           }
 
-          wx.showToast({
-            title: '网络请求失败',
-            icon: 'none',
-            duration: 2000
-          });
+          if (!silent) {
+            wx.showToast({
+              title: '网络请求失败',
+              icon: 'none',
+              duration: 2000
+            });
+          }
 
           reject(err);
         }
@@ -136,8 +142,8 @@ function get(endpoint, data = null, needAuth = false) {
 /**
  * POST 请求
  */
-function post(endpoint, data = null, needAuth = false) {
-  return request(endpoint, { method: 'POST', data, needAuth });
+function post(endpoint, data = null, needAuth = false, silent = false) {
+  return request(endpoint, { method: 'POST', data, needAuth, silent });
 }
 
 /**

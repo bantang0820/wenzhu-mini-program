@@ -92,7 +92,7 @@ Page({
     ];
 
     // 找出Top 1
-    const topTag = mockTagStats[0].tag;
+    const topTag = mockTagStats && mockTagStats.length > 0 ? mockTagStats[0].tag : '焦虑';
 
     // 阴影原型映射
     const shadowMapping = {

@@ -76,4 +76,30 @@
       </view>
     </view>
   </view>
+
+  <!-- ========== 分享解锁弹窗 ========== -->
+  <view class="share-modal-mask {{showShareModal ? 'show' : ''}}" bindtap="closeShareModal" wx:if="{{showShareModal}}">
+    <view class="share-modal-content" catchtap="catchTouch">
+      <view class="share-modal-header">
+        <view class="share-modal-icon-wrapper">
+          <text class="share-modal-icon">🕊️</text>
+        </view>
+      </view>
+      <text class="share-modal-title title-serif">获取额外朗读机会</text>
+      
+      <view class="share-modal-desc-container">
+        <text class="share-modal-quote">"先稳住自己，再拥抱孩子。"</text>
+        <text class="share-modal-desc">今天的 3 次朗读练习已经完成。\n我想把这份让情绪安定的力量分享给你。\n这样，我和你都能额外获得 1 次朗读机会。</text>
+      </view>
+      
+      <view class="share-modal-actions">
+        <button class="share-modal-btn primary-btn" open-type="share" id="unlockShareBtn">
+          分享给朋友
+        </button>
+        <view class="share-modal-btn secondary-btn" bindtap="goToPro">
+          不想分享，直接开通会员
+        </view>
+      </view>
+    </view>
+  </view>
 </view>
