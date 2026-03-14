@@ -133,5 +133,22 @@ App({
     } catch (err) {
       console.error('静默状态同步失败', err);
     }
+  },
+
+  ensurePrivacyAuthorization() {
+    return new Promise((resolve) => {
+      if (typeof wx.requirePrivacyAuthorize !== 'function') {
+        resolve(true);
+        return;
+      }
+
+      wx.requirePrivacyAuthorize({
+        success: () => resolve(true),
+        fail: (error) => {
+          console.warn('隐私授权未通过', error);
+          resolve(false);
+        }
+      });
+    });
   }
 });

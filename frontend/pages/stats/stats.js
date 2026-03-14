@@ -177,14 +177,14 @@ Page({
 
     // 模拟勋章数据
     var allMedals = [
-      { id: 1, name: '初次觉察', icon: '🌱', desc: '完成第一次朗读', requirement: 1, type: 'days' },
-      { id: 2, name: '坚持一周', icon: '🌿', desc: '连续打卡7天', requirement: 7, type: 'streak' },
-      { id: 3, name: '习惯养成', icon: '🪴', desc: '连续打卡30天', requirement: 30, type: 'streak' },
-      { id: 4, name: '能量觉醒', icon: '✨', desc: '累计获得500能量', requirement: 500, type: 'energy' },
-      { id: 5, name: '情绪导师', icon: '🌟', desc: '完成50次场景朗读', requirement: 50, type: 'scenarios' },
-      { id: 6, name: '百日筑基', icon: '💎', desc: '累计打卡100天', requirement: 100, type: 'days' },
-      { id: 7, name: '年度修行', icon: '🏆', desc: '累计打卡365天', requirement: 365, type: 'days' },
-      { id: 8, name: '大师风范', icon: '👑', desc: '完成500次场景朗读', requirement: 500, type: 'scenarios' }
+      { id: 1, name: '初见本心', icon: '🌱', desc: '完成第一次朗读', requirement: 1, type: 'days' },
+      { id: 2, name: '七日守心', icon: '🌿', desc: '连续打卡7天', requirement: 7, type: 'streak' },
+      { id: 3, name: '温柔成习', icon: '🪴', desc: '连续打卡30天', requirement: 30, type: 'streak' },
+      { id: 4, name: '心力丰盈', icon: '✨', desc: '累计获得500能量', requirement: 500, type: 'energy' },
+      { id: 5, name: '家庭灯塔', icon: '🌟', desc: '完成50次场景朗读', requirement: 50, type: 'scenarios' },
+      { id: 6, name: '内核稳固', icon: '💎', desc: '累计打卡100天', requirement: 100, type: 'days' },
+      { id: 7, name: '四季如磐', icon: '🏆', desc: '累计打卡365天', requirement: 365, type: 'days' },
+      { id: 8, name: '家风立名', icon: '👑', desc: '完成500次场景朗读', requirement: 500, type: 'scenarios' }
     ];
 
     var totalDays = that.data.totalDays || 0;

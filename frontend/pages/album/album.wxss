@@ -12,6 +12,7 @@
   width: 100%;
   min-height: 400rpx;
   padding: 48rpx 40rpx;
+  box-sizing: border-box; /* 宽度包含内边距，避免右侧溢出 */
   margin-bottom: 32rpx;
   border-radius: 0 0 48rpx 48rpx;
   overflow: hidden;

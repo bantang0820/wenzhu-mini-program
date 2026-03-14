@@ -89,9 +89,8 @@
       <view
         wx:if="{{!hasRecorded}}"
         class="record-button {{isRecording ? 'recording is-recording' : ''}}"
-        bindtouchstart="onRecordStart"
-        bindtouchend="onRecordEnd"
-        bindtouchcancel="onRecordEnd"
+        bindtouchstart="onRecordTouchStart"
+        bindtap="onRecordTap"
       >
         <view class="retell-mic-icon-wrapper" style="transform: scale(0.8);">
           <view class="mic-icon-head"></view>
@@ -110,6 +109,20 @@
         >
           <text class="play-icon">{{isPlaying ? '⏸️' : '▶️'}}</text>
           <text class="play-label">{{isPlaying ? '播放中' : '回听'}}</text>
+        </view>
+
+        <!-- 继续朗读按钮（保留麦克风，避免误松后可继续） -->
+        <view
+          class="record-button {{isRecording ? 'recording is-recording' : ''}}"
+          bindtouchstart="onRecordTouchStart"
+          bindtap="onRecordTap"
+        >
+          <view class="retell-mic-icon-wrapper" style="transform: scale(0.8);">
+            <view class="mic-icon-head"></view>
+            <view class="mic-icon-body"></view>
+            <view class="mic-icon-stand"></view>
+            <view class="mic-icon-base"></view>
+          </view>
         </view>
 
         <!-- 确认按钮 -->
@@ -154,31 +167,32 @@
   </view>
 
   <!-- 复述底部的麦克风和按钮 (与朗读完美重合) -->
-  <view class="stamp-section" wx:if="{{postReadingStep === 'retell'}}" style="pointer-events: auto;">
-    <view class="stamp-wrapper" wx:if="{{!retellText || isSpeechRecording}}">
-      <view class="record-button {{isSpeechRecording ? 'recording is-recording' : ''}}" bindtouchstart="onSpeechRecordStart" bindtouchend="onSpeechRecordEnd" bindtouchcancel="onSpeechRecordEnd">
-        <view class="retell-mic-icon-wrapper" style="transform: scale(0.8);">
+  <view class="stamp-section" wx:if="{{postReadingStep === 'retell'}}">
+    <view class="guide-text-container" wx:if="{{isSpeechRecording}}">
+      <text class="guide-text">正在倾听...</text>
+    </view>
+
+    <!-- 录音完成后的操作按钮组 -->
+    <view class="retell-action-buttons" style="width: 100vw; padding: 0 60rpx; box-sizing: border-box; margin-bottom: 20rpx;">
+      <view class="retell-btn-retry" bindtap="onBackToReading">
+        <text>重读上一句</text>
+      </view>
+
+      <view
+        class="record-button retell-middle-mic {{isSpeechRecording ? 'recording is-recording' : ''}}"
+        bindtouchstart="onSpeechRecordTouchStart"
+        bindtap="onSpeechRecordTap"
+      >
+        <view class="retell-mic-icon-wrapper">
           <view class="mic-icon-head"></view>
           <view class="mic-icon-body"></view>
           <view class="mic-icon-stand"></view>
           <view class="mic-icon-base"></view>
         </view>
       </view>
-    </view>
 
-    <view class="guide-text-container" wx:if="{{!retellText || isSpeechRecording}}">
-      <text class="guide-text">{{isSpeechRecording ? '正在倾听...' : '按住开始复述'}}</text>
-    </view>
-
-    <!-- 录音完成后的操作按钮组 -->
-    <view class="retell-action-buttons" wx:if="{{retellText && !isSpeechRecording}}" style="width: 100vw; padding: 0 60rpx; box-sizing: border-box; margin-bottom: 20rpx;">
-      <view class="retell-btn-retry" bindtap="onBackToReading">
-        <text class="btn-icon">↺</text>
-        <text>重读上一句</text>
-      </view>
-      <view class="retell-btn-next {{isGeneratingFeedback ? 'disabled' : ''}}" bindtap="onSubmitRetell">
-        <text>{{isGeneratingFeedback ? '感受中...' : (currentReflectionRound >= totalRounds ? '完成复盘' : '阅读下一句')}}</text>
-        <text class="btn-icon" wx:if="{{!isGeneratingFeedback}}">→</text>
+      <view class="retell-btn-next {{isGeneratingFeedback || isSpeechRecording || !retellText ? 'disabled' : ''}}" bindtap="onSubmitRetell">
+        <text>{{isGeneratingFeedback ? '感受中...' : (currentReflectionRound >= totalRounds ? '去复盘' : '朗读下一句')}}</text>
       </view>
     </view>
   </view>
@@ -223,6 +237,25 @@
             data-value="{{item.value}}"
           >
             <text>{{item.label}}</text>
+          </view>
+        </view>
+
+        <!-- 自定义补充感受区域（当选择了“自定义补充”或始终显示一个备用输入区） -->
+        <view class="custom-feeling-area" wx:if="{{selectedFinalState === 'custom'}}">
+          <textarea
+            class="custom-feeling-input"
+            value="{{feelingText}}"
+            bindinput="onFeelingInput"
+            placeholder="写下你当下的感受，或点击右侧麦克风说话..."
+            placeholder-class="custom-feeling-placeholder"
+            maxlength="200"
+          ></textarea>
+          <view
+            class="custom-feeling-mic {{isSpeechRecording && speechTarget === 'feeling' ? 'recording' : ''}}"
+            bindtouchstart="onSpeechRecordTouchStart"
+            bindtap="onSpeechRecordTap"
+          >
+            <text class="mic-icon">🎤</text>
           </view>
         </view>
 

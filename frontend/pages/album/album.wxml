@@ -18,7 +18,7 @@
         </view>
         <view class="progress-info">
           <text class="progress-text">已完成 {{album.progress}}%</text>
-          <text class="progress-detail">{{completedCount}}/{{totalCount}} 修</text>
+          <text class="progress-detail">{{completedCount}}/{{totalCount}}章</text>
         </view>
       </view>
     </view>
@@ -27,14 +27,14 @@
   <!-- 章节列表 -->
   <view class="chapters-section">
     <view class="section-header">
-      <text class="section-title">修习章节</text>
+      <text class="section-title">学习章节</text>
       <text class="section-subtitle">循序渐进，深度练习</text>
     </view>
 
     <view class="chapter-list">
       <view
         class="chapter-card"
-        wx:for="{{album.chapters}}"
+        wx:for="{{chapters}}"
         wx:key="id"
         bindtap="onChapterTap"
         data-id="{{item.id}}"
@@ -55,7 +55,7 @@
         <view class="chapter-status">
           <text class="status-icon" wx:if="{{item.locked}}">🔒</text>
           <view class="status-progress" wx:else>
-            <text class="progress-mini-text">{{item.completedCount}}/10修</text>
+            <text class="progress-mini-text">{{item.completedCount}}/10章</text>
           </view>
         </view>
       </view>
