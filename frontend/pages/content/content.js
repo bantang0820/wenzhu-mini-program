@@ -147,10 +147,41 @@ Page({
     this.saveLastRead('第1章 · 区分观察与评论');
 
     // 跳转到专辑详情页（展示10个章节列表）
-    wx.navigateTo({
-      url: '/pages/album/album?id=' + id,
-      fail: function(err) {
-        console.error('页面跳转失败:', err);
+    this.openAlbumPage(id);
+  },
+
+  openAlbumPage: function(id) {
+    const url = `/pages/album/album?id=${encodeURIComponent(id)}`;
+    this.safeNavigate(url);
+  },
+
+  safeNavigate: function(url) {
+    const pageStack = getCurrentPages();
+    const preferRedirect = pageStack.length >= 10;
+    const primaryMethod = preferRedirect ? 'redirectTo' : 'navigateTo';
+    const fallbackMethod = preferRedirect ? 'navigateTo' : 'redirectTo';
+
+    wx[primaryMethod]({
+      url,
+      fail: (err) => {
+        const errMsg = (err && err.errMsg) || '';
+        console.error(`页面跳转失败(${primaryMethod}):`, err);
+
+        // 页面栈过深时，自动切换为 redirectTo 再试一次
+        if (!preferRedirect && /limit exceed|page stack|webview count limit/i.test(errMsg)) {
+          wx[fallbackMethod]({
+            url,
+            fail: (redirectErr) => {
+              console.error(`页面跳转失败(${fallbackMethod}):`, redirectErr);
+              wx.showToast({
+                title: '跳转失败',
+                icon: 'none'
+              });
+            }
+          });
+          return;
+        }
+
         wx.showToast({
           title: '跳转失败',
           icon: 'none'

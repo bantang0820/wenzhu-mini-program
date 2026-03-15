@@ -241,8 +241,40 @@ Page({
     }
 
     // 进入章节详情页
-    wx.navigateTo({
-      url: `/pages/chapter/chapter?albumId=${this.data.albumId}&chapterId=${id}`
+    this.safeNavigate(`/pages/chapter/chapter?albumId=${encodeURIComponent(this.data.albumId)}&chapterId=${encodeURIComponent(id)}`);
+  },
+
+  safeNavigate(url) {
+    const pageStack = getCurrentPages();
+    const preferRedirect = pageStack.length >= 10;
+    const primaryMethod = preferRedirect ? 'redirectTo' : 'navigateTo';
+    const fallbackMethod = preferRedirect ? 'navigateTo' : 'redirectTo';
+
+    wx[primaryMethod]({
+      url,
+      fail: (err) => {
+        const errMsg = (err && err.errMsg) || '';
+        console.error(`页面跳转失败(${primaryMethod}):`, err);
+
+        if (!preferRedirect && /limit exceed|page stack|webview count limit/i.test(errMsg)) {
+          wx[fallbackMethod]({
+            url,
+            fail: (redirectErr) => {
+              console.error(`页面跳转失败(${fallbackMethod}):`, redirectErr);
+              wx.showToast({
+                title: '跳转失败',
+                icon: 'none'
+              });
+            }
+          });
+          return;
+        }
+
+        wx.showToast({
+          title: '跳转失败',
+          icon: 'none'
+        });
+      }
     });
   }
 });

@@ -28,8 +28,8 @@
   <view class="energy-glow {{isRecording ? 'active' : ''}}" style="transform: translate(-50%, -50%) scale({{energyScale || 1}});"></view>
 
   <!-- 返回按钮 -->
-  <view class="back-btn neumorphism-convex" bindtap="onBack" wx:if="{{!isCompleted}}">
-    <text class="back-icon">✕</text>
+  <view class="back-btn" bindtap="onBack" wx:if="{{!isCompleted}}">
+    <view class="back-icon"></view>
   </view>
 
   <!-- 场景标题 -->

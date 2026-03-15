@@ -10,7 +10,8 @@ export const config = {
   wechat: {
     appId: process.env.WECHAT_APP_ID || '',
     appSecret: process.env.WECHAT_APP_SECRET || '',
-    apiUrl: 'https://api.weixin.qq.com'
+    apiUrl: 'https://api.weixin.qq.com',
+    devMockOpenid: process.env.WECHAT_DEV_MOCK_OPENID || 'test_openid_local_user'
   },
 
   jwt: {

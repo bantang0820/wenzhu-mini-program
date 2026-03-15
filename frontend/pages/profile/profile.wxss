@@ -89,8 +89,29 @@
   border-radius: 50%;
 }
 
-.avatar-emoji {
-  font-size: 48rpx;
+.avatar-placeholder {
+  position: relative;
+  width: 52rpx;
+  height: 52rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-core {
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E6D7BC 0%, #C9A86A 100%);
+  box-shadow: 0 0 18rpx rgba(201, 168, 106, 0.28);
+}
+
+.avatar-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2rpx solid rgba(201, 168, 106, 0.25);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 72%);
 }
 
 .user-info {
@@ -105,6 +126,13 @@
   font-weight: 600;
   color: #2B303A;
   font-family: "Songti SC", serif;
+}
+
+.guest-desc {
+  font-size: 20rpx;
+  color: rgba(93, 83, 74, 0.68);
+  line-height: 1.5;
+  padding-right: 16rpx;
 }
 
 .user-tags {
@@ -669,4 +697,3 @@
   font-size: 24rpx;
   color: rgba(140, 134, 128, 0.6);
 }
-

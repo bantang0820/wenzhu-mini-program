@@ -2,6 +2,14 @@
 const app = getApp();
 const api = require('../../utils/api.js');
 
+const PENDING_REDEEM_CODE_KEY = 'pendingRedeemCode';
+const TAB_BAR_PAGES = [
+  '/pages/index/index',
+  '/pages/content/content',
+  '/pages/stats/stats',
+  '/pages/profile/profile'
+];
+
 Page({
   data: {
     loading: false,
@@ -9,7 +17,9 @@ Page({
     privacyContractName: '《隐私政策》'
   },
 
-  onLoad() {
+  onLoad(options = {}) {
+    this.redirectTarget = options.redirect ? decodeURIComponent(options.redirect) : '';
+    this.loginScene = options.scene || '';
     this.redirectIfLoggedIn();
     this.initPrivacySetting();
   },
@@ -22,9 +32,7 @@ Page({
     const token = wx.getStorageSync('token');
     const openid = wx.getStorageSync('openid');
     if (token && openid) {
-      wx.reLaunch({
-        url: '/pages/index/index'
-      });
+      this.navigateAfterLogin();
     }
   },
 
@@ -170,14 +178,12 @@ Page({
       wx.showToast({
         title: '欢迎回来',
         icon: 'success',
-        duration: 1500
+        duration: 1200
       });
 
       setTimeout(() => {
-        wx.reLaunch({
-          url: '/pages/index/index'
-        });
-      }, 1500);
+        this.navigateAfterLogin();
+      }, 1200);
 
     } catch (err) {
       console.error('登录流程出错', err);
@@ -189,5 +195,19 @@ Page({
       this.setData({ loading: false });
       wx.hideLoading();
     }
+  },
+
+  navigateAfterLogin() {
+    const hasPendingRedeem = !!wx.getStorageSync(PENDING_REDEEM_CODE_KEY);
+    const target = hasPendingRedeem
+      ? '/pages/profile/profile'
+      : (this.redirectTarget || '/pages/index/index');
+
+    if (TAB_BAR_PAGES.includes(target)) {
+      wx.switchTab({ url: target });
+      return;
+    }
+
+    wx.reLaunch({ url: target });
   }
 });

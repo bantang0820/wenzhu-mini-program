@@ -7,6 +7,17 @@ import logger from '../utils/logger';
  * 微信服务类
  */
 export class WechatService {
+  private getDevelopmentMockSession() {
+    const mockOpenid = config.wechat.devMockOpenid || 'test_openid_local_user';
+    logger.warn(`使用稳定测试用户 openid: ${mockOpenid}`);
+
+    return {
+      openid: mockOpenid,
+      session_key: 'mock_session_key',
+      unionid: 'mock_unionid'
+    };
+  }
+
   /**
    * 通过code获取session信息
    * @param code 微信登录码
@@ -37,13 +48,7 @@ export class WechatService {
 
         // 开发/测试环境：使用模拟用户
         if (config.nodeEnv === 'development' || code.startsWith('mock_')) {
-          logger.warn('使用测试模拟用户');
-          const mockOpenid = `test_openid_${Date.now()}`;
-          return {
-            openid: mockOpenid,
-            session_key: 'mock_session_key',
-            unionid: 'mock_unionid'
-          };
+          return this.getDevelopmentMockSession();
         }
 
         throw new Error(data.errmsg || '微信登录失败');
@@ -61,13 +66,8 @@ export class WechatService {
 
       // 开发/测试环境：返回模拟用户
       if (config.nodeEnv === 'development') {
-        logger.warn('微信API调用失败，使用测试模拟用户');
-        const mockOpenid = `test_openid_${Date.now()}`;
-        return {
-          openid: mockOpenid,
-          session_key: 'mock_session_key',
-          unionid: 'mock_unionid'
-        };
+        logger.warn('微信API调用失败，回退到稳定测试用户');
+        return this.getDevelopmentMockSession();
       }
 
       throw new Error('微信登录服务异常');

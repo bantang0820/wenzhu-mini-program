@@ -62,22 +62,31 @@
   position: fixed;
   top: 60rpx;
   left: 40rpx;
-  width: 80rpx;
-  height: 80rpx;
+  width: 64rpx;
+  height: 64rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
+  transition: all 0.2s ease;
+}
+
+.back-btn:active {
+  transform: scale(0.96);
 }
 
 .back-icon {
-  font-size: 48rpx;
-  color: var(--color-text-primary);
-  font-weight: 300;
+  width: 22rpx;
+  height: 22rpx;
+  border-left: 3rpx solid var(--color-text-primary);
+  border-bottom: 3rpx solid var(--color-text-primary);
+  transform: rotate(45deg);
+  margin-left: 6rpx;
+  box-sizing: border-box;
 }
 
 .dark-mode .back-icon {
-  color: var(--color-bg);
+  border-color: var(--color-bg);
 }
 
 /* 场景标题 */
@@ -1396,7 +1405,11 @@
 }
 
 .reading-mode .back-icon {
-  color: rgba(232, 208, 169, 0.8);
+  border-color: rgba(232, 208, 169, 0.9);
+}
+
+.reading-mode .back-btn {
+  background: transparent;
 }
 
 .reading-mode .scenario-tag {

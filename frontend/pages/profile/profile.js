@@ -2,6 +2,9 @@
 const app = getApp();
 const api = require('../../utils/api.js');
 
+const PENDING_REDEEM_CODE_KEY = 'pendingRedeemCode';
+const LOGIN_REDIRECT_PROFILE = '/pages/profile/profile';
+
 const DEFAULT_USER_INFO = {
   avatar: '',
   nickname: '',
@@ -10,7 +13,7 @@ const DEFAULT_USER_INFO = {
 };
 
 function createMenuList(isLoggedIn) {
-  return [
+  const menuList = [
     {
       id: 'account',
       icon: isLoggedIn ? '👤' : '🔐',
@@ -54,6 +57,10 @@ function createMenuList(isLoggedIn) {
       arrow: true
     }
   ];
+
+  return isLoggedIn
+    ? menuList
+    : menuList.filter(item => item.id !== 'account');
 }
 
 Page({
@@ -110,6 +117,7 @@ Page({
   onShow() {
     // 每次显示时刷新数据与登录态
     this.initData();
+    this.resumePendingRedeem();
   },
 
   initData() {
@@ -353,32 +361,7 @@ Page({
         break;
 
       case 'redeem':
-        if (!this.data.isLoggedIn) {
-          wx.showModal({
-            title: '请先登录',
-            content: '登录后可使用兑换码领取会员权益',
-            confirmText: '去登录',
-            success: (res) => {
-              if (res.confirm) {
-                wx.navigateTo({ url: '/pages/login/login' });
-              }
-            }
-          });
-          return;
-        }
-
-        wx.showModal({
-          title: '兑换中心',
-          placeholderText: '请输入 12 位兑换码',
-          editable: true,
-          confirmText: '立即兑换',
-          confirmColor: '#D4AF37',
-          success: (res) => {
-            if (res.confirm && res.content) {
-              this.handleRedeem(res.content.trim());
-            }
-          }
-        });
+        this.openRedeemCenter();
         break;
       // ... 其他 case 保持不变 ...
 
@@ -458,20 +441,31 @@ Page({
   },
 
   // 执行兑换逻辑
-  async handleRedeem(code) {
-    if (!code) return;
+  async handleRedeem(code, options = {}) {
+    const normalizedCode = (code || '').trim().toUpperCase();
+    if (!normalizedCode) return;
+
+    if (!this.data.isLoggedIn) {
+      wx.setStorageSync(PENDING_REDEEM_CODE_KEY, normalizedCode);
+      wx.navigateTo({
+        url: `/pages/login/login?redirect=${encodeURIComponent(LOGIN_REDIRECT_PROFILE)}&scene=redeem`
+      });
+      return;
+    }
 
     wx.showLoading({ title: '正在兑换...', mask: true });
 
     try {
       const res = await api.callFunction({
         name: 'redeemMembership',
-        data: { code }
+        data: { code: normalizedCode }
       });
 
       wx.hideLoading();
 
       if (res.result && res.result.success) {
+        wx.removeStorageSync(PENDING_REDEEM_CODE_KEY);
+
         // 更新全局会员状态
         app.globalData.isMember = true;
         if (app.globalData.userInfo) {
@@ -481,7 +475,10 @@ Page({
         }
         
         // 尝试重新同步一次云端状态以确保全量数据更新
-        app.checkLoginStatus();
+        await app.checkLoginStatus();
+        this.refreshAuthState();
+        this.loadUserInfo();
+        this.checkProStatus();
 
         wx.showModal({
           title: '兑换成功',
@@ -495,6 +492,9 @@ Page({
           }
         });
       } else {
+        if (options.fromPending) {
+          wx.removeStorageSync(PENDING_REDEEM_CODE_KEY);
+        }
         wx.showToast({
           title: res.result.msg || '兑换失败',
           icon: 'none',
@@ -504,11 +504,46 @@ Page({
     } catch (err) {
       wx.hideLoading();
       console.error('兑换接口调用失败', err);
+      if (options.fromPending) {
+        wx.removeStorageSync(PENDING_REDEEM_CODE_KEY);
+      }
       wx.showToast({
         title: '系统繁忙，请稍后再试',
         icon: 'none'
       });
     }
+  },
+
+  openRedeemCenter() {
+    wx.showModal({
+      title: '兑换中心',
+      placeholderText: '请输入 12 位兑换码',
+      editable: true,
+      confirmText: '立即兑换',
+      confirmColor: '#D4AF37',
+      success: (res) => {
+        if (res.confirm && res.content) {
+          this.handleRedeem(res.content.trim());
+        }
+      }
+    });
+  },
+
+  resumePendingRedeem() {
+    if (!this.data.isLoggedIn || this.pendingRedeemInFlight) {
+      return;
+    }
+
+    const pendingCode = wx.getStorageSync(PENDING_REDEEM_CODE_KEY);
+    if (!pendingCode) {
+      return;
+    }
+
+    this.pendingRedeemInFlight = true;
+    this.handleRedeem(pendingCode, { fromPending: true })
+      .finally(() => {
+        this.pendingRedeemInFlight = false;
+      });
   },
 
   // ========== 设置相关逻辑 ==========

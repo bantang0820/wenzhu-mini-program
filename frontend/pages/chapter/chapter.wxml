@@ -86,7 +86,14 @@
     <!-- 底部操作按钮 -->
     <view class="modal-actions">
       <view class="action-btn practice-btn-full" bindtap="onPracticeLesson">
-        <text class="btn-icon">🎙️</text>
+        <view class="practice-mic-shell">
+          <view class="practice-mic-icon-wrapper">
+            <view class="mic-icon-head"></view>
+            <view class="mic-icon-body"></view>
+            <view class="mic-icon-stand"></view>
+            <view class="mic-icon-base"></view>
+          </view>
+        </view>
         <text class="btn-label">朗读</text>
       </view>
       <view class="action-btn complete-btn-full {{currentLesson.completed ? 'completed' : ''}}" bindtap="onToggleComplete">

@@ -300,6 +300,14 @@ Page({
   handlePrivacyRelatedError(error, fallbackTitle = '操作失败，请重试') {
     const errMsg = error && (error.errMsg || error.msg) ? (error.errMsg || error.msg) : '';
 
+    if (errMsg.includes('please stop after start')) {
+      wx.showToast({
+        title: '上一段录音还在收尾，请再试一次',
+        icon: 'none'
+      });
+      return;
+    }
+
     if (errMsg.includes('privacy agreement')) {
       wx.showModal({
         title: '需补充隐私配置',
@@ -325,6 +333,25 @@ Page({
 
   sleep(ms = 0) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  },
+
+  async waitForSpeechRelease(timeoutMs = 1800) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+      const isBusy = this.data.isRecording
+        || this.data.isSpeechRecording
+        || !!this.activeSpeechTarget
+        || !!this.speechStartPending;
+
+      if (!isBusy) {
+        return true;
+      }
+
+      await this.sleep(60);
+    }
+
+    return false;
   },
 
   initAudioPlayer() {
@@ -551,15 +578,20 @@ Page({
     if (!hasPermission) return;
 
     this.speechStartPending = true;
+    
+    const hasUnreleasedSpeechSession = this.data.isRecording
+      || this.data.isSpeechRecording
+      || !!this.activeSpeechTarget;
+
+    if (hasUnreleasedSpeechSession) {
+      await this.stopSpeechInput({
+        force: true,
+        waitForStop: true,
+        timeoutMs: 2200
+      });
+    }
+
     this.activeSpeechTarget = target;
-
-    if (target !== 'reading' && this.data.isRecording) {
-      this.stopRecording();
-    }
-
-    if (target === 'reading' && this.data.isSpeechRecording) {
-      this.stopSpeechInput();
-    }
 
     const recorderReleasedAt = Math.max(this.lastRecorderStopAt || 0, this.lastRecorderStopRequestedAt || 0);
     const recorderCooldown = 800 - (Date.now() - recorderReleasedAt);
@@ -568,7 +600,7 @@ Page({
     }
 
     const speechReleasedAt = Math.max(this.lastSpeechStopAt || 0, this.lastSpeechStopRequestedAt || 0);
-    const speechCooldown = 500 - (Date.now() - speechReleasedAt);
+    const speechCooldown = 900 - (Date.now() - speechReleasedAt);
     if (speechCooldown > 0) {
       await this.sleep(speechCooldown);
     }
@@ -609,6 +641,7 @@ Page({
           });
           this.handlePrivacyRelatedError(error, '语音启动失败');
         }
+        this.lastSpeechStopAt = Date.now();
         this.activeSpeechTarget = '';
       } finally {
         setTimeout(() => {
@@ -620,15 +653,41 @@ Page({
     }
   },
 
-  stopSpeechInput() {
-    if (this.speechManager && (this.data.isSpeechRecording || this.data.isRecording)) {
+  async stopSpeechInput(options = {}) {
+    const { force = false, waitForStop = false, timeoutMs = 1800 } = options;
+    const shouldStopCurrentSpeech = this.data.isSpeechRecording || this.data.isRecording || !!this.activeSpeechTarget || force;
+
+    if (this.speechManager && shouldStopCurrentSpeech) {
       this.lastSpeechStopRequestedAt = Date.now();
-      this.speechManager.stop();
-    } else if (this.speechRecorder && (this.data.isSpeechRecording || this.data.isRecording)) {
+      try {
+        this.speechManager.stop();
+      } catch (error) {
+        console.warn('停止语音识别失败，尝试兜底清理', error);
+        this.setData({
+          isRecording: false,
+          isSpeechRecording: false
+        });
+        this.activeSpeechTarget = '';
+        this.lastSpeechStopAt = Date.now();
+      }
+    } else if (this.speechRecorder && shouldStopCurrentSpeech) {
       this.lastSpeechStopRequestedAt = Date.now();
-      this.speechRecorder.stop();
+      try {
+        this.speechRecorder.stop();
+      } catch (error) {
+        console.warn('停止语音录音失败，尝试兜底清理', error);
+        this.setData({
+          isRecording: false,
+          isSpeechRecording: false
+        });
+        this.activeSpeechTarget = '';
+        this.lastSpeechStopAt = Date.now();
+      }
     }
-    // 注意：不再手动 setData isSpeechRecording: false，交由 onStop 回调处理，以防止截断最后一次识别结果
+
+    if (waitForStop) {
+      await this.waitForSpeechRelease(timeoutMs);
+    }
   },
 
   // 设置当前日期
@@ -1183,13 +1242,20 @@ Page({
   },
 
   // 返回朗读阶段（重读上一句）
-  onBackToReading() {
+  async onBackToReading() {
+    await this.stopSpeechInput({
+      waitForStop: true,
+      timeoutMs: 2200
+    });
     this.setData({
       retellText: '',
+      isRecording: false,
       isSpeechRecording: false,
+      hasRecorded: false,
+      recordedFilePath: '',
+      speechTarget: 'reading',
       postReadingStep: null,
       showStamp: true,
-      hasRecorded: false,
       isPlaying: false,
       guideText: '长按开始朗读'
     });
@@ -1212,7 +1278,10 @@ Page({
       return;
     }
 
-    this.stopSpeechInput();
+    await this.stopSpeechInput({
+      waitForStop: true,
+      timeoutMs: 2200
+    });
     this.setData({ isGeneratingFeedback: true });
     try {
       const retellFeedback = await this.generateRetellFeedback({
@@ -1247,12 +1316,15 @@ Page({
     }
   },
 
-  onContinueAfterFeedback() {
+  async onContinueAfterFeedback() {
     if (this.feedbackAutoTimer) {
       clearTimeout(this.feedbackAutoTimer);
       this.feedbackAutoTimer = null;
     }
-    this.stopSpeechInput();
+    await this.stopSpeechInput({
+      waitForStop: true,
+      timeoutMs: 2200
+    });
     const { currentReflectionRound, totalRounds } = this.data;
 
     if (currentReflectionRound >= totalRounds) {
@@ -1268,7 +1340,11 @@ Page({
       currentReflectionMantra: '',
       retellText: '',
       retellFeedback: '',
+      isRecording: false,
       isSpeechRecording: false,
+      hasRecorded: false,
+      recordedFilePath: '',
+      speechTarget: 'reading',
       displayText: '',
       showGuide: false,
       showStamp: false
@@ -1492,6 +1568,9 @@ Page({
       showGuide: true, // 确保从复述返回后下一句可见
       showStamp: false, // 先隐藏录音按钮，等打字机完成后再显示
       guideText: this.getGuideText(nextRound), // 更新引导语
+      isRecording: false,
+      isSpeechRecording: false,
+      speechTarget: 'reading',
       hasRecorded: false, // 重置录音状态
       recordedFilePath: ''
     });
