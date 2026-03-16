@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authController from '../controllers/auth.controller';
+import adminController from '../controllers/admin.controller';
 import membershipController from '../controllers/membership.controller';
 import scenarioController from '../controllers/scenario.controller';
 import aiController from '../controllers/ai.controller';
@@ -7,7 +8,7 @@ import feedbackController from '../controllers/feedback.controller';
 import courseController from '../controllers/course.controller';
 import shareController from '../controllers/share.controller';
 import paymentController from '../controllers/payment.controller';
-import { authMiddleware, optionalAuth } from '../middlewares/auth';
+import { adminAuthMiddleware, authMiddleware, optionalAuth } from '../middlewares/auth';
 import { validate, validationSchemas } from '../middlewares/validate';
 
 const router = Router();
@@ -16,6 +17,25 @@ const router = Router();
 router.get('/health', (_req, res) => {
   res.json({ status: 'ok', message: '稳住小程序后端服务运行正常' });
 });
+
+// ========== Admin相关 ==========
+router.post('/admin/login', validate(validationSchemas.adminLogin), adminController.login);
+router.get('/admin/profile', adminAuthMiddleware, adminController.getProfile);
+router.get('/admin/users', adminAuthMiddleware, adminController.getUsers);
+router.get('/admin/redeem-codes', adminAuthMiddleware, adminController.getRedeemCodes);
+router.post(
+  '/admin/redeem-codes/generate',
+  adminAuthMiddleware,
+  validate(validationSchemas.adminGenerateRedeemCodes),
+  adminController.generateRedeemCodes
+);
+router.get('/admin/members', adminAuthMiddleware, adminController.getMembers);
+router.post(
+  '/admin/memberships/update',
+  adminAuthMiddleware,
+  validate(validationSchemas.adminUpdateMembership),
+  adminController.updateMembership
+);
 
 // ========== 认证相关 ==========
 // 微信一键登录
@@ -76,8 +96,8 @@ router.post('/ai/retell-feedback', validate(validationSchemas.generateRetellFeed
 router.post('/ai/mindful-diary', validate(validationSchemas.generateMindfulDiary), aiController.generateMindfulDiary);
 
 // ========== 反馈相关 ==========
-// 提交反馈（需要认证）
-router.post('/feedbacks', authMiddleware, validate(validationSchemas.submitFeedback), feedbackController.submitFeedback);
+// 提交反馈（可匿名，登录后自动关联用户）
+router.post('/feedbacks', optionalAuth, validate(validationSchemas.submitFeedback), feedbackController.submitFeedback);
 
 // 获取反馈列表（管理员功能，需要认证）
 router.get('/feedbacks', authMiddleware, feedbackController.getFeedbackList);

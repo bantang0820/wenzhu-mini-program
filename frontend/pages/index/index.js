@@ -280,7 +280,7 @@ Page({
     const heroList = [
       { id: "001", title: "没忍住吼了", icon: "❗", is_free: true, isHero: true },
       { id: "002", title: "作业拖拉", icon: "⏳", is_free: true, isHero: true },
-      { id: "003", title: "遇难题就放弃", icon: "⟡", is_free: false, isHero: true },
+      { id: "003", title: "畏难怕输", icon: "⟡", is_free: false, isHero: true },
       { id: "004", title: "早上不起床", icon: "△", is_free: false, isHero: true },
       { id: "005", title: "沉迷手机", icon: "▭", is_free: false, isHero: true },
       { id: "006", title: "磨蹭发呆", icon: "✎", is_free: false, isHero: true },
@@ -288,21 +288,16 @@ Page({
 
     // 其余场景
     const restList = [
-      { id: "007", title: "不肯尝试", is_free: false },
+      { id: "007", title: "被打不还手", is_free: false },
       { id: "008", title: "孩子顶嘴", is_free: false },
       { id: "009", title: "孩子冷漠", is_free: false },
-      { id: "010", title: "孩子怕输", is_free: false },
+      { id: "010", title: "不想上学", is_free: false },
       { id: "011", title: "吃饭挑食", is_free: false },
       { id: "012", title: "俩娃争宠", is_free: false },
-      { id: "013", title: "不想上学", is_free: false },
-      { id: "014", title: "沉迷看电视", is_free: false },
+      { id: "014", title: "内向社恐", is_free: false },
       { id: "015", title: "孩子撒谎", is_free: false },
       { id: "016", title: "爱发脾气", is_free: false },
       { id: "017", title: "和人打架", is_free: false },
-      { id: "018", title: "不听话", is_free: false },
-      { id: "019", title: "被打不还手", is_free: false },
-      { id: "020", title: "玻璃心", is_free: false },
-      { id: "021", title: "孩子躺平", is_free: false },
     ];
 
     const allScenarios = [...heroList, ...restList];

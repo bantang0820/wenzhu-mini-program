@@ -19,6 +19,12 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '30d'
   },
 
+  admin: {
+    username: process.env.ADMIN_USERNAME || 'admin',
+    password: process.env.ADMIN_PASSWORD || 'admin123',
+    tokenExpiresIn: process.env.ADMIN_JWT_EXPIRES_IN || '7d'
+  },
+
   deepseek: {
     apiKey: process.env.DEEPSEEK_API_KEY || '',
     apiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions'

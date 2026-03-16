@@ -3,6 +3,17 @@ const scenariosData = require('../../utils/scenarios.js');
 const api = require('../../utils/api.js');
 const app = getApp();
 
+const FINAL_STATE_OPTIONS = [
+  { value: 'calmer', label: '平静下来了' },
+  { value: 'more_patient', label: '更有耐心了' },
+  { value: 'relaxed', label: '松弛了一些' },
+  { value: 'understood', label: '接纳了现状' },
+  { value: 'still_tight', label: '还有点紧绷' },
+  { value: 'need_support', label: '还想再练练' },
+  { value: 'exhausted', label: '觉得很疲惫' },
+  { value: 'custom', label: '自定义补充' }
+];
+
 Page({
   data: {
     scenario: {}, // 场景数据
@@ -72,16 +83,9 @@ Page({
     roundRetells: [],
     roundFeedbacks: [],
     selectedFinalState: '',
-    finalStateOptions: [
-      { value: 'calmer', label: '平静下来了' },
-      { value: 'more_patient', label: '更有耐心了' },
-      { value: 'relaxed', label: '松弛了一些' },
-      { value: 'understood', label: '接纳了现状' },
-      { value: 'still_tight', label: '还有点紧绷' },
-      { value: 'need_support', label: '还想再练练' },
-      { value: 'exhausted', label: '觉得很疲惫' },
-      { value: 'custom', label: '自定义补充' }
-    ],
+    selectedFinalStates: [],
+    finalStateOptions: FINAL_STATE_OPTIONS.map((item) => ({ ...item, selected: false })),
+    showCustomFeelingInput: false,
 
     // 兼容卡片透传字段
     feelingText: '',
@@ -151,6 +155,13 @@ Page({
       this.audioPlayer.destroy();
       this.audioPlayer = null;
     }
+  },
+
+  buildFinalStateOptions(selectedValues = []) {
+    return FINAL_STATE_OPTIONS.map((item) => ({
+      ...item,
+      selected: selectedValues.includes(item.value)
+    }));
   },
 
   // 清理所有定时器
@@ -531,7 +542,19 @@ Page({
 
   onSpeechRecordTouchStart() {
     this.lastSpeechTouchStartAt = Date.now();
-    this.onSpeechRecordToggle();
+    if (!this.data.isSpeechRecording) {
+      this.onSpeechRecordToggle();
+    }
+  },
+
+  onSpeechRecordTouchEnd() {
+    if (this.data.isSpeechRecording) {
+      this.stopSpeechInput();
+    }
+  },
+
+  onSpeechRecordTouchCancel() {
+    this.onSpeechRecordTouchEnd();
   },
 
   onSpeechRecordTap() {
@@ -656,9 +679,17 @@ Page({
   async stopSpeechInput(options = {}) {
     const { force = false, waitForStop = false, timeoutMs = 1800 } = options;
     const shouldStopCurrentSpeech = this.data.isSpeechRecording || this.data.isRecording || !!this.activeSpeechTarget || force;
+    const currentTarget = this.activeSpeechTarget || this.data.speechTarget;
 
     if (this.speechManager && shouldStopCurrentSpeech) {
       this.lastSpeechStopRequestedAt = Date.now();
+      if (currentTarget === 'reading') {
+        this.stopVADEffect();
+      }
+      this.setData({
+        isRecording: false,
+        isSpeechRecording: false
+      });
       try {
         this.speechManager.stop();
       } catch (error) {
@@ -672,6 +703,13 @@ Page({
       }
     } else if (this.speechRecorder && shouldStopCurrentSpeech) {
       this.lastSpeechStopRequestedAt = Date.now();
+      if (currentTarget === 'reading') {
+        this.stopVADEffect();
+      }
+      this.setData({
+        isRecording: false,
+        isSpeechRecording: false
+      });
       try {
         this.speechRecorder.stop();
       } catch (error) {
@@ -789,6 +827,9 @@ Page({
       roundRetells: [],
       roundFeedbacks: [],
       selectedFinalState: '',
+      selectedFinalStates: [],
+      finalStateOptions: this.buildFinalStateOptions(),
+      showCustomFeelingInput: false,
       currentReflectionRound: 0,
       currentReflectionMantra: '',
       postReadingStep: ''
@@ -914,6 +955,9 @@ Page({
       roundRetells: [],
       roundFeedbacks: [],
       selectedFinalState: '',
+      selectedFinalStates: [],
+      finalStateOptions: this.buildFinalStateOptions(),
+      showCustomFeelingInput: false,
       feelingText: '',
       mindfulJournal: '',
       isGeneratingFeedback: false,
@@ -1041,6 +1085,9 @@ Page({
       roundRetells: [],
       roundFeedbacks: [],
       selectedFinalState: '',
+      selectedFinalStates: [],
+      finalStateOptions: this.buildFinalStateOptions(),
+      showCustomFeelingInput: false,
       feelingText: '',
       mindfulJournal: '',
       isGeneratingFeedback: false,
@@ -1081,7 +1128,19 @@ Page({
 
   onRecordTouchStart() {
     this.lastRecordTouchStartAt = Date.now();
-    this.onRecordToggle();
+    if (!this.data.isRecording) {
+      this.onRecordToggle();
+    }
+  },
+
+  onRecordTouchEnd() {
+    if (this.data.isRecording) {
+      this.stopRecording();
+    }
+  },
+
+  onRecordTouchCancel() {
+    this.onRecordTouchEnd();
   },
 
   onRecordTap() {
@@ -1235,6 +1294,10 @@ Page({
       retellText: '',
       retellFeedback: '',
       selectedFinalState: '',
+      selectedFinalStates: [],
+      finalStateOptions: this.buildFinalStateOptions(),
+      showCustomFeelingInput: false,
+      feelingText: '',
       isGeneratingFeedback: false,
       isSpeechRecording: false,
       speechTarget: 'retell'
@@ -1330,7 +1393,11 @@ Page({
     if (currentReflectionRound >= totalRounds) {
       this.setData({
         postReadingStep: 'state',
-        selectedFinalState: ''
+        selectedFinalState: '',
+        selectedFinalStates: [],
+        finalStateOptions: this.buildFinalStateOptions(),
+        showCustomFeelingInput: false,
+        feelingText: ''
       });
       return;
     }
@@ -1370,8 +1437,20 @@ Page({
   onSelectFinalState(e) {
     const value = e.currentTarget.dataset.value;
     if (!value) return;
+
+    const currentSelected = Array.isArray(this.data.selectedFinalStates)
+      ? [...this.data.selectedFinalStates]
+      : [];
+    const nextSelected = currentSelected.includes(value)
+      ? currentSelected.filter((item) => item !== value)
+      : [...currentSelected, value];
+
     this.setData({
-      selectedFinalState: value
+      selectedFinalStates: nextSelected,
+      selectedFinalState: nextSelected.join(','),
+      finalStateOptions: this.buildFinalStateOptions(nextSelected),
+      showCustomFeelingInput: nextSelected.includes('custom'),
+      feelingText: nextSelected.includes('custom') ? this.data.feelingText : ''
     });
   },
 
@@ -1382,20 +1461,44 @@ Page({
   },
 
   getFinalStateLabel() {
-    const selected = this.data.selectedFinalState;
-    if (selected === 'custom') {
-      return this.data.feelingText || '补充了一些感受';
+    const selectedValues = Array.isArray(this.data.selectedFinalStates)
+      ? this.data.selectedFinalStates
+      : [];
+    const labels = (this.data.finalStateOptions || [])
+      .filter((item) => item.value !== 'custom' && selectedValues.includes(item.value))
+      .map((item) => item.label);
+
+    if (selectedValues.includes('custom')) {
+      const customFeeling = (this.data.feelingText || '').trim();
+      labels.push(customFeeling || '补充了一些感受');
     }
-    const option = (this.data.finalStateOptions || []).find((item) => item.value === selected);
-    return option ? option.label : '';
+
+    return labels.join('、');
+  },
+
+  getFinalStateValue() {
+    const selectedValues = Array.isArray(this.data.selectedFinalStates)
+      ? this.data.selectedFinalStates
+      : [];
+
+    return selectedValues.map((value) => {
+      if (value !== 'custom') {
+        return value;
+      }
+
+      const customFeeling = (this.data.feelingText || '').trim();
+      return customFeeling ? `custom:${customFeeling}` : 'custom';
+    }).join(',');
   },
 
   // 第5句复述完成后：选择状态并生成卡片
   async onGenerateDiaryFromState() {
     if (this.data.isGeneratingJournal) return;
 
-    const selectedFinalState = this.data.selectedFinalState;
-    if (!selectedFinalState) {
+    const selectedFinalStates = Array.isArray(this.data.selectedFinalStates)
+      ? this.data.selectedFinalStates
+      : [];
+    if (!selectedFinalStates.length) {
       wx.showToast({
         title: '请选择你此刻的状态',
         icon: 'none'
@@ -1404,6 +1507,7 @@ Page({
     }
 
     this.stopSpeechInput();
+    const finalStateValue = this.getFinalStateValue();
     const finalStateLabel = this.getFinalStateLabel();
     const cleanRoundRetells = (this.data.roundRetells || []).map((item) => (typeof item === 'string' ? item : ''));
     const cleanAllMantras = (this.data.allMantras || []).map((item) => (typeof item === 'string' ? item : ''));
@@ -1419,7 +1523,7 @@ Page({
         scenarioTitle: this.data.scenario.title || '',
         allMantras: cleanAllMantras,
         roundRetells: cleanRoundRetells,
-        finalState: selectedFinalState,
+        finalState: finalStateValue,
         finalStateLabel: finalStateLabel,
         stormTime: this.data.stormTime,
         shiftTime: this.data.shiftTime,

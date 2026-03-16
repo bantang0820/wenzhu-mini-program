@@ -90,6 +90,7 @@ scenarioBlocks.forEach(block => {
   if (!titleMatch) return;
 
   const title = titleMatch[1].trim();
+  const existingScenario = existingScenarios[id];
   const modules = {
     module1: [],
     module2: [],
@@ -117,8 +118,6 @@ scenarioBlocks.forEach(block => {
   }
 
   const totalLines = moduleKeys.reduce((sum, key) => sum + modules[key].length, 0);
-  const existingScenario = existingScenarios[id];
-
   if (totalLines === 0 && existingScenario) {
     warnings.push(`${id} 源文案为空，已保留现有运行时内容`);
     scenarios[id] = {
@@ -127,7 +126,12 @@ scenarioBlocks.forEach(block => {
       title
     };
   } else {
-    scenarios[id] = { id, title, modules };
+    scenarios[id] = {
+      ...(existingScenario || {}),
+      id,
+      title,
+      modules
+    };
   }
 });
 

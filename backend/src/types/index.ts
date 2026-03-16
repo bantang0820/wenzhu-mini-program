@@ -216,3 +216,8 @@ export interface JwtPayload {
   userId: number;
   openid: string;
 }
+
+export interface AdminJwtPayload {
+  username: string;
+  role: 'admin';
+}

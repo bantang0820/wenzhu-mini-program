@@ -90,6 +90,8 @@
         wx:if="{{!hasRecorded}}"
         class="record-button {{isRecording ? 'recording is-recording' : ''}}"
         bindtouchstart="onRecordTouchStart"
+        bindtouchend="onRecordTouchEnd"
+        bindtouchcancel="onRecordTouchCancel"
         bindtap="onRecordTap"
       >
         <view class="retell-mic-icon-wrapper" style="transform: scale(0.8);">
@@ -115,6 +117,8 @@
         <view
           class="record-button {{isRecording ? 'recording is-recording' : ''}}"
           bindtouchstart="onRecordTouchStart"
+          bindtouchend="onRecordTouchEnd"
+          bindtouchcancel="onRecordTouchCancel"
           bindtap="onRecordTap"
         >
           <view class="retell-mic-icon-wrapper" style="transform: scale(0.8);">
@@ -181,6 +185,8 @@
       <view
         class="record-button retell-middle-mic {{isSpeechRecording ? 'recording is-recording' : ''}}"
         bindtouchstart="onSpeechRecordTouchStart"
+        bindtouchend="onSpeechRecordTouchEnd"
+        bindtouchcancel="onSpeechRecordTouchCancel"
         bindtap="onSpeechRecordTap"
       >
         <view class="retell-mic-icon-wrapper">
@@ -224,7 +230,7 @@
       <view wx:if="{{postReadingStep === 'state'}}" class="reflection-block">
         <view class="chat-item ai">
           <view class="chat-bubble ai">
-            <text>最后一步：请选择你此刻最接近的状态，我们马上为你生成正念日记卡片。</text>
+            <text>最后一步：请选择你此刻最接近的状态，可多选，我们马上为你生成正念日记卡片。</text>
           </view>
         </view>
 
@@ -232,7 +238,7 @@
           <view
             wx:for="{{finalStateOptions}}"
             wx:key="value"
-            class="state-option {{selectedFinalState === item.value ? 'active' : ''}}"
+            class="state-option {{item.selected ? 'active' : ''}}"
             bindtap="onSelectFinalState"
             data-value="{{item.value}}"
           >
@@ -241,7 +247,7 @@
         </view>
 
         <!-- 自定义补充感受区域（当选择了“自定义补充”或始终显示一个备用输入区） -->
-        <view class="custom-feeling-area" wx:if="{{selectedFinalState === 'custom'}}">
+        <view class="custom-feeling-area" wx:if="{{showCustomFeelingInput}}">
           <textarea
             class="custom-feeling-input"
             value="{{feelingText}}"
@@ -251,11 +257,18 @@
             maxlength="200"
           ></textarea>
           <view
-            class="custom-feeling-mic {{isSpeechRecording && speechTarget === 'feeling' ? 'recording' : ''}}"
+            class="record-button custom-feeling-record-button {{isSpeechRecording && speechTarget === 'feeling' ? 'recording is-recording' : ''}}"
             bindtouchstart="onSpeechRecordTouchStart"
+            bindtouchend="onSpeechRecordTouchEnd"
+            bindtouchcancel="onSpeechRecordTouchCancel"
             bindtap="onSpeechRecordTap"
           >
-            <text class="mic-icon">🎤</text>
+            <view class="retell-mic-icon-wrapper custom-feeling-mic-icon-wrapper">
+              <view class="mic-icon-head"></view>
+              <view class="mic-icon-body"></view>
+              <view class="mic-icon-stand"></view>
+              <view class="mic-icon-base"></view>
+            </view>
           </view>
         </view>
 

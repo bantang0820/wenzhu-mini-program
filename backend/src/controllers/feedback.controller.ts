@@ -13,15 +13,7 @@ export class FeedbackController {
   async submitFeedback(req: Request, res: Response): Promise<void> {
     try {
       const { content, contact } = req.body;
-      const openid = req.user?.openid;
-
-      if (!openid) {
-        res.status(401).json({
-          success: false,
-          error: '未授权'
-        } as ApiResponse);
-        return;
-      }
+      const openid = req.user?.openid || '';
 
       if (!content) {
         res.status(400).json({

@@ -9,21 +9,24 @@ import { AppError } from '../middlewares/error';
 export class FeedbackService {
   /**
    * 提交反馈
-   * @param openid 用户OpenID
+   * @param openid 用户OpenID（匿名时为空）
    * @param content 反馈内容
    * @param contact 联系方式（可选）
    * @returns 反馈ID
    */
   async submitFeedback(openid: string, content: string, contact?: string): Promise<number> {
     try {
-      // 获取用户ID
-      const [userRows] = await pool.execute(
-        'SELECT * FROM users WHERE openid = ?',
-        [openid]
-      );
+      let userId: number | null = null;
 
-      const users = userRows as any[];
-      const userId = users.length > 0 ? users[0].id : null;
+      if (openid) {
+        const [userRows] = await pool.execute(
+          'SELECT id FROM users WHERE openid = ?',
+          [openid]
+        );
+
+        const users = userRows as Array<{ id: number }>;
+        userId = users.length > 0 ? users[0].id : null;
+      }
 
       const [result] = await pool.execute(
         `INSERT INTO feedbacks (user_id, openid, content, contact)

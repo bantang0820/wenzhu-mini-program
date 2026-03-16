@@ -20,6 +20,51 @@ export const validate = (schema: Joi.ObjectSchema) => {
 
 // 常用验证规则
 export const validationSchemas = {
+  // 管理员登录
+  adminLogin: Joi.object({
+    username: Joi.string().required().messages({
+      'string.empty': '管理员账号不能为空',
+      'any.required': '缺少管理员账号'
+    }),
+    password: Joi.string().required().messages({
+      'string.empty': '管理员密码不能为空',
+      'any.required': '缺少管理员密码'
+    })
+  }),
+
+  // 管理员生成兑换码
+  adminGenerateRedeemCodes: Joi.object({
+    count: Joi.number().integer().min(1).max(100).required().messages({
+      'number.base': '生成数量必须为数字',
+      'number.min': '生成数量至少为1',
+      'number.max': '单次最多生成100个兑换码',
+      'any.required': '缺少生成数量'
+    }),
+    type: Joi.string().allow('').default('manual'),
+    duration: Joi.number().integer().min(1).max(3650).required().messages({
+      'number.base': '会员时长必须为数字',
+      'number.min': '会员时长至少为1天',
+      'number.max': '会员时长不能超过3650天',
+      'any.required': '缺少会员时长'
+    })
+  }),
+
+  // 管理员调整会员
+  adminUpdateMembership: Joi.object({
+    userId: Joi.number().integer().min(1).required().messages({
+      'number.base': '用户ID无效',
+      'any.required': '缺少用户ID'
+    }),
+    duration: Joi.number().integer().min(1).max(3650).required().messages({
+      'number.base': '会员时长必须为数字',
+      'number.min': '会员时长至少为1天',
+      'number.max': '会员时长不能超过3650天',
+      'any.required': '缺少会员时长'
+    }),
+    action: Joi.string().valid('grant', 'extend').default('grant'),
+    type: Joi.string().allow('').optional()
+  }),
+
   // 用户登录
   wechatLogin: Joi.object({
     code: Joi.string().required().messages({

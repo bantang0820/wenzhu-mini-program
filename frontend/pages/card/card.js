@@ -948,22 +948,116 @@ Page({
   },
 
   // 保存到相册
-  saveToAlbum() {
+  async saveToAlbum() {
     const { cardImage } = this.data;
     if (!cardImage) {
       wx.showToast({ title: '请先生成卡片', icon: 'none' });
       return;
     }
 
-    wx.saveImageToPhotosAlbum({
-      filePath: cardImage,
-      success: () => {
-        wx.showToast({ title: '已保存到相册', icon: 'success' });
-      },
-      fail: (err) => {
-        console.error('保存失败', err);
-        wx.showToast({ title: '保存失败', icon: 'none' });
+    try {
+      const hasPermission = await this.ensureAlbumPermission();
+      if (!hasPermission) {
+        return;
       }
+
+      const filePath = await this.getSavableImagePath(cardImage);
+      await this.saveImageToAlbum(filePath);
+
+      wx.showToast({ title: '已保存到相册', icon: 'success' });
+    } catch (err) {
+      console.error('保存失败', err);
+
+      const errMsg = err && err.errMsg ? err.errMsg : '';
+      if (errMsg.includes('auth deny') || errMsg.includes('authorize')) {
+        await this.openAlbumPermissionSetting();
+        return;
+      }
+
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+    }
+  },
+
+  ensureAlbumPermission() {
+    return new Promise((resolve) => {
+      wx.getSetting({
+        success: (res) => {
+          const authState = res.authSetting['scope.writePhotosAlbum'];
+
+          if (authState === true) {
+            resolve(true);
+            return;
+          }
+
+          if (authState === false) {
+            this.openAlbumPermissionSetting().then(resolve);
+            return;
+          }
+
+          wx.authorize({
+            scope: 'scope.writePhotosAlbum',
+            success: () => resolve(true),
+            fail: () => {
+              this.openAlbumPermissionSetting().then(resolve);
+            }
+          });
+        },
+        fail: () => resolve(false)
+      });
+    });
+  },
+
+  openAlbumPermissionSetting() {
+    return new Promise((resolve) => {
+      wx.showModal({
+        title: '需要相册权限',
+        content: '保存正念日记卡片需要写入系统相册，请开启“保存到相册”权限。',
+        confirmText: '去设置',
+        success: (modalRes) => {
+          if (!modalRes.confirm) {
+            resolve(false);
+            return;
+          }
+
+          wx.openSetting({
+            success: (settingRes) => {
+              resolve(!!settingRes.authSetting['scope.writePhotosAlbum']);
+            },
+            fail: () => resolve(false)
+          });
+        },
+        fail: () => resolve(false)
+      });
+    });
+  },
+
+  getSavableImagePath(filePath) {
+    return new Promise((resolve, reject) => {
+      if (!filePath) {
+        reject(new Error('图片路径为空'));
+        return;
+      }
+
+      if (filePath.startsWith('wxfile://') || filePath.startsWith('/')) {
+        resolve(filePath);
+        return;
+      }
+
+      wx.getImageInfo({
+        src: filePath,
+        success: (res) => resolve(res.path || filePath),
+        fail: reject
+      });
+    });
+  },
+
+  saveImageToAlbum(filePath) {
+    return new Promise((resolve, reject) => {
+      wx.saveImageToPhotosAlbum({
+        filePath,
+        success: resolve,
+        fail: reject
+      });
     });
   },
 

@@ -1,13 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/app';
-import { JwtPayload } from '../types';
+import { AdminJwtPayload, JwtPayload } from '../types';
+import { verifyAdminToken } from '../utils/jwt';
 
 // 扩展Request类型
 declare global {
   namespace Express {
     interface Request {
       user?: JwtPayload;
+      admin?: AdminJwtPayload;
     }
   }
 }
@@ -59,5 +61,42 @@ export const optionalAuth = async (
   } catch (error) {
     // 忽略错误，继续处理请求
     next();
+  }
+};
+
+// 管理员认证中间件
+export const adminAuthMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      res.status(401).json({
+        success: false,
+        error: '未提供管理员认证令牌'
+      });
+      return;
+    }
+
+    const decoded = verifyAdminToken(token);
+
+    if (decoded.role !== 'admin') {
+      res.status(401).json({
+        success: false,
+        error: '无效的管理员认证令牌'
+      });
+      return;
+    }
+
+    req.admin = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      error: '无效的管理员认证令牌'
+    });
   }
 };

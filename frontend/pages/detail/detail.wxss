@@ -862,25 +862,19 @@
   font-size: 26rpx;
 }
 
-.custom-feeling-mic {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: 50%;
-  background: rgba(232, 208, 169, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
+.custom-feeling-record-button {
+  width: 96rpx;
+  height: 96rpx;
+  flex-shrink: 0;
+  box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.14);
 }
 
-.custom-feeling-mic .mic-icon {
-  font-size: 36rpx;
+.custom-feeling-mic-icon-wrapper {
+  transform: scale(0.64);
 }
 
-.custom-feeling-mic.recording {
-  background: rgba(212, 175, 55, 0.3);
-  box-shadow: 0 0 20rpx rgba(212, 175, 55, 0.4);
-  transform: scale(1.05);
+.custom-feeling-record-button:active {
+  transform: scale(0.94);
 }
 
 .reflection-btn {

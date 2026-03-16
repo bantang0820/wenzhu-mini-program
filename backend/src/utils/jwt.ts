@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config/app';
-import { JwtPayload } from '../types';
+import { AdminJwtPayload, JwtPayload } from '../types';
 
 /**
  * 生成JWT token
@@ -22,4 +22,26 @@ export const generateToken = (payload: JwtPayload): string => {
  */
 export const verifyToken = (token: string): JwtPayload => {
   return jwt.verify(token, config.jwt.secret) as JwtPayload;
+};
+
+/**
+ * 生成管理员JWT token
+ * @param payload 管理员token负载
+ * @returns token字符串
+ */
+export const generateAdminToken = (payload: AdminJwtPayload): string => {
+  return jwt.sign(
+    payload,
+    config.jwt.secret,
+    { expiresIn: config.admin.tokenExpiresIn } as jwt.SignOptions
+  );
+};
+
+/**
+ * 验证管理员JWT token
+ * @param token token字符串
+ * @returns 解码后的payload
+ */
+export const verifyAdminToken = (token: string): AdminJwtPayload => {
+  return jwt.verify(token, config.jwt.secret) as AdminJwtPayload;
 };
