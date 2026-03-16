@@ -161,36 +161,50 @@ export class AIService {
         .map((item, index) => `${index + 1}. ${item}`)
         .join('\n');
 
-      const prompt = `请生成一段“正念育儿日记”正文，用户将直接用于生成卡片。
+      const prompt = `# Background & Context
+1. 用户刚刚经历了一次与孩子的情绪冲突，没忍住发了脾气，随后感到懊悔和内疚。
+2. 用户刚刚在一个小程序里完成了5个步骤的阅读平复：接纳情绪 -> 课题分离 -> 成长型思维 -> 具体行动 -> 自我身份确认。
+3. 这篇日记是整个体验的“结案陈词”，是送给用户自己的一份情绪礼物。
 
-场景：${data.scenarioTitle}
-练习轨迹：风暴 ${timeStart} -> 转念 ${timeMid} -> 安顿 ${timeEnd}
-5句朗读原文：
-${mantrasPreview}
+# Input Variables
+用户当前触发的场景是：${data.scenarioTitle}
+用户平复后选择的情绪标签是：${data.finalStateLabel}（${data.finalState}）
+用户的复述记录（供参考）：
+${retellsPreview || '（未提供）'}
 
-用户每句复述：
-${retellsPreview || '（用户复述较短）'}
+# Generation Rules (必须严格遵守)
+1. 绝对的第一人称：全篇只能用“我”为主语。就像是用户自己在心里默默写下的日记。
+2. 零说教，纯觉察：绝对禁止出现“你应该”、“父母需要”、“你要知道”等任何指导性、评判性的词汇。
+3. 破除全能自恋：在文案中要体现出“我不必为孩子的所有情绪负责，我无法也不需要完美”的松弛感。
+4. 语言风格：像水一样柔软，像树根一样坚定。多用感官词汇（呼吸、紧绷、松弛、流动），句子要短促、有诗意。
 
-用户最终状态：${data.finalStateLabel}（${data.finalState}）
+# Format Rules (格式红线，绝不能违反)
+1. 字数限制：全文必须严格控制在 300 字以内，越精炼越有力量。
+2. 极简段落：每段最多只能有 1 到 3 句话！绝不能超过 3 句！
+3. 呼吸感排版：只要意思稍有停顿，必须立刻换行（使用回车键）。多用短句，创造视觉上的留白和轻盈感。
 
-要求：
-1. 第一人称“我”叙述，温暖真实，富有希望感。
-2. 重点体现：我先稳住自己，再去连接孩子。
-3. 结尾给一句“下一次我会...”的具体行动。
-4. 只输出正文，不要标题，不要markdown标记。`;
+# Diary Structure (四段式结构)
+请严格按照以下四个层次递进书写，段落之间自然过渡（记得遵守上述的换行规则）：
+- 【觉察·看见风暴】：用客观、抽离的视角描述刚才身体或心理的失控感（例如：胸腔发紧、疲惫感袭来），承认自己搞砸了，不带任何羞耻感。结合场景：${data.scenarioTitle}。
+- 【向内·拥抱内在】：视线越过孩子，向内看见自己。承认刚才的愤怒其实是因为自己太累了、或者内在空间太拥挤了。对自己说一句允许和接纳的话。
+- 【分离·重塑界限】：进行深度的课题分离。确认孩子的试探、执拗或哭闹，是他生命力发展的自然呈现，是他的课题；而我的情绪，是我自己的功课。互不纠缠。
+- 【赋能·真实胜于完美】：结合用户输入的 [当前情绪标签]，以一句极具力量的短句收尾。确认真实的碰撞胜过虚假的完美，确认自己当下的身份和力量。
 
-      const diaryContent = await this.chatWithZhipu(
+# Output Format
+直接输出排版好的日记正文，绝不要输出任何标题、解析或多余的解释说明。`;
+
+      const diaryContent = await this.chatWithDeepseek(
         [
           {
             role: 'system',
-            content: '你是正念育儿写作助手，擅长写有温度、有力量、可直接发布的短日记。'
+            content: '你是一位深谙“无条件接纳”与“阿德勒课题分离”的心理疗愈大师。你极度敏锐，能够看透父母在养育过程中产生的愤怒、崩溃与内疚，其实往往源于自身的“全能自恋”（渴望完美控制）以及内在小孩的匮乏。\n你的任务是化身为用户内心那个最温柔、最清醒的“高我”（Higher Self），以第一人称（“我”）的口吻，为刚刚经历过情绪风暴并完成自我平复的父母，撰写一篇专属的《正念日记》。'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        0.75,
+        0.8,
         900
       );
 
@@ -204,6 +218,43 @@ ${retellsPreview || '（用户复述较短）'}
       logger.error('生成正念日记失败:', error);
       return this.getMindfulDiaryFallback(data);
     }
+  }
+
+  /**
+   * 调用DeepSeek大模型
+   */
+  private async chatWithDeepseek(
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    temperature = 0.7,
+    maxTokens = 800
+  ): Promise<string> {
+    if (!config.deepseek.apiKey || config.deepseek.apiKey === 'your_deepseek_api_key' || config.deepseek.apiKey.startsWith('your_')) {
+      throw new Error('DEEPSEEK_API_KEY 未配置');
+    }
+
+    const response = await axios.post(
+      config.deepseek.apiUrl,
+      {
+        model: 'deepseek-chat',
+        messages,
+        temperature,
+        max_tokens: maxTokens
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${config.deepseek.apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      }
+    );
+
+    const content = response.data?.choices?.[0]?.message?.content;
+    if (!content || typeof content !== 'string') {
+      throw new Error('DeepSeek返回内容为空');
+    }
+
+    return content;
   }
 
   /**

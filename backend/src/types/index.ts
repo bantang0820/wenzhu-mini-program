@@ -22,12 +22,14 @@ export interface CreateUserData {
 // 会员相关类型
 export interface Membership {
   id: number;
-  user_id: number;
+  user_id: number | null;
+  openid: string;
+  code: string;
   status: 'active' | 'inactive';
   type: string;
   start_date: Date;
   end_date: Date;
-  created_at: Date;
+  create_time: Date;
 }
 
 // 兑换码相关类型
@@ -40,6 +42,28 @@ export interface RedeemCode {
   used_by: string | null;
   used_time: Date | null;
   created_at: Date;
+}
+
+export type PaymentOrderStatus = 'pending' | 'paid' | 'closed' | 'refunded' | 'failed';
+
+export interface PaymentOrder {
+  id: number;
+  order_no: string;
+  user_id: number;
+  openid: string;
+  product_type: string;
+  description: string;
+  total_amount: number;
+  duration_days: number;
+  status: PaymentOrderStatus;
+  prepay_id: string | null;
+  transaction_id: string | null;
+  vip_start_date: Date | null;
+  vip_end_date: Date | null;
+  paid_at: Date | null;
+  wechat_payload: string | null;
+  create_time: Date;
+  update_time: Date;
 }
 
 // 反馈相关类型

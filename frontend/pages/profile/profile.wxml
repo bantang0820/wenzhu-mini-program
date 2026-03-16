@@ -33,10 +33,6 @@
         </view>
       </view>
 
-      <!-- 只有这个按钮触发会员中心/开通 -->
-      <view class="member-btn {{isPro ? 'pro' : ''}}" bindtap="onMemberCardTap">
-        <text class="btn-text">{{isLoggedIn ? (isPro ? '会员中心' : '开通 Pro') : '登录 / 注册'}}</text>
-      </view>
     </view>
   </view>
 

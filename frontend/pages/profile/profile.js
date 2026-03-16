@@ -12,15 +12,8 @@ const DEFAULT_USER_INFO = {
   levelName: '觉察者'
 };
 
-function createMenuList(isLoggedIn) {
+function createMenuList() {
   const menuList = [
-    {
-      id: 'account',
-      icon: isLoggedIn ? '👤' : '🔐',
-      title: isLoggedIn ? '个人信息' : '登录 / 注册',
-      desc: isLoggedIn ? '设置昵称、头像与账号' : '新用户从这里进入',
-      arrow: true
-    },
     {
       id: 'redeem',
       icon: '🎁',
@@ -58,9 +51,7 @@ function createMenuList(isLoggedIn) {
     }
   ];
 
-  return isLoggedIn
-    ? menuList
-    : menuList.filter(item => item.id !== 'account');
+  return menuList;
 }
 
 Page({
@@ -86,7 +77,7 @@ Page({
     },
 
     // ========== 功能列表 ==========
-    menuList: createMenuList(false),
+    menuList: createMenuList(),
 
     // ========== Pro 状态 ==========
     isPro: false,
@@ -135,7 +126,7 @@ Page({
 
     this.setData({
       isLoggedIn,
-      menuList: createMenuList(isLoggedIn)
+      menuList: createMenuList()
     });
 
     if (!isLoggedIn) {

@@ -31,7 +31,7 @@ App({
   globalData: {
     userInfo: null,
     openid: null,
-    isMember: true, // 强制给测试号开通会员权限
+    isMember: false,
     api: null
   },
 
@@ -75,8 +75,9 @@ App({
     if (user) {
       const normalizedUser = this.normalizeUserProfile(user);
       this.globalData.userInfo = normalizedUser;
-      this.globalData.isMember = normalizedUser.isVip;
+      this.globalData.isMember = !!normalizedUser.isVip;
       wx.setStorageSync('userInfo', normalizedUser);
+      wx.setStorageSync('isMember', !!normalizedUser.isVip);
 
       if (normalizedUser.vip_expire_time) {
         wx.setStorageSync('proExpireTime', new Date(normalizedUser.vip_expire_time).getTime());
@@ -129,6 +130,12 @@ App({
           user: res.result.user || res.result
         });
         console.log('同步云端状态成功:', this.globalData.isMember);
+        return;
+      }
+
+      const authError = res.result?.error || '';
+      if (/401|未授权|用户不存在/.test(authError)) {
+        this.clearAuthSession();
       }
     } catch (err) {
       console.error('静默状态同步失败', err);

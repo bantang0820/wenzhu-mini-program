@@ -83,27 +83,42 @@
 
   <!-- 第一轮朗读前说明 -->
   <view class="reading-intro-overlay {{closingOverlay === 'start' ? 'is-dissolving' : ''}}" wx:if="{{currentPhase === 'reading' && !postReadingStep && showReadingIntro}}">
-    <view class="reading-intro-card {{closingOverlay === 'start' ? 'is-dissolving' : ''}}">
-      <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'start'}}"></view>
-      <text class="reading-intro-kicker">开始前</text>
-      <text class="reading-intro-title title-serif">你可能在想，读出来有什么用</text>
-      <text class="reading-intro-body">其实，当你轻声把一句话念出来的时候，</text>
-      <text class="reading-intro-body">身体会比大脑更快安静下来。</text>
-      <text class="reading-intro-body">不需要有感情，不需要念得好听，</text>
-      <text class="reading-intro-body">就像跟自己说句悄悄话那样就够了。</text>
-      <view class="reading-intro-button" bindtap="onConfirmReadingIntro">
-        <text>先试一句</text>
+    <view class="reading-intro-card flip-container {{isFlipping ? 'is-flipped' : ''}} {{closingOverlay === 'start' ? 'is-dissolving' : ''}}">
+      <view class="flipper">
+        <view class="front-face">
+          <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'start'}}"></view>
+          <text class="reading-intro-kicker">开始前</text>
+          <text class="reading-intro-title title-serif">你可能在想，读出来有什么用</text>
+          <text class="reading-intro-body">其实，当你轻声把一句话念出来的时候，</text>
+          <text class="reading-intro-body">身体会比大脑更快安静下来。</text>
+          <text class="reading-intro-body">不需要有感情，不需要念得好听，</text>
+          <text class="reading-intro-body">就像跟自己说句悄悄话那样就够了。</text>
+          <view class="reading-intro-button" bindtap="onConfirmReadingIntro">
+            <text>先试一句</text>
+          </view>
+        </view>
+        <view class="back-face">
+          <text class="quote-reveal-text title-serif">{{allMantras[0] || currentText}}</text>
+        </view>
       </view>
     </view>
   </view>
 
   <!-- 句间过渡提示页 -->
   <view class="reading-intro-overlay {{closingOverlay === 'transition' ? 'is-dissolving' : ''}}" wx:if="{{currentPhase === 'reading' && !postReadingStep && showReadingTransition}}">
-    <view class="reading-intro-card round-transition-card {{closingOverlay === 'transition' ? 'is-dissolving' : ''}}">
-      <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'transition'}}"></view>
-      <text class="reading-intro-body round-transition-body" wx:for="{{readingTransitionLines}}" wx:key="index">{{item}}</text>
-      <view class="reading-intro-button" bindtap="onConfirmReadingTransition">
-        <text>{{readingTransitionButtonText}}</text>
+    <view class="reading-intro-card round-transition-card flip-container {{isFlipping ? 'is-flipped' : ''}} {{closingOverlay === 'transition' ? 'is-dissolving' : ''}}">
+      <view class="flipper">
+        <view class="front-face">
+          <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'transition'}}"></view>
+          <text class="reading-intro-kicker">0{{readingRound}} / 05</text>
+          <text class="reading-intro-body round-transition-body" wx:for="{{readingTransitionLines}}" wx:key="index">{{item}}</text>
+          <view class="reading-intro-button" bindtap="onConfirmReadingTransition">
+            <text>{{readingTransitionButtonText}}</text>
+          </view>
+        </view>
+        <view class="back-face">
+          <text class="quote-reveal-text title-serif">{{readingTransitionAction === 'enter-final-state' ? '太棒了，完成所有朗读' : allMantras[readingRound]}}</text>
+        </view>
       </view>
     </view>
   </view>

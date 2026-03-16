@@ -20,6 +20,7 @@ Page({
   onLoad(options = {}) {
     this.redirectTarget = options.redirect ? decodeURIComponent(options.redirect) : '';
     this.loginScene = options.scene || '';
+    this.loginInFlight = false;
     this.redirectIfLoggedIn();
     this.initPrivacySetting();
   },
@@ -102,8 +103,9 @@ Page({
 
   // 处理一键登录
   async handleQuickLogin() {
-    if (this.data.loading) return;
-    
+    if (this.data.loading || this.loginInFlight) return;
+
+    this.loginInFlight = true;
     this.setData({ loading: true });
     wx.showLoading({ title: '正在开启...', mask: true });
 
@@ -112,19 +114,17 @@ Page({
       const code = await this.getWechatLoginCode();
 
       // 2. 调用后端登录/注册接口
-      const loginRes = await api.callFunction({
-        name: 'login',
-        data: { code }
-      });
+      const loginRes = await api.post('/auth/wechat-login', { code }, false, true);
+      const loginData = loginRes.data || {};
 
-      if (!loginRes.result || !loginRes.result.success || !loginRes.result.openid || !loginRes.result.token) {
-        throw new Error(loginRes.result?.error || '登录失败，请重试');
+      if (!loginRes.success || !loginData.openid || !loginData.token) {
+        throw new Error(loginRes.error || '登录失败，请重试');
       }
 
-      const { openid, token } = loginRes.result;
-      const loginUser = (app.normalizeUserProfile && loginRes.result.user)
-        ? app.normalizeUserProfile(loginRes.result.user)
-        : (loginRes.result.user || {});
+      const { openid, token } = loginData;
+      const loginUser = (app.normalizeUserProfile && loginData.user)
+        ? app.normalizeUserProfile(loginData.user)
+        : (loginData.user || {});
 
       // 3. 保存登录态
       if (typeof app.setAuthSession === 'function') {
@@ -144,20 +144,22 @@ Page({
 
       // 4. 非阻塞同步用户信息（不影响主登录流程）
       try {
-        const syncRes = await api.callFunction({
-          name: 'syncUserProfile',
-          data: {
+        const syncRes = await api.post(
+          '/auth/sync-profile',
+          {
             userInfo: {
               nickname: loginUser.nickname || '正念家长',
               avatarUrl: loginUser.avatarUrl || loginUser.avatar_url || ''
             }
-          }
-        });
+          },
+          true,
+          true
+        );
 
-        if (syncRes.result && syncRes.result.success && syncRes.result.user) {
+        if (syncRes.success && syncRes.data && syncRes.data.user) {
           const syncedUser = typeof app.normalizeUserProfile === 'function'
-            ? app.normalizeUserProfile(syncRes.result.user)
-            : syncRes.result.user;
+            ? app.normalizeUserProfile(syncRes.data.user)
+            : syncRes.data.user;
 
           if (typeof app.setAuthSession === 'function') {
             app.setAuthSession({
@@ -192,6 +194,7 @@ Page({
         icon: 'none'
       });
     } finally {
+      this.loginInFlight = false;
       this.setData({ loading: false });
       wx.hideLoading();
     }

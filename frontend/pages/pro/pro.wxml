@@ -52,11 +52,11 @@
     <view class="price-card selected">
       <view class="card-left">
         <text class="plan-name">Pro 年卡会员</text>
-        <text class="plan-desc">平均每天仅需 0.5 元</text>
+        <text class="plan-desc">平均每天仅需 0.27 元</text>
       </view>
       <view class="card-right">
         <text class="currency">¥</text>
-        <text class="price">199</text>
+        <text class="price">99</text>
         <text class="original">¥299</text>
       </view>
     </view>

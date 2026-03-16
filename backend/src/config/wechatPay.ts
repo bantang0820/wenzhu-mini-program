@@ -129,12 +129,16 @@ class WechatPayConfig {
       // 解密数据
       const decrypted: any = wxpay.decipher_gcm(
         ciphertext,
-        associated_data,
+        associated_data || '',
         nonce,
         apiV3Key
       );
 
-      return JSON.parse(decrypted);
+      if (typeof decrypted === 'string') {
+        return JSON.parse(decrypted);
+      }
+
+      return decrypted;
     } catch (error) {
       logger.error('解密回调数据失败:', error);
       throw error;

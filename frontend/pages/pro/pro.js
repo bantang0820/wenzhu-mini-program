@@ -1,4 +1,7 @@
 const api = require('../../utils/api.js');
+const app = getApp();
+
+const ANNUAL_PRODUCT_TYPE = 'annual';
 
 Page({
   data: {
@@ -9,9 +12,8 @@ Page({
   onLoad() {
     console.log('=== Pro 页面 onLoad ===');
     console.log('当前文件: frontend/pages/pro/pro.js (新版支付)');
-    const app = getApp();
     this.setData({
-      isPro: app.globalData.isMember
+      isPro: !!app.globalData.isMember
     });
   },
 
@@ -20,7 +22,6 @@ Page({
     console.log('=== onPayTap 被调用 ===');
     wx.vibrateShort({ type: 'medium' });
 
-    const app = getApp();
     const openid = wx.getStorageSync('openid');
     const token = wx.getStorageSync('token');
     console.log('当前 openid:', openid);
@@ -53,9 +54,7 @@ Page({
 
       // 2. 创建支付订单
       const payRes = await api.post('/payment/create', {
-        openid: openid,
-        description: '稳住Pro年卡会员',
-        totalAmount: 19900, // 199元 = 19900分
+        productType: ANNUAL_PRODUCT_TYPE,
         orderNo: orderNo
       }, true);
 
@@ -65,7 +64,7 @@ Page({
         throw new Error(payRes.error || '创建支付订单失败');
       }
 
-      const { payParams, prepayId } = payRes.data;
+      const { payParams } = payRes.data;
 
       // 3. 调起微信支付
       wx.requestPayment({
@@ -80,10 +79,9 @@ Page({
             icon: 'success'
           });
 
-          // 刷新用户状态
           setTimeout(() => {
-            this.checkPaymentStatus(orderNo);
-          }, 1000);
+            this.checkPaymentStatus(orderNo, 0);
+          }, 1200);
         },
         fail: (err) => {
           console.error('支付失败:', err);
@@ -114,21 +112,80 @@ Page({
   },
 
   // 检查支付状态
-  async checkPaymentStatus(orderNo) {
+  async checkPaymentStatus(orderNo, attempt = 0) {
     try {
       const res = await api.post('/payment/query', {
         orderNo: orderNo
       }, true);
 
-      if (res.success && res.data.trade_state === 'SUCCESS') {
-        // 支付成功，更新会员状态
-        const app = getApp();
-        app.globalData.isMember = true;
-        wx.setStorageSync('isMember', true);
+      if (res.success && (res.data.trade_state === 'SUCCESS' || res.data.isPaid)) {
+        const token = wx.getStorageSync('token');
+        const openid = wx.getStorageSync('openid');
+        const cachedUser = wx.getStorageSync('userInfo') || app.globalData.userInfo || {};
+        const vipExpireTime = res.data.vipExpireTime;
+
+        if (typeof app.setAuthSession === 'function') {
+          app.setAuthSession({
+            token,
+            openid,
+            user: {
+              ...cachedUser,
+              openid,
+              isVip: true,
+              vipExpireTime
+            }
+          });
+        }
+
+        if (typeof app.checkLoginStatus === 'function') {
+          app.checkLoginStatus().catch((syncError) => {
+            console.warn('支付成功后刷新会员状态失败', syncError);
+          });
+        }
+
+        this.setData({
+          isPro: true
+        });
+
+        let modalContent = '恭喜您成为稳住Pro会员！';
+
+        if (vipExpireTime) {
+          const expireDate = new Date(vipExpireTime);
+          const year = expireDate.getFullYear();
+          const month = String(expireDate.getMonth() + 1).padStart(2, '0');
+          const day = String(expireDate.getDate()).padStart(2, '0');
+          modalContent = `恭喜您成为稳住Pro会员！\n有效期至：${year}.${month}.${day}`;
+        }
 
         wx.showModal({
           title: '开通成功',
-          content: '恭喜您成为稳住Pro会员！',
+          content: modalContent,
+          showCancel: false,
+          success: () => {
+            wx.switchTab({
+              url: '/pages/profile/profile'
+            });
+          }
+        });
+        return;
+      }
+
+      if (attempt < 9) {
+        setTimeout(() => {
+          this.checkPaymentStatus(orderNo, attempt + 1);
+        }, 1800);
+      }
+    } catch (error) {
+      console.error('查询支付状态失败:', error);
+
+      if (attempt < 9) {
+        setTimeout(() => {
+          this.checkPaymentStatus(orderNo, attempt + 1);
+        }, 1800);
+      } else {
+        wx.showModal({
+          title: '支付结果确认中',
+          content: '款项已提交，如果没有自动跳转，请稍后到个人中心查看会员状态。',
           showCancel: false,
           success: () => {
             wx.switchTab({
@@ -137,8 +194,6 @@ Page({
           }
         });
       }
-    } catch (error) {
-      console.error('查询支付状态失败:', error);
     }
   },
 

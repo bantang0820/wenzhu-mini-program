@@ -149,9 +149,9 @@ export class AdminService {
       );
 
       await connection.execute(
-        `INSERT INTO memberships (user_id, status, type, start_date, end_date)
-         VALUES (?, 'active', ?, ?, ?)`,
-        [userId, type, startDate, endDate]
+        `INSERT INTO memberships (user_id, openid, code, status, type, start_date, end_date)
+         VALUES (?, ?, '', 'active', ?, ?, ?)`,
+        [userId, user.openid, type, startDate, endDate]
       );
 
       await connection.commit();

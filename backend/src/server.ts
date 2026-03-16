@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { IncomingMessage } from 'http';
 import { config } from './config/app';
 import { testConnection } from './config/database';
 import routes from './routes';
@@ -15,7 +16,11 @@ const app: Application = express();
 
 // 中间件配置
 app.use(cors()); // 跨域支持
-app.use(express.json()); // 解析JSON请求体
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    (req as IncomingMessage & { rawBody?: string }).rawBody = buf.toString('utf8');
+  }
+})); // 解析JSON请求体，并保留原始请求体用于支付回调验签
 app.use(express.urlencoded({ extended: true })); // 解析URL编码的请求体
 
 // 请求日志

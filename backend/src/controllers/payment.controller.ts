@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
+import { getPaymentProduct } from '../config/paymentProducts';
+import { AppError } from '../middlewares/error';
 import PaymentService from '../services/payment.service';
+import PaymentOrderService from '../services/payment-order.service';
 import { ApiResponse } from '../types';
 import logger from '../utils/logger';
-import crypto from 'crypto';
 
 /**
  * 支付控制器
@@ -14,10 +16,11 @@ export class PaymentController {
    */
   async createPayment(req: Request, res: Response): Promise<void> {
     try {
-      const { openid, description, totalAmount, orderNo } = req.body;
+      const { orderNo, productType } = req.body;
+      const openid = req.user?.openid;
+      const product = getPaymentProduct(productType);
 
-      // 参数验证
-      if (!openid || !description || !totalAmount || !orderNo) {
+      if (!openid || !orderNo) {
         res.status(400).json({
           success: false,
           error: '缺少必要参数'
@@ -25,26 +28,24 @@ export class PaymentController {
         return;
       }
 
-      // 金额验证（单位：分）
-      if (totalAmount <= 0) {
-        res.status(400).json({
-          success: false,
-          error: '金额必须大于0'
-        } as ApiResponse);
-        return;
-      }
+      logger.info(`创建支付订单: ${orderNo}, 商品: ${product.type}, 金额: ${product.totalAmount}分, 用户: ${openid}`);
 
-      logger.info(`创建支付订单: ${orderNo}, 金额: ${totalAmount}分, 用户: ${openid}`);
+      await PaymentOrderService.createPendingOrder(orderNo, openid, product.type);
 
       // 创建JSAPI支付订单
       const orderResult = await PaymentService.createJsapiOrder(
         openid,
-        description,
-        totalAmount,
+        product.description,
+        product.totalAmount,
         orderNo
       );
 
       if (orderResult.errorCode) {
+        await PaymentOrderService.markOrderFailed(orderNo, orderResult.raw || {
+          code: orderResult.errorCode,
+          message: orderResult.errorMsg
+        });
+
         res.json({
           success: false,
           error: orderResult.errorMsg
@@ -52,24 +53,25 @@ export class PaymentController {
         return;
       }
 
-      // 生成小程序支付参数
-      const payParams = await PaymentService.getMiniPayParams(
-        orderResult.prepayId!
-      );
+      await PaymentOrderService.updatePrepayInfo(orderNo, orderResult.prepayId!, orderResult.raw);
 
       res.json({
         success: true,
         data: {
           prepayId: orderResult.prepayId,
-          payParams: payParams,
-          orderNo: orderNo
+          payParams: orderResult.payParams,
+          orderNo: orderNo,
+          productType: product.type,
+          totalAmount: product.totalAmount,
+          description: product.description
         }
       } as ApiResponse);
     } catch (error) {
       logger.error('创建支付订单失败:', error);
-      res.status(500).json({
+      const statusCode = error instanceof AppError ? error.statusCode : 500;
+      res.status(statusCode).json({
         success: false,
-        error: '创建支付订单失败'
+        error: error instanceof AppError ? error.message : '创建支付订单失败'
       } as ApiResponse);
     }
   }
@@ -81,8 +83,9 @@ export class PaymentController {
   async queryOrder(req: Request, res: Response): Promise<void> {
     try {
       const { orderNo } = req.body;
+      const openid = req.user?.openid;
 
-      if (!orderNo) {
+      if (!orderNo || !openid) {
         res.status(400).json({
           success: false,
           error: '缺少订单号'
@@ -92,17 +95,35 @@ export class PaymentController {
 
       logger.info(`查询订单: ${orderNo}`);
 
-      const orderData = await PaymentService.queryOrder(orderNo);
+      let localOrder = await PaymentOrderService.assertOrderOwner(orderNo, openid);
+      let wechatOrder: any = null;
+
+      if (localOrder.status !== 'paid') {
+        wechatOrder = await PaymentService.queryOrder(orderNo);
+
+        if (wechatOrder) {
+          localOrder = (await PaymentOrderService.syncFromWechatOrder(orderNo, wechatOrder)) || localOrder;
+        }
+      }
 
       res.json({
         success: true,
-        data: orderData
+        data: {
+          orderNo,
+          trade_state: wechatOrder?.trade_state || (localOrder.status === 'paid' ? 'SUCCESS' : ''),
+          transaction_id: wechatOrder?.transaction_id || localOrder.transaction_id,
+          isPaid: localOrder.status === 'paid',
+          vipExpireTime: localOrder.vip_end_date,
+          localOrder,
+          wechatOrder: wechatOrder || null
+        }
       } as ApiResponse);
     } catch (error) {
       logger.error('查询订单失败:', error);
-      res.status(500).json({
+      const statusCode = error instanceof AppError ? error.statusCode : 500;
+      res.status(statusCode).json({
         success: false,
-        error: '查询订单失败'
+        error: error instanceof AppError ? error.message : '查询订单失败'
       } as ApiResponse);
     }
   }
@@ -114,8 +135,9 @@ export class PaymentController {
   async closeOrder(req: Request, res: Response): Promise<void> {
     try {
       const { orderNo } = req.body;
+      const openid = req.user?.openid;
 
-      if (!orderNo) {
+      if (!orderNo || !openid) {
         res.status(400).json({
           success: false,
           error: '缺少订单号'
@@ -125,7 +147,12 @@ export class PaymentController {
 
       logger.info(`关闭订单: ${orderNo}`);
 
+      await PaymentOrderService.assertOrderOwner(orderNo, openid);
       await PaymentService.closeOrder(orderNo);
+      await PaymentOrderService.markOrderClosed(orderNo, {
+        action: 'manual_close',
+        closedAt: new Date().toISOString()
+      });
 
       res.json({
         success: true,
@@ -135,9 +162,10 @@ export class PaymentController {
       } as ApiResponse);
     } catch (error) {
       logger.error('关闭订单失败:', error);
-      res.status(500).json({
+      const statusCode = error instanceof AppError ? error.statusCode : 500;
+      res.status(statusCode).json({
         success: false,
-        error: '关闭订单失败'
+        error: error instanceof AppError ? error.message : '关闭订单失败'
       } as ApiResponse);
     }
   }
@@ -166,7 +194,7 @@ export class PaymentController {
       }
 
       // 获取请求体
-      const body = JSON.stringify(req.body);
+      const body = (req as Request & { rawBody?: string }).rawBody || JSON.stringify(req.body);
 
       // 验证签名
       const isValid = await PaymentService.verifyCallbackSignature(
@@ -201,28 +229,27 @@ export class PaymentController {
 
       logger.info('支付回调解密数据:', JSON.stringify(decryptedData, null, 2));
 
-      // TODO: 根据业务逻辑处理支付成功后的操作
-      // 例如：更新订单状态、开通会员等
       const { out_trade_no, trade_state, transaction_id, amount } = decryptedData;
 
       if (trade_state === 'SUCCESS') {
         logger.info(`订单 ${out_trade_no} 支付成功，交易流水号: ${transaction_id}，金额: ${amount.total}分`);
-
-        // TODO: 在这里添加你的业务逻辑
-        // 1. 更新数据库订单状态
-        // 2. 开通会员
-        // 3. 发送通知等
+        await PaymentOrderService.syncPaidOrder(out_trade_no, {
+          transactionId: transaction_id,
+          paidAt: decryptedData.success_time || null,
+          wechatPayload: decryptedData
+        });
+      } else {
+        await PaymentOrderService.syncFromWechatOrder(out_trade_no, decryptedData);
       }
 
-      // 返回成功响应（必须返回200状态码和指定格式）
       res.json({
         code: 'SUCCESS',
-        message: '处理成功'
+        message: '成功'
       });
     } catch (error) {
       logger.error('处理支付回调失败:', error);
-      // 即使处理失败，也要返回200，否则微信会重复推送
-      res.json({
+
+      res.status(500).json({
         code: 'FAIL',
         message: '处理失败'
       });
@@ -236,9 +263,10 @@ export class PaymentController {
   async refund(req: Request, res: Response): Promise<void> {
     try {
       const { orderNo, refundNo, totalAmount, refundAmount, reason } = req.body;
+      const openid = req.user?.openid;
 
       // 参数验证
-      if (!orderNo || !refundNo || !totalAmount || !refundAmount) {
+      if (!orderNo || !refundNo || !totalAmount || !refundAmount || !openid) {
         res.status(400).json({
           success: false,
           error: '缺少必要参数'
@@ -257,6 +285,7 @@ export class PaymentController {
 
       logger.info(`申请退款: 订单${orderNo}, 退款金额${refundAmount}分`);
 
+      await PaymentOrderService.assertOrderOwner(orderNo, openid);
       const refundResult = await PaymentService.refund(
         orderNo,
         refundNo,
@@ -265,15 +294,18 @@ export class PaymentController {
         reason
       );
 
+      await PaymentOrderService.markOrderRefunded(orderNo, refundResult);
+
       res.json({
         success: true,
         data: refundResult
       } as ApiResponse);
     } catch (error) {
       logger.error('申请退款失败:', error);
-      res.status(500).json({
+      const statusCode = error instanceof AppError ? error.statusCode : 500;
+      res.status(statusCode).json({
         success: false,
-        error: '申请退款失败'
+        error: error instanceof AppError ? error.message : '申请退款失败'
       } as ApiResponse);
     }
   }

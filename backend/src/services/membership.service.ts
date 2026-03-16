@@ -93,9 +93,9 @@ export class MembershipService {
 
       // 7. 插入会员记录
       await connection.execute(
-        `INSERT INTO memberships (user_id, status, type, start_date, end_date)
-         VALUES (?, 'active', ?, ?, ?)`,
-        [user.id, redeemCode.type, startDate, endDate]
+        `INSERT INTO memberships (user_id, openid, code, status, type, start_date, end_date)
+         VALUES (?, ?, ?, 'active', ?, ?, ?)`,
+        [user.id, openid, redeemCode.code, redeemCode.type, startDate, endDate]
       );
 
       // 提交事务

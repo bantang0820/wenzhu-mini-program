@@ -1,9 +1,11 @@
 // API 配置文件
-module.exports = {
-  // 本地开发调试地址
-  baseURL: 'http://127.0.0.1:3000/api',
+const API_BASE_URL = 'https://1dt2po0565100.vicp.fun/api';
 
-  // 备用地址（主地址请求失败时自动重试）
+module.exports = {
+  // 小程序默认走线上后端，便于真机直接登录
+  baseURL: API_BASE_URL,
+
+  // 如需临时切换地址，可直接修改上面的常量
   fallbackBaseURLs: [],
 
   // API 超时时间（毫秒）

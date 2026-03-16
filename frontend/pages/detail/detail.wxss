@@ -387,17 +387,70 @@
   animation: introOverlayFadeOut 0.42s ease forwards;
 }
 
+/* 翻转卡片效果 */
+.flip-container {
+  perspective: 1500rpx;
+}
+
+.flipper {
+  width: 100%;
+  position: relative;
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.is-flipped .flipper {
+  transform: rotateY(180deg);
+}
+
 .reading-intro-card {
   width: 100%;
   max-width: 620rpx;
-  padding: 56rpx 44rpx 48rpx;
-  border-radius: 36rpx;
-  background: linear-gradient(180deg, rgba(24, 30, 38, 0.96) 0%, rgba(15, 18, 23, 0.96) 100%);
-  border: none;
-  box-shadow: 0 24rpx 80rpx rgba(0, 0, 0, 0.28);
   text-align: center;
   position: relative;
-  overflow: hidden;
+}
+
+.front-face, .back-face {
+  border-radius: 36rpx;
+  background: linear-gradient(180deg, rgba(24, 30, 38, 0.96) 0%, rgba(15, 18, 23, 0.96) 100%);
+  box-shadow: 0 24rpx 80rpx rgba(0, 0, 0, 0.28);
+  padding: 56rpx 44rpx 48rpx;
+}
+
+.front-face {
+  width: 100%;
+  backface-visibility: hidden;
+  transform: rotateY(0deg);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.back-face {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  backface-visibility: hidden;
+  transform: rotateY(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.back-face .quote-reveal-text {
+  font-size: 38rpx;
+  line-height: 1.8;
+  color: #F6E8D1;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-shadow: none;
+  text-align: center; /* 明确覆盖正文的对齐方式 */
+  text-align-last: center;
 }
 
 .reading-intro-card.is-dissolving {
@@ -405,10 +458,12 @@
 }
 
 .round-transition-card {
-  border: none;
-  box-shadow: none;
-  background: transparent;
-  padding: 36rpx 32rpx 32rpx;
+  /* wrapper itself doesn't have background now */
+}
+
+.round-transition-card .front-face,
+.round-transition-card .back-face {
+  /* Using the same card style as intro for consistency */
 }
 
 .reading-intro-kicker {
@@ -475,19 +530,22 @@
 
 .quote-reveal-container {
   width: 100%;
-  max-width: 600rpx;
-  text-align: center;
-  padding: 80rpx 40rpx;
-  margin-bottom: 60rpx;
+  padding: 40rpx 60rpx; /* 控制统一的左右边距，确保两边留白绝对一致 */
+  margin-bottom: 30rpx; /* 减小底部外边距，避免文字跟底部固定区域重叠 */
+  box-sizing: border-box; /* 确保padding不会撑大宽度 */
 }
 
 .quote-reveal-text {
-  font-size: 52rpx;
-  font-weight: 700;
-  line-height: 1.8;
-  letter-spacing: 0.05em;
+  font-size: 40rpx; /* 减小字号，避免文字显得太大 */
+  font-weight: 300; /* 保持轻盈、松弛 */
+  line-height: 1.8; /* 缩小行高，防止多行文字挤到底部重叠 */
+  letter-spacing: 0.08em; 
   color: var(--color-text-primary);
-  white-space: pre-line;
+  white-space: pre-wrap; /* 改为 pre-wrap，更好地处理自然换行和手动换行 */
+  font-family: 'Times New Roman', STSong, 'Songti SC', serif; /* 保持衬线体高级感 */
+  display: block; /* 确保文字块占据整行 */
+  text-align: justify; /* 两端对齐，使得每行文字左右边缘完全平齐 */
+  text-align-last: left; /* 最后一行左对齐，自然收尾 */
 }
 
 @keyframes introOverlayFadeOut {
@@ -633,26 +691,62 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   gap: 8rpx;
+  position: relative;
+}
+
+/* 增加底层波纹元素 */
+.record-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: rgba(232, 208, 169, 0.15);
+  z-index: -1;
+  opacity: 0;
+  transition: all 0.3s ease;
 }
 
 .record-button:active {
-  background: rgba(232, 208, 169, 0.15);
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
-  border-color: rgba(232, 208, 169, 0.3);
+  transform: scale(0.92);
+  background: rgba(232, 208, 169, 0.2);
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
+  border-color: rgba(232, 208, 169, 0.4);
 }
 
 .record-button.recording {
+  transform: scale(0.95);
   background: rgba(232, 208, 169, 0.15);
-  border-color: rgba(232, 208, 169, 0.5);
-  box-shadow: 0 0 40rpx rgba(232, 208, 169, 0.2);
+  border-color: rgba(232, 208, 169, 0.6);
+  box-shadow: inset 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
 }
 
-@keyframes recordingPulse {
-  0%, 100% {
-    box-shadow: 0 0 20rpx rgba(255, 255, 255, 0.1), 0 0 0 0 rgba(255, 255, 255, 0.4);
+.record-button.recording::before {
+  opacity: 1;
+  animation: breatheRipple 2s ease-in-out infinite;
+}
+
+@keyframes breatheRipple {
+  0% {
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+    box-shadow: 0 0 0 0 rgba(232, 208, 169, 0.4);
   }
   50% {
-    box-shadow: 0 0 30rpx rgba(255, 255, 255, 0.3), 0 0 0 15rpx rgba(255, 255, 255, 0);
+    width: 160%;
+    height: 160%;
+    opacity: 0.2;
+    box-shadow: 0 0 0 20rpx rgba(232, 208, 169, 0);
+  }
+  100% {
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+    box-shadow: 0 0 0 0 rgba(232, 208, 169, 0);
   }
 }
 
@@ -1577,6 +1671,16 @@
 
 .reading-mode .record-button {
   background: rgba(26, 31, 38, 0.8);
+  border-color: rgba(232, 208, 169, 0.6);
+}
+
+.reading-mode .record-button:active {
+  background: rgba(232, 208, 169, 0.15);
+  border-color: rgba(232, 208, 169, 0.8);
+}
+
+.reading-mode .record-button.recording {
+  background: rgba(232, 208, 169, 0.2);
   border-color: #E8D0A9;
 }
 

@@ -1,13 +1,10 @@
 import WechatPayConfig from '../config/wechatPay';
 import logger from '../utils/logger';
-import crypto from 'crypto';
 
 /**
  * 支付订单接口
  */
 interface PaymentOrder {
-  appid?: string;
-  mchid?: string;
   description: string;      // 商品描述
   out_trade_no: string;     // 商户订单号
   notify_url: string;       // 支付回调地址
@@ -34,7 +31,8 @@ interface PaymentOrder {
  */
 interface PaymentResult {
   prepayId?: string;        // 预支付交易会话标识
-  codeUrl?: string;         // 二维码链接（PC扫码支付）
+  payParams?: MiniPayParams;
+  raw?: Record<string, any>;
   errorCode?: string;       // 错误代码
   errorMsg?: string;        // 错误信息
 }
@@ -61,8 +59,7 @@ class PaymentService {
     openid: string,
     description: string,
     totalAmount: number,
-    orderNo: string,
-    clientIp?: string
+    orderNo: string
   ): Promise<PaymentResult> {
     try {
       const wxpay = WechatPayConfig.getInstance();
@@ -90,33 +87,36 @@ class PaymentService {
 
       // 调用JSAPI下单接口
       const result = await wxpay.transactions_jsapi(order);
-
-      // 添加回调URL
-      if (result.status === 200 && result.data) {
-        // 下单成功，需要用新订单号再次请求以设置notify_url
-        // 或者直接在第一次请求时包含在扩展参数中
-        logger.info('微信支付下单响应:', JSON.stringify(result, null, 2));
-      }
+      logger.info('微信支付下单响应:', JSON.stringify(result, null, 2));
 
       if (result.status !== 200) {
         return {
           errorCode: result.status.toString(),
-          errorMsg: `下单失败: HTTP ${result.status}`
+          errorMsg: result.message || `下单失败: HTTP ${result.status}`,
+          raw: result
         };
       }
 
-      const data = result.data;
-
-      if (!data.prepay_id) {
+      if (!result.package || !result.paySign) {
         return {
           errorCode: 'NO_PREPAY_ID',
-          errorMsg: '未获取到预支付交易会话标识'
+          errorMsg: '未获取到有效的支付参数',
+          raw: result
         };
       }
 
-      // 返回预支付ID
+      const prepayId = result.package.replace('prepay_id=', '');
+
       return {
-        prepayId: data.prepay_id
+        prepayId,
+        payParams: {
+          timeStamp: result.timeStamp,
+          nonceStr: result.nonceStr,
+          package: result.package,
+          signType: result.signType || 'RSA',
+          paySign: result.paySign
+        },
+        raw: result
       };
     } catch (error: any) {
       logger.error('创建JSAPI支付订单失败:', error);
@@ -124,41 +124,6 @@ class PaymentService {
         errorCode: error.code || 'CREATE_ORDER_ERROR',
         errorMsg: error.message || '创建支付订单失败'
       };
-    }
-  }
-
-  /**
-   * 生成小程序支付参数
-   * 用于前端调起支付
-   */
-  async getMiniPayParams(prepayId: string): Promise<MiniPayParams> {
-    try {
-      const wxpay = WechatPayConfig.getInstance();
-      const appId = process.env.WECHAT_APP_ID!;
-
-      const timeStamp = Math.floor(Date.now() / 1000).toString();
-      const nonceStr = this.generateNonceStr();
-      const pkg = `prepay_id=${prepayId}`;
-
-      // 构建签名串
-      const signStr = `${appId}\n${timeStamp}\n${nonceStr}\n${pkg}\n`;
-
-      // 使用SDK的签名方法
-      const paySign = wxpay.getSignature('POST', nonceStr, timeStamp, '/v3/pay/transactions/jsapi', pkg);
-
-      const payParams: MiniPayParams = {
-        timeStamp: timeStamp,
-        nonceStr: nonceStr,
-        package: pkg,
-        signType: 'RSA',
-        paySign: paySign
-      };
-
-      logger.info('生成小程序支付参数成功');
-      return payParams;
-    } catch (error: any) {
-      logger.error('生成小程序支付参数失败:', error);
-      throw error;
     }
   }
 
@@ -180,7 +145,7 @@ class PaymentService {
         throw new Error(`查询订单失败: HTTP ${result.status}`);
       }
 
-      return result.data;
+      return result;
     } catch (error) {
       logger.error('查询订单失败:', error);
       throw error;
@@ -289,18 +254,6 @@ class PaymentService {
       signature,
       serial
     );
-  }
-
-  /**
-   * 生成随机字符串
-   */
-  private generateNonceStr(length: number = 32): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
   }
 }
 

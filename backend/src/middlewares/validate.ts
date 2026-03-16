@@ -148,24 +148,15 @@ export const validationSchemas = {
 
   // 创建支付订单
   createPayment: Joi.object({
-    openid: Joi.string().required().messages({
-      'string.empty': 'OpenID不能为空',
-      'any.required': '缺少OpenID'
-    }),
-    description: Joi.string().min(1).max(127).required().messages({
-      'string.min': '商品描述至少1个字符',
-      'string.max': '商品描述不能超过127个字符',
-      'any.required': '缺少商品描述'
-    }),
-    totalAmount: Joi.number().integer().min(1).required().messages({
-      'number.min': '金额必须大于0',
-      'any.required': '缺少金额'
-    }),
+    productType: Joi.string().valid('annual').default('annual'),
     orderNo: Joi.string().min(1).max(32).required().messages({
       'string.min': '订单号至少1个字符',
       'string.max': '订单号不能超过32个字符',
       'any.required': '缺少订单号'
-    })
+    }),
+    openid: Joi.string().allow('').optional(),
+    description: Joi.string().allow('').max(127).optional(),
+    totalAmount: Joi.number().integer().min(1).optional()
   }),
 
   // 查询订单

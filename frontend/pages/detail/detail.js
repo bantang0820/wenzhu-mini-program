@@ -147,6 +147,7 @@ Page({
     isGeneratingJournal: false,
     speechAvailable: false,
     isSpeechRecording: false,
+    isFlipping: false,
     speechTarget: 'reading', // reading | retell | feeling
     hasRecordPermission: false,
 
@@ -1330,14 +1331,19 @@ Page({
       console.warn('预热朗读录音能力失败', error);
     });
 
-    this.playOverlayDissolve('start', () => {
-      this.setData({
-        showReadingIntro: false,
-        showGuide: true,
-        closingOverlay: ''
+    this.setData({ isFlipping: true });
+
+    setTimeout(() => {
+      this.playOverlayDissolve('start', () => {
+        this.setData({
+          showReadingIntro: false,
+          showGuide: true,
+          closingOverlay: '',
+          isFlipping: false
+        });
+        this.startTypewriter();
       });
-      this.startTypewriter();
-    });
+    }, 1500);
   },
 
   getReadingTransitionConfig(round) {
@@ -1374,22 +1380,35 @@ Page({
     wx.vibrateShort({ type: 'light' });
     const action = this.data.readingTransitionAction;
 
-    this.playOverlayDissolve('transition', () => {
-      this.setData({
-        showReadingTransition: false,
-        readingTransitionLines: [],
-        readingTransitionButtonText: '',
-        readingTransitionAction: '',
-        closingOverlay: ''
-      });
-
-      if (action === 'enter-final-state') {
+    if (action === 'enter-final-state') {
+      this.playOverlayDissolve('transition', () => {
+        this.setData({
+          showReadingTransition: false,
+          readingTransitionLines: [],
+          readingTransitionButtonText: '',
+          readingTransitionAction: '',
+          closingOverlay: ''
+        });
         this.enterFinalStateFlow();
-        return;
-      }
+      });
+      return;
+    }
 
-      this.nextRound();
-    });
+    this.setData({ isFlipping: true });
+
+    setTimeout(() => {
+      this.playOverlayDissolve('transition', () => {
+        this.setData({
+          showReadingTransition: false,
+          readingTransitionLines: [],
+          readingTransitionButtonText: '',
+          readingTransitionAction: '',
+          closingOverlay: '',
+          isFlipping: false
+        });
+        this.nextRound();
+      });
+    }, 1500);
   },
 
   playOverlayDissolve(kind, onComplete) {
@@ -1413,9 +1432,19 @@ Page({
       clearInterval(this.data.typewriterTimer);
     }
 
+    // 格式化当前句子：在句号或问号后面增加换行符，让段落按照完整句子换行，减轻压力
+    let formattedText = this.data.currentText || '';
+    
+    // 将英文问号统一替换为中文问号，避免字体差异显得突兀
+    formattedText = formattedText.replace(/\?/g, '？');
+    
+    // 匹配中文/英文句号以及中文问号（后面如果紧跟空格也一并处理），在标点后增加换行符
+    // 注意：如果是字符串末尾的标点，我们保留它但不加额外的换行
+    formattedText = formattedText.replace(/([。\.？])\s*(?!$)/g, '$1\n');
+
     this.setData({
       typewriterTimer: null,
-      displayText: this.data.currentText || '',
+      displayText: formattedText,
       showStamp: true
     });
   },

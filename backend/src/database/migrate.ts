@@ -31,14 +31,17 @@ const createTables = async () => {
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS memberships (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL COMMENT '用户ID',
-        status ENUM('active', 'inactive') DEFAULT 'active' COMMENT '会员状态',
-        type VARCHAR(50) DEFAULT 'annual' COMMENT '会员类型',
-        start_date DATETIME NOT NULL COMMENT '开始时间',
-        end_date DATETIME NOT NULL COMMENT '过期时间',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        user_id INT DEFAULT NULL COMMENT '用户ID',
+        openid VARCHAR(128) NOT NULL COMMENT '微信OpenID',
+        type VARCHAR(50) DEFAULT 'redeem' COMMENT '会员类型',
+        code VARCHAR(50) DEFAULT '' COMMENT '兑换码或来源标识',
+        status VARCHAR(20) DEFAULT 'active' COMMENT '会员状态',
+        start_date DATETIME DEFAULT NULL COMMENT '开始时间',
+        end_date DATETIME DEFAULT NULL COMMENT '过期时间',
+        create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         INDEX idx_user_id (user_id),
+        INDEX idx_openid (openid),
         INDEX idx_status (status),
         INDEX idx_end_date (end_date)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='会员记录表';
@@ -62,7 +65,37 @@ const createTables = async () => {
     `);
     console.log('✅ 兑换码表创建成功');
 
-    // 4. 创建反馈表
+    // 4. 创建支付订单表
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS payment_orders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        order_no VARCHAR(32) NOT NULL UNIQUE COMMENT '商户订单号',
+        user_id INT NOT NULL COMMENT '用户ID',
+        openid VARCHAR(100) NOT NULL COMMENT '用户OpenID',
+        product_type VARCHAR(50) NOT NULL DEFAULT 'annual' COMMENT '商品类型',
+        description VARCHAR(127) NOT NULL COMMENT '商品描述',
+        total_amount INT NOT NULL COMMENT '支付金额（分）',
+        duration_days INT NOT NULL DEFAULT 365 COMMENT '会员时长（天）',
+        status ENUM('pending', 'paid', 'closed', 'refunded', 'failed') DEFAULT 'pending' COMMENT '订单状态',
+        prepay_id VARCHAR(100) DEFAULT NULL COMMENT '预支付ID',
+        transaction_id VARCHAR(100) DEFAULT NULL COMMENT '微信支付单号',
+        vip_start_date DATETIME DEFAULT NULL COMMENT '会员开始时间',
+        vip_end_date DATETIME DEFAULT NULL COMMENT '会员结束时间',
+        paid_at DATETIME DEFAULT NULL COMMENT '支付成功时间',
+        wechat_payload JSON DEFAULT NULL COMMENT '微信侧回包',
+        create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_order_no (order_no),
+        INDEX idx_user_id (user_id),
+        INDEX idx_openid (openid),
+        INDEX idx_status (status),
+        INDEX idx_transaction_id (transaction_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付订单表';
+    `);
+    console.log('✅ 支付订单表创建成功');
+
+    // 5. 创建反馈表
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS feedbacks (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -77,7 +110,7 @@ const createTables = async () => {
     `);
     console.log('✅ 反馈表创建成功');
 
-    // 5. 创建场景表
+    // 6. 创建场景表
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS scenarios (
         id VARCHAR(50) PRIMARY KEY COMMENT '场景ID',
@@ -99,7 +132,7 @@ const createTables = async () => {
     `);
     console.log('✅ 场景表创建成功');
 
-    // 6. 创建练习记录表
+    // 7. 创建练习记录表
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS practice_records (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -119,7 +152,7 @@ const createTables = async () => {
     `);
     console.log('✅ 练习记录表创建成功');
 
-    // 7. 创建情绪日志表
+    // 8. 创建情绪日志表
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS emotion_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -138,7 +171,7 @@ const createTables = async () => {
     `);
     console.log('✅ 情绪日志表创建成功');
 
-    // 8. 创建专辑表
+    // 9. 创建专辑表
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS albums (
         id VARCHAR(50) PRIMARY KEY COMMENT '专辑ID',
@@ -157,7 +190,7 @@ const createTables = async () => {
     `);
     console.log('✅ 专辑表创建成功');
 
-    // 9. 创建章节表
+    // 10. 创建章节表
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS chapters (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -176,7 +209,7 @@ const createTables = async () => {
     `);
     console.log('✅ 答案表创建成功');
 
-    // 10. 创建学习进度表
+    // 11. 创建学习进度表
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS learning_progress (
         id INT AUTO_INCREMENT PRIMARY KEY,
