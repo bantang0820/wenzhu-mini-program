@@ -97,14 +97,13 @@
     </view>
   </view>
 
-  <!-- 第一句完成后的过渡提示页 -->
-  <view class="reading-intro-overlay {{closingOverlay === 'round2' ? 'is-dissolving' : ''}}" wx:if="{{currentPhase === 'reading' && !postReadingStep && showRoundTwoTransition}}">
-    <view class="reading-intro-card round-transition-card {{closingOverlay === 'round2' ? 'is-dissolving' : ''}}">
-      <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'round2'}}"></view>
-      <text class="reading-intro-body round-transition-body">你刚才做了一件很重要的事——先接住了自己。</text>
-      <text class="reading-intro-body round-transition-body">接下来我们来找回自己的课题，把孩子的课题归还给孩子，开始朗读第二句吧。</text>
-      <view class="reading-intro-button" bindtap="onConfirmRoundTwoTransition">
-        <text>再读一句</text>
+  <!-- 句间过渡提示页 -->
+  <view class="reading-intro-overlay {{closingOverlay === 'transition' ? 'is-dissolving' : ''}}" wx:if="{{currentPhase === 'reading' && !postReadingStep && showReadingTransition}}">
+    <view class="reading-intro-card round-transition-card {{closingOverlay === 'transition' ? 'is-dissolving' : ''}}">
+      <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'transition'}}"></view>
+      <text class="reading-intro-body round-transition-body" wx:for="{{readingTransitionLines}}" wx:key="index">{{item}}</text>
+      <view class="reading-intro-button" bindtap="onConfirmReadingTransition">
+        <text>{{readingTransitionButtonText}}</text>
       </view>
     </view>
   </view>

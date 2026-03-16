@@ -14,6 +14,52 @@ const FINAL_STATE_OPTIONS = [
   { value: 'custom', label: '自定义补充' }
 ];
 
+const READING_TRANSITIONS = {
+  1: {
+    lines: [
+      '你刚才做了一件很重要的事——先接住了自己。',
+      '接下来我们来找回自己的课题，把孩子的课题归还给孩子，开始朗读第二句吧。'
+    ],
+    buttonText: '再读一句',
+    action: 'next-round'
+  },
+  2: {
+    lines: [
+      '放下不属于我们的重担后，是不是感觉到了一丝轻松？',
+      '犯错不是糟糕的结局，而是你们共同成长的契机。带着这份轻松，换个视角看看刚才发生的事，点击朗读第三句。'
+    ],
+    buttonText: '再读一句',
+    action: 'next-round'
+  },
+  3: {
+    lines: [
+      '视角的转变，已经让你在当下重新获得了力量。',
+      '有了觉察，改变就会自然发生。深呼吸，让我们看看现在可以做点什么微小的事，重新连接彼此。点击朗读第四句。'
+    ],
+    buttonText: '再读一句',
+    action: 'next-round'
+  },
+  4: {
+    lines: [
+      '已经掌握了应对当下的方法，真棒。',
+      '其实，你愿意在这里停下来向内看，就已经证明了一件事——你是一个充满爱的父母。',
+      '现在，让我们回到一切的起点，去拥抱那个真实且足够好的自己。'
+    ],
+    buttonText: '读最后一句',
+    action: 'next-round'
+  },
+  5: {
+    lines: [
+      '恭喜你，完成了一次充满力量的内心探索。🎉',
+      '偶尔情绪失控，并不代表你是个糟糕的父母。不必追求完美无瑕的育儿，真实的碰撞和及时的修复，才是给孩子最好的滋养。',
+      '现在，带着这份平和与确信，去抱一抱你的孩子（或者去喝杯水，抱一抱辛苦了的自己）吧。',
+      '当你需要力量时，随时回来，我们在这里陪你稳稳地向前走。'
+    ],
+    buttonText: '继续',
+    action: 'enter-final-state'
+  }
+};
+
 Page({
   data: {
     scenario: {}, // 场景数据
@@ -44,8 +90,11 @@ Page({
     guideText: '', // 引导文案（根据轮次动态生成）
     showStamp: false, // 显示录音按钮（延迟后）
     showReadingIntro: false, // 首句前说明
-    showRoundTwoTransition: false, // 第一句完成后的过渡页
-    closingOverlay: '', // '' | start | round2
+    showReadingTransition: false, // 朗读轮次之间的过渡页
+    readingTransitionLines: [],
+    readingTransitionButtonText: '',
+    readingTransitionAction: '',
+    closingOverlay: '', // '' | start | transition
     stampHintText: '', // 提示文字（已废弃）
     typewriterTimer: null,
     readingTimer: null,
@@ -1100,7 +1149,10 @@ Page({
       showGuide: false,
       showStamp: false,
       showReadingIntro: true,
-      showRoundTwoTransition: false,
+      showReadingTransition: false,
+      readingTransitionLines: [],
+      readingTransitionButtonText: '',
+      readingTransitionAction: '',
       closingOverlay: '',
       readingRound: 1,
       backgroundBrightness: 30,
@@ -1234,7 +1286,10 @@ Page({
       showGuide: false,
       showStamp: false, // 先隐藏录音按钮，等打字机完成后再显示
       showReadingIntro: true,
-      showRoundTwoTransition: false,
+      showReadingTransition: false,
+      readingTransitionLines: [],
+      readingTransitionButtonText: '',
+      readingTransitionAction: '',
       closingOverlay: '',
       readingRound: 1, // 从第一轮开始
       backgroundBrightness: 30, // 第一轮最暗
@@ -1285,15 +1340,54 @@ Page({
     });
   },
 
-  onConfirmRoundTwoTransition() {
-    if (!this.data.showRoundTwoTransition) return;
+  getReadingTransitionConfig(round) {
+    return READING_TRANSITIONS[round] || null;
+  },
+
+  showReadingTransition(round) {
+    const transitionConfig = this.getReadingTransitionConfig(round);
+    if (!transitionConfig) {
+      if (round >= this.data.totalRounds) {
+        this.enterFinalStateFlow();
+      } else {
+        this.nextRound();
+      }
+      return;
+    }
+
+    this.setData({
+      showGuide: false,
+      showStamp: false,
+      hasRecorded: false,
+      isPlaying: false,
+      showReadingTransition: true,
+      readingTransitionLines: transitionConfig.lines,
+      readingTransitionButtonText: transitionConfig.buttonText,
+      readingTransitionAction: transitionConfig.action,
+      closingOverlay: ''
+    });
+  },
+
+  onConfirmReadingTransition() {
+    if (!this.data.showReadingTransition) return;
 
     wx.vibrateShort({ type: 'light' });
-    this.playOverlayDissolve('round2', () => {
+    const action = this.data.readingTransitionAction;
+
+    this.playOverlayDissolve('transition', () => {
       this.setData({
-        showRoundTwoTransition: false,
+        showReadingTransition: false,
+        readingTransitionLines: [],
+        readingTransitionButtonText: '',
+        readingTransitionAction: '',
         closingOverlay: ''
       });
+
+      if (action === 'enter-final-state') {
+        this.enterFinalStateFlow();
+        return;
+      }
+
       this.nextRound();
     });
   },
@@ -1542,26 +1636,13 @@ Page({
       this.updateCheckIn();
 
       setTimeout(() => {
-        this.enterFinalStateFlow();
+        this.showReadingTransition(readingRound);
       }, 800);
     } else {
       this.addEnergy(10);
-      if (readingRound === 1) {
-        setTimeout(() => {
-          this.setData({
-            showGuide: false,
-            showStamp: false,
-            hasRecorded: false,
-            isPlaying: false,
-            closingOverlay: '',
-            showRoundTwoTransition: true
-          });
-        }, 400);
-      } else {
-        setTimeout(() => {
-          this.nextRound();
-        }, 400);
-      }
+      setTimeout(() => {
+        this.showReadingTransition(readingRound);
+      }, 400);
     }
   },
 
@@ -1646,6 +1727,10 @@ Page({
       postReadingStep: null,
       showStamp: true,
       showReadingIntro: false,
+      showReadingTransition: false,
+      readingTransitionLines: [],
+      readingTransitionButtonText: '',
+      readingTransitionAction: '',
       isPlaying: false,
       guideText: '长按开始朗读'
     });
@@ -1770,6 +1855,11 @@ Page({
       isSpeechRecording: false,
       hasRecorded: false,
       recordedFilePath: '',
+      showReadingTransition: false,
+      readingTransitionLines: [],
+      readingTransitionButtonText: '',
+      readingTransitionAction: '',
+      closingOverlay: '',
       selectedFinalState: '',
       selectedFinalStates: [],
       finalStateOptions: this.buildFinalStateOptions(),
@@ -2016,7 +2106,10 @@ Page({
       showGuide: true, // 确保从复述返回后下一句可见
       showStamp: false, // 先隐藏录音按钮，等打字机完成后再显示
       showReadingIntro: false,
-      showRoundTwoTransition: false,
+      showReadingTransition: false,
+      readingTransitionLines: [],
+      readingTransitionButtonText: '',
+      readingTransitionAction: '',
       closingOverlay: '',
       guideText: this.getGuideText(nextRound), // 更新引导语
       isRecording: false,
