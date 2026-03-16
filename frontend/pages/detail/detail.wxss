@@ -289,8 +289,8 @@
   padding-top: 60rpx;
   min-height: 50vh;
   opacity: 0;
-  transform: translateY(40rpx);
-  transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(20rpx);
+  transition: all 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .phase-reveal.show {
@@ -304,7 +304,7 @@
   flex-direction: column;
   align-items: center;
   margin-bottom: 40rpx;
-  animation: fadeIn 1s ease 0.3s both;
+  animation: fadeIn 0.45s ease 0.05s both;
 }
 
 .progress-ring {
@@ -384,7 +384,7 @@
 
 .reading-intro-overlay.is-dissolving {
   pointer-events: none;
-  animation: introOverlayFadeOut 0.42s ease forwards;
+  animation: introOverlayFadeOut 0.28s ease forwards;
 }
 
 /* 翻转卡片效果 */
@@ -395,7 +395,7 @@
 .flipper {
   width: 100%;
   position: relative;
-  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.52s cubic-bezier(0.22, 1, 0.36, 1);
   transform-style: preserve-3d;
 }
 
@@ -454,7 +454,7 @@
 }
 
 .reading-intro-card.is-dissolving {
-  animation: introCardDissolve 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: introCardDissolve 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .round-transition-card {
@@ -493,6 +493,7 @@
 
 .round-transition-body {
   line-height: 2.15;
+  white-space: pre-wrap;
 }
 
 .reading-intro-dissolve {
@@ -506,7 +507,7 @@
     radial-gradient(circle at 26% 72%, rgba(255, 248, 220, 0.72) 0, rgba(255, 248, 220, 0) 11%),
     radial-gradient(circle at 70% 76%, rgba(232, 208, 169, 0.64) 0, rgba(232, 208, 169, 0) 13%),
     radial-gradient(circle at 52% 44%, rgba(255, 255, 255, 0.5) 0, rgba(255, 255, 255, 0) 9%);
-  animation: introSparkleBurst 0.42s ease-out forwards;
+  animation: introSparkleBurst 0.28s ease-out forwards;
 }
 
 .reading-intro-body + .reading-intro-body {

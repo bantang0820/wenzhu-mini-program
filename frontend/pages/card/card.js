@@ -1,4 +1,7 @@
 // pages/card/card.js - 简化版（用于调试）
+const DIARY_HANDWRITING_FONT = '"HanziPen SC", "STXingkai", "Kaiti SC", "STKaiti", "KaiTi", "DFKai-SB", cursive, serif';
+const DIARY_SERIF_FONT = '"Songti SC", "STSong", serif';
+
 Page({
   data: {
     scenario: null,
@@ -273,7 +276,7 @@ Page({
 
     // 日期（左上）
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.font = '400 15px "Songti SC", serif';
+    ctx.font = `400 15px ${DIARY_SERIF_FONT}`;
     ctx.textAlign = 'left';
     ctx.fillText(dateInfo.fullDate, 100, 55);
     ctx.fillText(dateInfo.weekday, 100, 80);
@@ -286,13 +289,13 @@ Page({
     // ============ 4. 主标题区 ============
     // 英文副标题
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    ctx.font = 'italic 400 18px "Songti SC", serif';
+    ctx.font = `italic 400 18px ${DIARY_SERIF_FONT}`;
     ctx.textAlign = 'center';
     ctx.fillText('Mindful Parenting Diary', width / 2, 155);
 
     // 中文主标题（手写风格）
     ctx.fillStyle = '#2C3E50';
-    ctx.font = '700 50px "STKaiti", "KaiTi", "cursive", serif'; // 使用手写字体
+    ctx.font = `700 50px ${DIARY_HANDWRITING_FONT}`; // 使用更接近手写体的字体栈
     ctx.textAlign = 'center';
     ctx.fillText('正念育儿日记', width / 2, 220);
 
@@ -364,18 +367,18 @@ Page({
     const textX = footerStartX + qrSize + 28;
 
     // 第一行：扫码加入（手写风格）
-    ctx.font = '400 20px "STKaiti", "KaiTi", "cursive", serif';
+    ctx.font = `400 20px ${DIARY_HANDWRITING_FONT}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillText('扫码加入', textX, qrY + 8);
 
     // 第二行：稳住· 正念育儿（英文副标题 + 中文）
-    ctx.font = 'italic 400 13px "Songti SC", serif';
+    ctx.font = `italic 400 13px ${DIARY_SERIF_FONT}`;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
     ctx.fillText('Mindful Parenting', textX, qrY + 35);
 
-    ctx.font = '400 18px "STKaiti", "KaiTi", "cursive", serif';
+    ctx.font = `400 18px ${DIARY_HANDWRITING_FONT}`;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.fillText('稳住· 正念育儿', textX, qrY + 55);
 
@@ -436,7 +439,7 @@ Page({
       if (isSignature) {
         // 落款居右显示（始终显示）- 使用手写字体
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.font = '400 20px "STKaiti", "KaiTi", "cursive", serif';
+        ctx.font = `400 20px ${DIARY_HANDWRITING_FONT}`;
         ctx.textAlign = 'right';
         ctx.fillText(paragraph.trim(), startX + maxWidth, currentY + lineHeight);
         currentY += lineHeight;
@@ -463,7 +466,7 @@ Page({
           } else {
             // 普通文字 - 使用手写字体
             ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-            ctx.font = '400 24px "STKaiti", "KaiTi", "cursive", serif';
+            ctx.font = `400 24px ${DIARY_HANDWRITING_FONT}`;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'alphabetic';
 
@@ -529,7 +532,7 @@ Page({
   // 绘制涂改文字（潦草的多道笔触）
   drawStrikethroughText(ctx, text, x, y, maxWidth) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.font = '400 24px "STKaiti", "KaiTi", "cursive", serif';
+    ctx.font = `400 24px ${DIARY_HANDWRITING_FONT}`;
     ctx.textAlign = 'left';
 
     const lines = this.wrapTextToLines(ctx, text, maxWidth);
@@ -597,7 +600,7 @@ Page({
 
   // 绘制荧光笔高亮文字(不规则边缘效果)
   drawHighlightedText(ctx, text, x, y, maxWidth) {
-    ctx.font = '400 24px "STKaiti", "KaiTi", "cursive", serif';
+    ctx.font = `400 24px ${DIARY_HANDWRITING_FONT}`;
     ctx.textAlign = 'left';
 
     const lines = this.wrapTextToLines(ctx, text, maxWidth);
@@ -956,6 +959,11 @@ Page({
     }
 
     try {
+      const hasPrivacyConsent = await this.ensurePrivacyConsent();
+      if (!hasPrivacyConsent) {
+        return;
+      }
+
       const hasPermission = await this.ensureAlbumPermission();
       if (!hasPermission) {
         return;
@@ -968,14 +976,33 @@ Page({
     } catch (err) {
       console.error('保存失败', err);
 
-      const errMsg = err && err.errMsg ? err.errMsg : '';
-      if (errMsg.includes('auth deny') || errMsg.includes('authorize')) {
+      if (this.isPrivacyPermissionError(err)) {
+        await this.showPrivacyPermissionGuide();
+        return;
+      }
+
+      if (this.isAlbumPermissionError(err)) {
         await this.openAlbumPermissionSetting();
         return;
       }
 
       wx.showToast({ title: '保存失败，请重试', icon: 'none' });
     }
+  },
+
+  async ensurePrivacyConsent() {
+    const app = getApp();
+
+    if (!app || typeof app.ensurePrivacyAuthorization !== 'function') {
+      return true;
+    }
+
+    const approved = await app.ensurePrivacyAuthorization();
+    if (!approved) {
+      await this.showPrivacyPermissionGuide();
+    }
+
+    return approved;
   },
 
   ensureAlbumPermission() {
@@ -997,7 +1024,13 @@ Page({
           wx.authorize({
             scope: 'scope.writePhotosAlbum',
             success: () => resolve(true),
-            fail: () => {
+            fail: async (error) => {
+              if (this.isPrivacyPermissionError(error)) {
+                await this.showPrivacyPermissionGuide();
+                resolve(false);
+                return;
+              }
+
               this.openAlbumPermissionSetting().then(resolve);
             }
           });
@@ -1011,7 +1044,7 @@ Page({
     return new Promise((resolve) => {
       wx.showModal({
         title: '需要相册权限',
-        content: '保存正念日记卡片需要写入系统相册，请开启“保存到相册”权限。',
+        content: '保存正念日记卡片需要写入系统相册。若设置页里没有“保存到相册”，请到手机系统设置里给微信开启“照片/相册”权限。',
         confirmText: '去设置',
         success: (modalRes) => {
           if (!modalRes.confirm) {
@@ -1021,7 +1054,18 @@ Page({
 
           wx.openSetting({
             success: (settingRes) => {
-              resolve(!!settingRes.authSetting['scope.writePhotosAlbum']);
+              const authState = settingRes.authSetting['scope.writePhotosAlbum'];
+
+              if (authState === true) {
+                resolve(true);
+                return;
+              }
+
+              if (typeof authState === 'undefined') {
+                this.showSystemAlbumPermissionGuide();
+              }
+
+              resolve(false);
             },
             fail: () => resolve(false)
           });
@@ -1029,6 +1073,50 @@ Page({
         fail: () => resolve(false)
       });
     });
+  },
+
+  showPrivacyPermissionGuide() {
+    return new Promise((resolve) => {
+      wx.showModal({
+        title: '需要隐私授权',
+        content: '保存图片前，需要先同意小程序的隐私保护指引。请重新点击一次“保存”，并在弹出的隐私提示里点同意。',
+        showCancel: false,
+        success: () => resolve(false),
+        fail: () => resolve(false)
+      });
+    });
+  },
+
+  showSystemAlbumPermissionGuide() {
+    const systemInfo = typeof wx.getSystemInfoSync === 'function'
+      ? wx.getSystemInfoSync()
+      : {};
+    const platform = systemInfo.platform || '';
+    const content = platform === 'ios'
+      ? '如果设置页里没有“保存到相册”，请到 iPhone 的“设置 -> 微信 -> 照片”，改成“所有照片”后再回来保存。'
+      : '如果设置页里没有“保存到相册”，请到手机“系统设置 -> 应用管理 -> 微信 -> 权限”，打开照片/视频/存储权限后再回来保存。';
+
+    wx.showModal({
+      title: '还差系统权限',
+      content,
+      showCancel: false
+    });
+  },
+
+  getErrorMessage(error) {
+    if (!error) return '';
+    if (typeof error === 'string') return error;
+    return error.errMsg || error.message || JSON.stringify(error);
+  },
+
+  isPrivacyPermissionError(error) {
+    const errMsg = this.getErrorMessage(error);
+    return /privacy|隐私|needPrivacyAuthorization|api scope is not declared in the privacy agreement|privacy api banned|errno\":?112|errno\":?103|errno\":?104/i.test(errMsg);
+  },
+
+  isAlbumPermissionError(error) {
+    const errMsg = this.getErrorMessage(error);
+    return /auth deny|auth denied|authorize|permission denied|scope\.writePhotosAlbum/i.test(errMsg);
   },
 
   getSavableImagePath(filePath) {

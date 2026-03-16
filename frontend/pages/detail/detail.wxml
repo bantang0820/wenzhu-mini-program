@@ -89,10 +89,11 @@
           <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'start'}}"></view>
           <text class="reading-intro-kicker">开始前</text>
           <text class="reading-intro-title title-serif">你可能在想，读出来有什么用</text>
-          <text class="reading-intro-body">其实，当你轻声把一句话念出来的时候，</text>
-          <text class="reading-intro-body">身体会比大脑更快安静下来。</text>
-          <text class="reading-intro-body">不需要有感情，不需要念得好听，</text>
-          <text class="reading-intro-body">就像跟自己说句悄悄话那样就够了。</text>
+          <text class="reading-intro-body">其实，当你轻声把一句话念出来时，</text>
+          <text class="reading-intro-body">声音会经过耳朵再次回到大脑，</text>
+          <text class="reading-intro-body">身体也会瞬间沉静下来。</text>
+          <text class="reading-intro-body">不需要读的有感情，不需要念的好听，</text>
+          <text class="reading-intro-body">就像和自己说悄悄话那样就够了。</text>
           <view class="reading-intro-button" bindtap="onConfirmReadingIntro">
             <text>先试一句</text>
           </view>
@@ -125,12 +126,6 @@
 
   <!-- 录音按钮（延迟显示）- 移出 phase-reveal 以实现真正的底部固定 -->
   <view class="stamp-section reading-stamp-section" wx:if="{{currentPhase === 'reading' && !postReadingStep && showStamp}}">
-    <view class="reading-guide-top" wx:if="{{showGuide && readingRound === 1}}">
-      <text class="reading-guide-top-line">读出来和默读不一样。</text>
-      <text class="reading-guide-top-line">声音会经过耳朵再回到大脑，感受截然不同。</text>
-      <text class="reading-guide-top-line">试着读一读吧。</text>
-    </view>
-
     <!-- 录音按钮 -->
     <view class="stamp-wrapper">
       <!-- 未录音状态：显示录音按钮 -->
@@ -250,8 +245,7 @@
   <view class="phase-reflection" wx:if="{{postReadingStep === 'state' || postReadingStep === 'feedback'}}">
     <view class="reflection-card">
       <view class="reflection-head">
-        <text class="reflection-tag">本心对话</text>
-        <text class="reflection-title title-serif">把刚刚的力量，留在身体里</text>
+        <text class="reflection-title title-serif">把刚才朗读获得的力量，记录下来吧。</text>
       </view>
 
       <!-- 第2步：AI抱持反馈（虽然由于逻辑跳过，但保留结构防错） -->
@@ -273,7 +267,7 @@
       <view wx:if="{{postReadingStep === 'state'}}" class="reflection-block">
         <view class="chat-item ai">
           <view class="chat-bubble ai">
-            <text>最后一步：请选择你此刻最接近的状态，可多选，我们马上为你生成正念日记卡片。</text>
+            <text>最后一步：请选择你此刻最接近的状态，可多选。</text>
           </view>
         </view>
 
