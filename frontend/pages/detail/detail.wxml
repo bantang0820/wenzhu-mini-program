@@ -28,7 +28,7 @@
   <view class="energy-glow {{isRecording ? 'active' : ''}}" style="transform: translate(-50%, -50%) scale({{energyScale || 1}});"></view>
 
   <!-- 返回按钮 -->
-  <view class="back-btn" bindtap="onBack" wx:if="{{!isCompleted}}">
+  <view class="back-btn" style="{{backButtonStyle}}" bindtap="onBack" wx:if="{{!isCompleted}}">
     <view class="back-icon"></view>
   </view>
 
@@ -77,12 +77,46 @@
 
     <!-- 金句容器 -->
     <view class="quote-reveal-container">
-      <text class="quote-reveal-text title-serif typewriter shimmer">{{displayText}}</text>
+      <text class="quote-reveal-text title-serif">{{displayText}}</text>
+    </view>
+  </view>
+
+  <!-- 第一轮朗读前说明 -->
+  <view class="reading-intro-overlay {{closingOverlay === 'start' ? 'is-dissolving' : ''}}" wx:if="{{currentPhase === 'reading' && !postReadingStep && showReadingIntro}}">
+    <view class="reading-intro-card {{closingOverlay === 'start' ? 'is-dissolving' : ''}}">
+      <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'start'}}"></view>
+      <text class="reading-intro-kicker">开始前</text>
+      <text class="reading-intro-title title-serif">你可能在想，读出来有什么用</text>
+      <text class="reading-intro-body">其实，当你轻声把一句话念出来的时候，</text>
+      <text class="reading-intro-body">身体会比大脑更快安静下来。</text>
+      <text class="reading-intro-body">不需要有感情，不需要念得好听，</text>
+      <text class="reading-intro-body">就像跟自己说句悄悄话那样就够了。</text>
+      <view class="reading-intro-button" bindtap="onConfirmReadingIntro">
+        <text>先试一句</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 第一句完成后的过渡提示页 -->
+  <view class="reading-intro-overlay {{closingOverlay === 'round2' ? 'is-dissolving' : ''}}" wx:if="{{currentPhase === 'reading' && !postReadingStep && showRoundTwoTransition}}">
+    <view class="reading-intro-card round-transition-card {{closingOverlay === 'round2' ? 'is-dissolving' : ''}}">
+      <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'round2'}}"></view>
+      <text class="reading-intro-body round-transition-body">你刚才做了一件很重要的事——先接住了自己。</text>
+      <text class="reading-intro-body round-transition-body">接下来我们来找回自己的课题，把孩子的课题归还给孩子，开始朗读第二句吧。</text>
+      <view class="reading-intro-button" bindtap="onConfirmRoundTwoTransition">
+        <text>再读一句</text>
+      </view>
     </view>
   </view>
 
   <!-- 录音按钮（延迟显示）- 移出 phase-reveal 以实现真正的底部固定 -->
-  <view class="stamp-section" wx:if="{{currentPhase === 'reading' && !postReadingStep && showStamp}}">
+  <view class="stamp-section reading-stamp-section" wx:if="{{currentPhase === 'reading' && !postReadingStep && showStamp}}">
+    <view class="reading-guide-top" wx:if="{{showGuide && readingRound === 1}}">
+      <text class="reading-guide-top-line">读出来和默读不一样。</text>
+      <text class="reading-guide-top-line">声音会经过耳朵再回到大脑，感受截然不同。</text>
+      <text class="reading-guide-top-line">试着读一读吧。</text>
+    </view>
+
     <!-- 录音按钮 -->
     <view class="stamp-wrapper">
       <!-- 未录音状态：显示录音按钮 -->
@@ -92,7 +126,6 @@
         bindtouchstart="onRecordTouchStart"
         bindtouchend="onRecordTouchEnd"
         bindtouchcancel="onRecordTouchCancel"
-        bindtap="onRecordTap"
       >
         <view class="retell-mic-icon-wrapper" style="transform: scale(0.8);">
           <view class="mic-icon-head"></view>
@@ -100,6 +133,7 @@
           <view class="mic-icon-stand"></view>
           <view class="mic-icon-base"></view>
         </view>
+        <text class="record-inner-label">长按朗读</text>
       </view>
 
       <!-- 已录音状态：显示回放按钮和确认按钮 -->
@@ -119,7 +153,6 @@
           bindtouchstart="onRecordTouchStart"
           bindtouchend="onRecordTouchEnd"
           bindtouchcancel="onRecordTouchCancel"
-          bindtap="onRecordTap"
         >
           <view class="retell-mic-icon-wrapper" style="transform: scale(0.8);">
             <view class="mic-icon-head"></view>
@@ -127,6 +160,7 @@
             <view class="mic-icon-stand"></view>
             <view class="mic-icon-base"></view>
           </view>
+          <text class="record-inner-label">长按朗读</text>
         </view>
 
         <!-- 确认按钮 -->
@@ -138,9 +172,7 @@
     </view>
 
     <!-- 引导语（录音按钮下方） -->
-    <view class="guide-text-container" wx:if="{{showGuide && !hasRecorded}}">
-      <text class="guide-text">{{isRecording ? '正在倾听...' : '按住开始朗读，让情绪流过你的身体'}}</text>
-    </view>
+    <view class="reading-guide-bottom-shell"></view>
   </view>
 
   <!-- 第2.5阶段：复述 (与朗读界面UI绝对统一) -->
@@ -171,13 +203,9 @@
   </view>
 
   <!-- 复述底部的麦克风和按钮 (与朗读完美重合) -->
-  <view class="stamp-section" wx:if="{{postReadingStep === 'retell'}}">
-    <view class="guide-text-container" wx:if="{{isSpeechRecording}}">
-      <text class="guide-text">正在倾听...</text>
-    </view>
-
+  <view class="stamp-section retell-stamp-section" wx:if="{{postReadingStep === 'retell'}}">
     <!-- 录音完成后的操作按钮组 -->
-    <view class="retell-action-buttons" style="width: 100vw; padding: 0 60rpx; box-sizing: border-box; margin-bottom: 20rpx;">
+    <view class="retell-action-buttons">
       <view class="retell-btn-retry" bindtap="onBackToReading">
         <text>重读上一句</text>
       </view>
@@ -187,7 +215,6 @@
         bindtouchstart="onSpeechRecordTouchStart"
         bindtouchend="onSpeechRecordTouchEnd"
         bindtouchcancel="onSpeechRecordTouchCancel"
-        bindtap="onSpeechRecordTap"
       >
         <view class="retell-mic-icon-wrapper">
           <view class="mic-icon-head"></view>
@@ -195,12 +222,14 @@
           <view class="mic-icon-stand"></view>
           <view class="mic-icon-base"></view>
         </view>
+        <text class="record-inner-label">长按复述</text>
       </view>
 
-      <view class="retell-btn-next {{isGeneratingFeedback || isSpeechRecording || !retellText ? 'disabled' : ''}}" bindtap="onSubmitRetell">
+      <view class="retell-btn-next {{isGeneratingFeedback || isSpeechRecording ? 'disabled' : ''}}" bindtap="onSubmitRetell">
         <text>{{isGeneratingFeedback ? '感受中...' : (currentReflectionRound >= totalRounds ? '去复盘' : '朗读下一句')}}</text>
       </view>
     </view>
+    <view class="retell-bottom-shell"></view>
   </view>
 
   <!-- 朗读后复盘流程 (仅保留最后的日记卡片部分) -->
@@ -261,7 +290,6 @@
             bindtouchstart="onSpeechRecordTouchStart"
             bindtouchend="onSpeechRecordTouchEnd"
             bindtouchcancel="onSpeechRecordTouchCancel"
-            bindtap="onSpeechRecordTap"
           >
             <view class="retell-mic-icon-wrapper custom-feeling-mic-icon-wrapper">
               <view class="mic-icon-head"></view>

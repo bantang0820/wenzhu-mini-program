@@ -43,6 +43,9 @@ Page({
     showGuide: false, // 显示引导语
     guideText: '', // 引导文案（根据轮次动态生成）
     showStamp: false, // 显示录音按钮（延迟后）
+    showReadingIntro: false, // 首句前说明
+    showRoundTwoTransition: false, // 第一句完成后的过渡页
+    closingOverlay: '', // '' | start | round2
     stampHintText: '', // 提示文字（已废弃）
     typewriterTimer: null,
     readingTimer: null,
@@ -75,6 +78,7 @@ Page({
 
     // 复盘流程（已同步至所有场景：每句朗读后复述）
     isRoundRetellMode: false,
+    skipRetellForRemainingRounds: false,
     postReadingStep: '', // '' | retell | feedback | state
     currentReflectionRound: 0,
     currentReflectionMantra: '',
@@ -94,7 +98,7 @@ Page({
     isGeneratingJournal: false,
     speechAvailable: false,
     isSpeechRecording: false,
-    speechTarget: 'retell', // reading | retell | feeling
+    speechTarget: 'reading', // reading | retell | feeling
     hasRecordPermission: false,
 
     // 第四阶段：完成
@@ -112,10 +116,15 @@ Page({
     stormTime: null,      // 风暴时刻（进入页面时）
     shiftTime: null,      // 转念时刻（按压完成后）
     anchorTime: null,     // 安顿时刻（点击"稳住了"时）
+
+    // 顶部导航定位
+    backButtonStyle: ''
   },
 
   onLoad(options) {
     const { id, mode, autoStart } = options;
+
+    this.initTopNavPosition();
 
     // 判断是否为快速模式
     if (mode === 'quick') {
@@ -146,6 +155,38 @@ Page({
     this.initAudioPlayer();
     this.initSpeechRecognition();
     this.checkRecordPermission();
+  },
+
+  initTopNavPosition() {
+    try {
+      const windowInfo = typeof wx.getWindowInfo === 'function'
+        ? wx.getWindowInfo()
+        : wx.getSystemInfoSync();
+      const menuButtonRect = typeof wx.getMenuButtonBoundingClientRect === 'function'
+        ? wx.getMenuButtonBoundingClientRect()
+        : null;
+      const windowWidth = windowInfo.windowWidth || windowInfo.screenWidth || 375;
+      const statusBarHeight = windowInfo.statusBarHeight || 0;
+      const backButtonSize = (64 / 750) * windowWidth;
+      const backButtonLeft = (40 / 750) * windowWidth;
+
+      let backButtonTop = statusBarHeight + 8;
+
+      if (menuButtonRect && menuButtonRect.height) {
+        backButtonTop = menuButtonRect.top + (menuButtonRect.height - backButtonSize) / 2;
+      }
+
+      this.setData({
+        backButtonStyle: [
+          `top: ${Math.round(backButtonTop)}px`,
+          `left: ${Math.round(backButtonLeft)}px`,
+          `width: ${Math.round(backButtonSize)}px`,
+          `height: ${Math.round(backButtonSize)}px`
+        ].join('; ')
+      });
+    } catch (error) {
+      console.warn('初始化顶部导航位置失败，使用默认返回键位置', error);
+    }
   },
 
   onUnload() {
@@ -184,7 +225,7 @@ Page({
       this.speechManager = plugin.getRecordRecognitionManager();
 
       this.speechManager.onStart = () => {
-        const speechTarget = this.activeSpeechTarget || this.data.speechTarget;
+        const speechTarget = this.currentSpeechSessionTarget || this.activeSpeechTarget || 'retell';
         console.log('语音识别开始', speechTarget);
 
         if (speechTarget === 'reading') {
@@ -192,24 +233,32 @@ Page({
             isRecording: true
           });
           this.startVADEffect();
+          if (this.pendingStopAfterSpeechStart || this.isSpeechTouching === false) {
+            this.pendingStopAfterSpeechStart = false;
+            this.stopSpeechInput({ force: true });
+          }
           return;
         }
 
         this.setData({
           isSpeechRecording: true
         });
+        if (this.pendingStopAfterSpeechStart || this.isSpeechTouching === false) {
+          this.pendingStopAfterSpeechStart = false;
+          this.stopSpeechInput({ force: true });
+        }
       };
       
       this.speechManager.onRecognize = (res) => {
         // 实时转写
-        const speechTarget = this.activeSpeechTarget || this.data.speechTarget;
+        const speechTarget = this.currentSpeechSessionTarget || this.activeSpeechTarget || 'retell';
         if (res.result && speechTarget !== 'reading') {
           this.updateSpeechText(res.result, { animated: true });
         }
       };
 
       this.speechManager.onStop = (res) => {
-        const speechTarget = this.activeSpeechTarget || this.data.speechTarget;
+        const speechTarget = this.currentSpeechSessionTarget || this.activeSpeechTarget || 'retell';
 
         if (speechTarget === 'reading') {
           this.stopVADEffect();
@@ -239,27 +288,44 @@ Page({
         this.lastSpeechStopAt = Date.now();
         this.speechAudioPath = res.tempFilePath;
         this.activeSpeechTarget = '';
+        this.currentSpeechSessionTarget = '';
       };
 
       this.speechManager.onError = (res) => {
         console.error('录音识别失败', res.msg);
-        const speechTarget = this.activeSpeechTarget || this.data.speechTarget;
+        const speechTarget = this.currentSpeechSessionTarget || this.activeSpeechTarget || 'retell';
+        const errorMsg = res.msg || '';
+        const isStopRaceError = errorMsg.includes('please stop after start');
         if (speechTarget === 'reading') {
           this.stopVADEffect();
           this.setData({
             isRecording: false,
-            speechAvailable: false
+            speechAvailable: !isStopRaceError
           });
         } else {
           this.setData({
             isSpeechRecording: false,
-            speechAvailable: false
+            speechAvailable: !isStopRaceError
           });
         }
         this.lastSpeechStopAt = Date.now();
         this.activeSpeechTarget = '';
+        this.currentSpeechSessionTarget = '';
+
+        if (isStopRaceError) {
+          return;
+        }
+
+        if (errorMsg.includes('internal voice data failed')) {
+          wx.showToast({
+            title: '语音识别暂时不可用，请重试',
+            icon: 'none'
+          });
+          return;
+        }
+
         wx.showToast({
-          title: res.msg || '识别失败，请重试',
+          title: errorMsg || '识别失败，请重试',
           icon: 'none'
         });
       };
@@ -283,6 +349,10 @@ Page({
         isRecording: true
       });
       this.startVADEffect();
+      if (this.pendingStopAfterRecordStart || this.isRecordTouching === false) {
+        this.pendingStopAfterRecordStart = false;
+        this.stopRecording();
+      }
     });
 
     this.recorderManager.onStop((res) => {
@@ -346,6 +416,10 @@ Page({
     return new Promise((resolve) => setTimeout(resolve, ms));
   },
 
+  hasPendingSpeechStop() {
+    return (this.lastSpeechStopRequestedAt || 0) > (this.lastSpeechStopAt || 0);
+  },
+
   async waitForSpeechRelease(timeoutMs = 1800) {
     const startedAt = Date.now();
 
@@ -353,6 +427,7 @@ Page({
       const isBusy = this.data.isRecording
         || this.data.isSpeechRecording
         || !!this.activeSpeechTarget
+        || !!this.currentSpeechSessionTarget
         || !!this.speechStartPending;
 
       if (!isBusy) {
@@ -467,6 +542,61 @@ Page({
     });
   },
 
+  resetSpeechSessionState() {
+    this.activeSpeechTarget = '';
+    this.currentSpeechSessionTarget = '';
+    this.speechStartPending = false;
+    this.pendingStopAfterSpeechStart = false;
+    this.isSpeechTouching = false;
+    this.setData({
+      isSpeechRecording: false,
+      speechTarget: 'reading'
+    });
+  },
+
+  async prepareReadingRecorder(options = {}) {
+    const {
+      requestPrivacy = false,
+      requestPermission = false,
+      showToast = false
+    } = options;
+
+    if (!this.recorderManager) {
+      this.initRecorderManager();
+    }
+
+    let privacyAuthorized = true;
+    if (requestPrivacy && app && typeof app.ensurePrivacyAuthorization === 'function') {
+      privacyAuthorized = await app.ensurePrivacyAuthorization();
+      if (!privacyAuthorized) {
+        if (showToast) {
+          wx.showToast({
+            title: '请先同意隐私授权',
+            icon: 'none'
+          });
+        }
+        return false;
+      }
+    }
+
+    if (requestPermission) {
+      const hasPermission = await this.ensureRecordPermission();
+      if (!hasPermission) {
+        if (showToast) {
+          wx.showToast({
+            title: '请先允许麦克风权限',
+            icon: 'none'
+          });
+        }
+        return false;
+      }
+      return true;
+    }
+
+    await this.checkRecordPermission();
+    return true;
+  },
+
   updateSpeechText(text) {
     const options = arguments[1] || {};
     if (this.data.speechTarget === 'retell') {
@@ -536,11 +666,16 @@ Page({
     }
   },
 
-  shouldIgnoreTap(lastTouchTimestamp) {
+  shouldIgnoreTap(lastTouchTimestamp, lastTouchEndTimestamp) {
+    if (lastTouchEndTimestamp && (Date.now() - lastTouchEndTimestamp < 500)) {
+      return true;
+    }
+
     return lastTouchTimestamp && (Date.now() - lastTouchTimestamp < 350);
   },
 
   onSpeechRecordTouchStart() {
+    this.isSpeechTouching = true;
     this.lastSpeechTouchStartAt = Date.now();
     if (!this.data.isSpeechRecording) {
       this.onSpeechRecordToggle();
@@ -548,8 +683,15 @@ Page({
   },
 
   onSpeechRecordTouchEnd() {
+    this.isSpeechTouching = false;
+    this.lastSpeechTouchEndAt = Date.now();
     if (this.data.isSpeechRecording) {
       this.stopSpeechInput();
+      return;
+    }
+
+    if (this.speechStartPending) {
+      this.pendingStopAfterSpeechStart = true;
     }
   },
 
@@ -558,7 +700,7 @@ Page({
   },
 
   onSpeechRecordTap() {
-    if (this.shouldIgnoreTap(this.lastSpeechTouchStartAt)) return;
+    if (this.shouldIgnoreTap(this.lastSpeechTouchStartAt, this.lastSpeechTouchEndAt)) return;
     this.onSpeechRecordToggle();
   },
 
@@ -615,6 +757,7 @@ Page({
     }
 
     this.activeSpeechTarget = target;
+    this.currentSpeechSessionTarget = target;
 
     const recorderReleasedAt = Math.max(this.lastRecorderStopAt || 0, this.lastRecorderStopRequestedAt || 0);
     const recorderCooldown = 800 - (Date.now() - recorderReleasedAt);
@@ -626,6 +769,13 @@ Page({
     const speechCooldown = 900 - (Date.now() - speechReleasedAt);
     if (speechCooldown > 0) {
       await this.sleep(speechCooldown);
+    }
+
+    if (target !== 'reading' && this.isSpeechTouching === false) {
+      this.speechStartPending = false;
+      this.activeSpeechTarget = '';
+      this.currentSpeechSessionTarget = '';
+      return;
     }
 
     if (target === 'reading') {
@@ -641,6 +791,7 @@ Page({
       this.updateSpeechText('');
     }
 
+    this.pendingStopAfterSpeechStart = false;
     wx.vibrateShort({ type: 'light' });
 
     if (this.speechManager) {
@@ -666,6 +817,7 @@ Page({
         }
         this.lastSpeechStopAt = Date.now();
         this.activeSpeechTarget = '';
+        this.currentSpeechSessionTarget = '';
       } finally {
         setTimeout(() => {
           this.speechStartPending = false;
@@ -679,10 +831,10 @@ Page({
   async stopSpeechInput(options = {}) {
     const { force = false, waitForStop = false, timeoutMs = 1800 } = options;
     const shouldStopCurrentSpeech = this.data.isSpeechRecording || this.data.isRecording || !!this.activeSpeechTarget || force;
-    const currentTarget = this.activeSpeechTarget || this.data.speechTarget;
+    const currentTarget = this.currentSpeechSessionTarget || this.activeSpeechTarget || this.data.speechTarget;
+    const stopAlreadyPending = this.hasPendingSpeechStop();
 
     if (this.speechManager && shouldStopCurrentSpeech) {
-      this.lastSpeechStopRequestedAt = Date.now();
       if (currentTarget === 'reading') {
         this.stopVADEffect();
       }
@@ -690,19 +842,22 @@ Page({
         isRecording: false,
         isSpeechRecording: false
       });
-      try {
-        this.speechManager.stop();
-      } catch (error) {
-        console.warn('停止语音识别失败，尝试兜底清理', error);
-        this.setData({
-          isRecording: false,
-          isSpeechRecording: false
-        });
-        this.activeSpeechTarget = '';
-        this.lastSpeechStopAt = Date.now();
+      if (!stopAlreadyPending) {
+        this.lastSpeechStopRequestedAt = Date.now();
+        try {
+          this.speechManager.stop();
+        } catch (error) {
+          console.warn('停止语音识别失败，尝试兜底清理', error);
+          this.setData({
+            isRecording: false,
+            isSpeechRecording: false
+          });
+          this.activeSpeechTarget = '';
+          this.currentSpeechSessionTarget = '';
+          this.lastSpeechStopAt = Date.now();
+        }
       }
     } else if (this.speechRecorder && shouldStopCurrentSpeech) {
-      this.lastSpeechStopRequestedAt = Date.now();
       if (currentTarget === 'reading') {
         this.stopVADEffect();
       }
@@ -710,16 +865,20 @@ Page({
         isRecording: false,
         isSpeechRecording: false
       });
-      try {
-        this.speechRecorder.stop();
-      } catch (error) {
-        console.warn('停止语音录音失败，尝试兜底清理', error);
-        this.setData({
-          isRecording: false,
-          isSpeechRecording: false
-        });
-        this.activeSpeechTarget = '';
-        this.lastSpeechStopAt = Date.now();
+      if (!stopAlreadyPending) {
+        this.lastSpeechStopRequestedAt = Date.now();
+        try {
+          this.speechRecorder.stop();
+        } catch (error) {
+          console.warn('停止语音录音失败，尝试兜底清理', error);
+          this.setData({
+            isRecording: false,
+            isSpeechRecording: false
+          });
+          this.activeSpeechTarget = '';
+          this.currentSpeechSessionTarget = '';
+          this.lastSpeechStopAt = Date.now();
+        }
       }
     }
 
@@ -770,11 +929,11 @@ Page({
   // 获取当前轮次的引导语
   getGuideText(round) {
     const guideTexts = {
-      1: '长按麦克风，轻声朗读，让情绪流过',
-      2: '长按麦克风，把这句话读给自己听',
-      3: '长按麦克风，深呼吸，让这句话进入心里',
-      4: '长按麦克风，感受每一个字，让它滋养你的心',
-      5: '长按麦克风，最后一句，让它成为你的一部分'
+      1: '长按朗读，轻轻的念给自己听',
+      2: '长按麦克风，把这句话说给自己听',
+      3: '长按麦克风，不用全信，先慢慢念',
+      4: '长按麦克风，慢一点，给自己一点空间',
+      5: '长按麦克风，最后一句，轻轻说完就好'
     };
     return guideTexts[round] || guideTexts[1];
   },
@@ -784,21 +943,20 @@ Page({
     // 使用外部场景数据文件
     const scenario = scenariosData[id] || scenariosData["001"] || {};
 
-    // 如果场景有modules结构（新格式），从5个模块各随机选1句
+    // 如果场景有modules结构（新格式），首轮固定读模块一第一句，其余模块保留随机
     let finalMantras = [];
     if (scenario.modules) {
-      // 从每个模块随机选1句
       const module1 = Array.isArray(scenario.modules.module1) ? scenario.modules.module1 : [];
       const module2 = Array.isArray(scenario.modules.module2) ? scenario.modules.module2 : [];
       const module3 = Array.isArray(scenario.modules.module3) ? scenario.modules.module3 : [];
       const module4 = Array.isArray(scenario.modules.module4) ? scenario.modules.module4 : [];
       const module5 = Array.isArray(scenario.modules.module5) ? scenario.modules.module5 : [];
 
-      // 随机选择函数
       const randomPick = (arr) => arr.length ? arr[Math.floor(Math.random() * arr.length)] : '';
+      const firstModuleLine = module1[0] || '';
 
       finalMantras = [
-        randomPick(module1),
+        firstModuleLine,
         randomPick(module2),
         randomPick(module3),
         randomPick(module4),
@@ -810,12 +968,12 @@ Page({
     }
 
 
-    const isRoundRetellMode = true; // 同步到所有场景：统一启用逐句复述模式
+    const isRoundRetellMode = false; // 先关闭逐句复述，回归纯朗读流程
     // 直接使用scenario数据，不再使用fallbackData（因为scenarios.js已有完整数据）
     const normalizedScenario = {
       ...scenario
     };
-    const initialText = normalizedScenario.stabilizeText || finalMantras[0] || fallbackScenario.stabilizeText || '';
+    const initialText = normalizedScenario.stabilizeText || finalMantras[0] || '';
 
     this.setData({
       scenario: normalizedScenario,
@@ -824,6 +982,7 @@ Page({
       allMantras: finalMantras, // 保存所有轮次的文案（从5个模块各选1句）
       healingQuote: normalizedScenario.healingQuote || '', // 保存治愈的话
       isRoundRetellMode: isRoundRetellMode,
+      skipRetellForRemainingRounds: true,
       roundRetells: [],
       roundFeedbacks: [],
       selectedFinalState: '',
@@ -938,8 +1097,11 @@ Page({
       isDarkMode: false,
       isStabilizing: false,
       isStabilized: false,
-      showGuide: true,
+      showGuide: false,
       showStamp: false,
+      showReadingIntro: true,
+      showRoundTwoTransition: false,
+      closingOverlay: '',
       readingRound: 1,
       backgroundBrightness: 30,
       currentText: firstMantra,
@@ -963,11 +1125,12 @@ Page({
       isGeneratingFeedback: false,
       isGeneratingJournal: false,
       isSpeechRecording: false,
-      speechTarget: 'retell'
+      speechTarget: 'reading'
     });
 
-    // 启动打字机效果
-    this.startTypewriter();
+    this.prepareReadingRecorder().catch((error) => {
+      console.warn('初始化朗读录音能力失败', error);
+    });
   },
 
   // ========== 第一阶段：长按止颤（保留用于普通模式）==========
@@ -1068,8 +1231,11 @@ Page({
       isDarkMode: false, // 切回浅色模式
       isStabilizing: false, // 重置稳定化状态
       isStabilized: false, // 重置稳定状态
-      showGuide: true,
+      showGuide: false,
       showStamp: false, // 先隐藏录音按钮，等打字机完成后再显示
+      showReadingIntro: true,
+      showRoundTwoTransition: false,
+      closingOverlay: '',
       readingRound: 1, // 从第一轮开始
       backgroundBrightness: 30, // 第一轮最暗
       currentText: firstMantra, // 第一轮文案
@@ -1093,40 +1259,77 @@ Page({
       isGeneratingFeedback: false,
       isGeneratingJournal: false,
       isSpeechRecording: false,
-      speechTarget: 'retell'
+      speechTarget: 'reading'
+    });
+  },
+
+  onConfirmReadingIntro() {
+    if (!this.data.showReadingIntro) return;
+
+    wx.vibrateShort({ type: 'light' });
+    this.prepareReadingRecorder({
+      requestPrivacy: true,
+      requestPermission: true,
+      showToast: true
+    }).catch((error) => {
+      console.warn('预热朗读录音能力失败', error);
     });
 
-    // 启动打字机效果
-    this.startTypewriter();
+    this.playOverlayDissolve('start', () => {
+      this.setData({
+        showReadingIntro: false,
+        showGuide: true,
+        closingOverlay: ''
+      });
+      this.startTypewriter();
+    });
+  },
+
+  onConfirmRoundTwoTransition() {
+    if (!this.data.showRoundTwoTransition) return;
+
+    wx.vibrateShort({ type: 'light' });
+    this.playOverlayDissolve('round2', () => {
+      this.setData({
+        showRoundTwoTransition: false,
+        closingOverlay: ''
+      });
+      this.nextRound();
+    });
+  },
+
+  playOverlayDissolve(kind, onComplete) {
+    this.setData({
+      closingOverlay: kind
+    });
+
+    setTimeout(() => {
+      if (typeof onComplete === 'function') {
+        onComplete();
+      } else {
+        this.setData({
+          closingOverlay: ''
+        });
+      }
+    }, 420);
   },
 
   startTypewriter() {
-    const fullText = this.data.currentText;
-    let index = 0;
-    let currentDisplay = '';
+    if (this.data.typewriterTimer) {
+      clearInterval(this.data.typewriterTimer);
+    }
 
-    const typewriterTimer = setInterval(() => {
-      if (index < fullText.length) {
-        currentDisplay += fullText[index];
-        this.setData({
-          displayText: currentDisplay
-        });
-        index++;
-      } else {
-        clearInterval(typewriterTimer);
-        // 打字完成，立即显示录音按钮
-        this.setData({
-          showStamp: true
-        });
-      }
-    }, this.data.TYPEWRITER_SPEED);
-
-    this.setData({ typewriterTimer });
+    this.setData({
+      typewriterTimer: null,
+      displayText: this.data.currentText || '',
+      showStamp: true
+    });
   },
 
   // ========== 录音功能 ==========
 
   onRecordTouchStart() {
+    this.isRecordTouching = true;
     this.lastRecordTouchStartAt = Date.now();
     if (!this.data.isRecording) {
       this.onRecordToggle();
@@ -1134,8 +1337,15 @@ Page({
   },
 
   onRecordTouchEnd() {
+    this.isRecordTouching = false;
+    this.lastRecordTouchEndAt = Date.now();
     if (this.data.isRecording) {
       this.stopRecording();
+      return;
+    }
+
+    if (this.recordStartPending) {
+      this.pendingStopAfterRecordStart = true;
     }
   },
 
@@ -1144,7 +1354,7 @@ Page({
   },
 
   onRecordTap() {
-    if (this.shouldIgnoreTap(this.lastRecordTouchStartAt)) return;
+    if (this.shouldIgnoreTap(this.lastRecordTouchStartAt, this.lastRecordTouchEndAt)) return;
     this.onRecordToggle();
   },
 
@@ -1162,7 +1372,69 @@ Page({
   async startRecording() {
     this.recordStartPending = true;
     try {
-      await this.startSpeechCapture('reading');
+      const recorderReady = await this.prepareReadingRecorder({
+        requestPrivacy: true,
+        requestPermission: true,
+        showToast: true
+      });
+      if (!recorderReady) {
+        return;
+      }
+
+      if (this.data.isRoundRetellMode) {
+        const hasSpeechReleasePending = this.hasPendingSpeechStop()
+          || !!this.currentSpeechSessionTarget
+          || !!this.speechStartPending;
+
+        if (this.data.isSpeechRecording || this.activeSpeechTarget || hasSpeechReleasePending) {
+          await this.stopSpeechInput({
+            force: true,
+            waitForStop: true,
+            timeoutMs: 2600
+          });
+        }
+
+        const speechReleasedAt = Math.max(this.lastSpeechStopAt || 0, this.lastSpeechStopRequestedAt || 0);
+        const speechCooldown = 900 - (Date.now() - speechReleasedAt);
+        if (speechCooldown > 0) {
+          await this.sleep(speechCooldown);
+        }
+      } else {
+        this.resetSpeechSessionState();
+      }
+
+      const recorderReleasedAt = Math.max(this.lastRecorderStopAt || 0, this.lastRecorderStopRequestedAt || 0);
+      const recorderCooldown = 500 - (Date.now() - recorderReleasedAt);
+      if (recorderCooldown > 0) {
+        await this.sleep(recorderCooldown);
+      }
+
+      if (this.isRecordTouching === false) {
+        return;
+      }
+
+      this.setData({
+        hasRecorded: false,
+        recordedFilePath: '',
+        isPlaying: false
+      });
+
+      this.pendingStopAfterRecordStart = false;
+      this.recorderManager.start({
+        duration: 60000,
+        sampleRate: 16000,
+        numberOfChannels: 1,
+        encodeBitRate: 96000,
+        format: 'aac'
+      });
+    } catch (error) {
+      console.error('启动朗读录音失败', error);
+      this.stopVADEffect();
+      this.setData({
+        isRecording: false
+      });
+      this.lastRecorderStopAt = Date.now();
+      this.handlePrivacyRelatedError(error, '录音启动失败');
     } finally {
       setTimeout(() => {
         this.recordStartPending = false;
@@ -1172,8 +1444,22 @@ Page({
 
   // 结束录音
   stopRecording() {
-    if (!this.data.isRecording) return;
-    this.stopSpeechInput();
+    if (!this.data.isRecording || !this.recorderManager) return;
+
+    this.pendingStopAfterRecordStart = false;
+    this.lastRecorderStopRequestedAt = Date.now();
+    this.stopVADEffect();
+    this.setData({
+      isRecording: false
+    });
+
+    try {
+      this.recorderManager.stop();
+    } catch (error) {
+      console.warn('停止朗读录音失败', error);
+      this.lastRecorderStopAt = Date.now();
+      this.handlePrivacyRelatedError(error, '录音停止失败');
+    }
   },
 
   // 启动VAD效果（模拟光晕缩放）
@@ -1226,10 +1512,10 @@ Page({
   // 确认录音，进入下一轮或完成
   onConfirmRecord() {
     wx.vibrateShort({ type: 'heavy' });
-    const { readingRound, totalRounds, isRoundRetellMode } = this.data;
+    const { readingRound, totalRounds, isRoundRetellMode, skipRetellForRemainingRounds } = this.data;
 
     // 所有场景：每句朗读后进入复述流程
-    if (isRoundRetellMode) {
+    if (isRoundRetellMode && !skipRetellForRemainingRounds) {
       if (readingRound >= totalRounds) {
         this.addEnergy(60, true);
         this.setData({ anchorTime: new Date() });
@@ -1247,31 +1533,35 @@ Page({
       return;
     }
 
-    // 判断是否是最后一轮（第5句）
+    // 跳过复述后，直接走纯朗读流程，最后一轮进入本心对话
     if (readingRound >= totalRounds) {
-      // 第五句完成：+10能量 +50每日奖励 = +60能量
-      this.addEnergy(60, true); // isDailyBonus=true显示特殊提示
-
-      // 记录安顿时刻（点击完成录音的瞬间）
+      this.addEnergy(60, true);
       this.setData({
         anchorTime: new Date()
       });
-
-      // 更新打卡记录
       this.updateCheckIn();
 
-      // 其他场景保持原逻辑：直接进入日记卡片
       setTimeout(() => {
-        this.navigateToCardWithoutAI();
-      }, 1200);
+        this.enterFinalStateFlow();
+      }, 800);
     } else {
-      // 普通句子：+10能量
       this.addEnergy(10);
-
-      // 进入下一轮
-      setTimeout(() => {
-        this.nextRound();
-      }, 500);
+      if (readingRound === 1) {
+        setTimeout(() => {
+          this.setData({
+            showGuide: false,
+            showStamp: false,
+            hasRecorded: false,
+            isPlaying: false,
+            closingOverlay: '',
+            showRoundTwoTransition: true
+          });
+        }, 400);
+      } else {
+        setTimeout(() => {
+          this.nextRound();
+        }, 400);
+      }
     }
   },
 
@@ -1286,6 +1576,7 @@ Page({
     this.setData({
       currentPhase: 'reading',
       showStamp: false,
+      showReadingIntro: false,
       hasRecorded: false,
       isPlaying: false,
       postReadingStep: 'retell',
@@ -1304,6 +1595,41 @@ Page({
     });
   },
 
+  async onSkipRetell() {
+    wx.vibrateShort({ type: 'light' });
+    await this.stopSpeechInput({
+      waitForStop: true,
+      timeoutMs: 2200
+    });
+
+    this.setData({
+      skipRetellForRemainingRounds: true,
+      retellText: '',
+      retellFeedback: '',
+      isSpeechRecording: false,
+      speechTarget: 'reading'
+    });
+
+    const currentReflectionRound = this.data.currentReflectionRound || this.data.readingRound;
+    if (currentReflectionRound >= this.data.totalRounds) {
+      this.enterFinalStateFlow();
+      return;
+    }
+
+    this.setData({
+      postReadingStep: '',
+      currentReflectionMantra: '',
+      displayText: '',
+      showGuide: false,
+      showStamp: false,
+      showReadingIntro: false
+    });
+
+    setTimeout(() => {
+      this.nextRound();
+    }, 320);
+  },
+
   // 返回朗读阶段（重读上一句）
   async onBackToReading() {
     await this.stopSpeechInput({
@@ -1319,6 +1645,7 @@ Page({
       speechTarget: 'reading',
       postReadingStep: null,
       showStamp: true,
+      showReadingIntro: false,
       isPlaying: false,
       guideText: '长按开始朗读'
     });
@@ -1333,18 +1660,23 @@ Page({
       ? this.data.allMantras[currentReflectionRound - 1]
       : (this.data.currentText || '');
     const retellText = (this.data.retellText || '').trim();
-    if (!retellText) {
-      wx.showToast({
-        title: '先按按钮说一句复述',
-        icon: 'none'
-      });
-      return;
-    }
 
     await this.stopSpeechInput({
       waitForStop: true,
       timeoutMs: 2200
     });
+
+    if (!retellText) {
+      const roundRetells = [...(this.data.roundRetells || [])];
+      roundRetells[currentReflectionRound - 1] = '';
+      this.setData({
+        roundRetells,
+        retellFeedback: ''
+      });
+      this.onContinueAfterFeedback();
+      return;
+    }
+
     this.setData({ isGeneratingFeedback: true });
     try {
       const retellFeedback = await this.generateRetellFeedback({
@@ -1391,14 +1723,7 @@ Page({
     const { currentReflectionRound, totalRounds } = this.data;
 
     if (currentReflectionRound >= totalRounds) {
-      this.setData({
-        postReadingStep: 'state',
-        selectedFinalState: '',
-        selectedFinalStates: [],
-        finalStateOptions: this.buildFinalStateOptions(),
-        showCustomFeelingInput: false,
-        feelingText: ''
-      });
+      this.enterFinalStateFlow();
       return;
     }
 
@@ -1414,7 +1739,8 @@ Page({
       speechTarget: 'reading',
       displayText: '',
       showGuide: false,
-      showStamp: false
+      showStamp: false,
+      showReadingIntro: false
     });
 
     setTimeout(() => {
@@ -1432,6 +1758,24 @@ Page({
     this.feedbackAutoTimer = setTimeout(() => {
       this.onContinueAfterFeedback();
     }, 1800);
+  },
+
+  enterFinalStateFlow() {
+    this.setData({
+      postReadingStep: 'state',
+      currentReflectionMantra: '',
+      retellText: '',
+      retellFeedback: '',
+      isRecording: false,
+      isSpeechRecording: false,
+      hasRecorded: false,
+      recordedFilePath: '',
+      selectedFinalState: '',
+      selectedFinalStates: [],
+      finalStateOptions: this.buildFinalStateOptions(),
+      showCustomFeelingInput: false,
+      feelingText: ''
+    });
   },
 
   onSelectFinalState(e) {
@@ -1671,12 +2015,19 @@ Page({
       displayText: '', // 清空，等待打字机效果
       showGuide: true, // 确保从复述返回后下一句可见
       showStamp: false, // 先隐藏录音按钮，等打字机完成后再显示
+      showReadingIntro: false,
+      showRoundTwoTransition: false,
+      closingOverlay: '',
       guideText: this.getGuideText(nextRound), // 更新引导语
       isRecording: false,
       isSpeechRecording: false,
       speechTarget: 'reading',
       hasRecorded: false, // 重置录音状态
       recordedFilePath: ''
+    });
+
+    this.prepareReadingRecorder().catch((error) => {
+      console.warn('下一轮朗读录音预热失败', error);
     });
 
     // 启动打字机效果
