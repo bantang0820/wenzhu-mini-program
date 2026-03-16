@@ -37,6 +37,8 @@ Page({
   onShow() {
     // 每次显示时刷新数据
     this.loadUserData();
+    this.loadCalendarData();
+    this.loadMedalData();
   },
 
   // 初始化数据
@@ -53,17 +55,73 @@ Page({
     this.setData({ loading: false });
   },
 
+  getPracticeDateString(date = new Date()) {
+    const targetDate = date instanceof Date ? date : new Date(date);
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  calculateLocalContinuousDays(checkInMap = {}) {
+    const today = this.getPracticeDateString();
+    if (!checkInMap[today]) {
+      return 0;
+    }
+
+    let streak = 0;
+    const cursor = new Date(`${today}T12:00:00`);
+
+    while (checkInMap[this.getPracticeDateString(cursor)]) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  },
+
+  getLocalPracticeStats() {
+    const checkInMap = wx.getStorageSync('checkInMap') || {};
+    const energyData = wx.getStorageSync('energyData') || {};
+    const storedTotalDays = Number(wx.getStorageSync('totalDays') || 0);
+    const totalDays = Math.max(Object.keys(checkInMap).length, storedTotalDays);
+    const totalEnergy = Number(
+      energyData.totalEnergy !== undefined ? energyData.totalEnergy : (wx.getStorageSync('totalEnergy') || 0)
+    );
+    const continuousDays = Math.max(
+      this.calculateLocalContinuousDays(checkInMap),
+      Number(wx.getStorageSync('currentStreak') || 0)
+    );
+
+    return {
+      totalDays,
+      totalEnergy,
+      continuousDays,
+      checkInMap
+    };
+  },
+
+  persistLocalPracticeStats(stats = {}) {
+    wx.setStorageSync('totalDays', Number(stats.totalDays || 0));
+    wx.setStorageSync('totalEnergy', Number(stats.totalEnergy || 0));
+    wx.setStorageSync('currentStreak', Number(stats.continuousDays || 0));
+  },
+
   // ========== 加载用户数据 ==========
   async loadUserData() {
     // 先读取本地数据兜底
-    const totalDays = wx.getStorageSync('totalDays') || 0;
-    const totalEnergy = wx.getStorageSync('totalEnergy') || 0;
-    const localContinuousDays = wx.getStorageSync('currentStreak') || 0;
+    const localStats = this.getLocalPracticeStats();
+    let finalStats = {
+      totalDays: localStats.totalDays,
+      totalEnergy: localStats.totalEnergy,
+      continuousDays: localStats.continuousDays
+    };
 
     this.setData({
-      totalDays,
-      totalEnergy,
-      continuousDays: localContinuousDays
+      totalDays: finalStats.totalDays,
+      totalEnergy: finalStats.totalEnergy,
+      continuousDays: finalStats.continuousDays,
+      checkInMap: localStats.checkInMap
     });
 
     // 登录状态下使用后端核心统计，保持与本心页数据一致
@@ -74,11 +132,20 @@ Page({
 
       if (isLoggedIn) {
         const apiClient = app.globalData.api || api;
-        const response = await apiClient.get('/scenarios/core-statistics', null, true);
+        const response = await apiClient.get('/scenarios/statistics', null, true);
 
         if (response.success && response.data) {
+          finalStats = {
+            totalDays: Math.max(localStats.totalDays, Number(response.data.totalDays || 0)),
+            totalEnergy: Math.max(localStats.totalEnergy, Number(response.data.totalEnergy || 0)),
+            continuousDays: Math.max(localStats.continuousDays, Number(response.data.continuousDays || 0))
+          };
+
+          this.persistLocalPracticeStats(finalStats);
           this.setData({
-            continuousDays: response.data.continuousDays || 0
+            totalDays: finalStats.totalDays,
+            totalEnergy: finalStats.totalEnergy,
+            continuousDays: finalStats.continuousDays
           });
         }
       }
@@ -87,7 +154,8 @@ Page({
     }
 
     // 计算等级
-    this.calculateLevel(totalDays);
+    this.calculateLevel(finalStats.totalDays);
+    this.loadMedalData(finalStats);
   },
 
   // 计算用户等级（重构为：心灵状态）
@@ -137,6 +205,7 @@ Page({
   // ========== 加载日历数据 ==========
   loadCalendarData() {
     const { currentYear, currentMonth } = this.data;
+    const checkInMap = wx.getStorageSync('checkInMap') || {};
 
     // 获取当月天数
     const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
@@ -155,7 +224,7 @@ Page({
       });
     }
 
-    this.setData({ calendarDays });
+    this.setData({ calendarDays, checkInMap });
   },
 
   // 检查某天是否打卡
@@ -172,7 +241,7 @@ Page({
   },
 
   // ========== 加载勋章数据 ==========
-  loadMedalData: function() {
+  loadMedalData: function(statsOverrides = {}) {
     var that = this;
 
     // 模拟勋章数据
@@ -187,9 +256,10 @@ Page({
       { id: 8, name: '家风立名', icon: '👑', desc: '完成500次场景朗读', requirement: 500, type: 'scenarios' }
     ];
 
-    var totalDays = that.data.totalDays || 0;
-    var totalEnergy = that.data.totalEnergy || 0;
-    var totalScenarios = wx.getStorageSync('totalScenarios') || 0;
+    var totalDays = statsOverrides.totalDays !== undefined ? statsOverrides.totalDays : (that.data.totalDays || 0);
+    var continuousDays = statsOverrides.continuousDays !== undefined ? statsOverrides.continuousDays : (that.data.continuousDays || 0);
+    var totalEnergy = statsOverrides.totalEnergy !== undefined ? statsOverrides.totalEnergy : (that.data.totalEnergy || 0);
+    var totalScenarios = wx.getStorageSync('totalCount') || wx.getStorageSync('totalScenarios') || 0;
 
     var medals = [];
     var lockedMedals = [];
@@ -203,7 +273,7 @@ Page({
             isUnlocked = totalDays >= medal.requirement;
             break;
           case 'streak':
-            isUnlocked = totalDays >= medal.requirement;
+            isUnlocked = continuousDays >= medal.requirement;
             break;
           case 'energy':
             isUnlocked = totalEnergy >= medal.requirement;

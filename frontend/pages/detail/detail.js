@@ -16,36 +16,72 @@ const FINAL_STATE_OPTIONS = [
 
 const READING_TRANSITIONS = {
   1: {
+    phaseTitle: '课题分离',
     lines: [
-      '你刚才做了一件很重要的事——\n先接住了自己。\n接下来我们来找回自己的课题，\n把孩子的课题归还给孩子，\n开始朗读第二句吧。'
+      '你刚才做了一件很重要的事——',
+      '先接住了自己。',
+      '接下来我们来找回自己的课题，',
+      '把孩子的课题归还给孩子，',
+      '开始朗读第二句吧。'
     ],
     buttonText: '再读一句',
     action: 'next-round'
   },
   2: {
+    phaseTitle: '认知翻转',
     lines: [
-      '放下不属于我们的重担后，\n是不是感觉到了一丝轻松？\n犯错不是糟糕的结局，\n而是你们共同成长的契机。\n带着这份轻松，\n换个视角看看刚才发生的事吧。'
+      '放下不属于我们的重担后，',
+      '是不是感觉到了一丝轻松？',
+      '犯错不是糟糕的结局，',
+      '而是你们共同成长的契机。',
+      '带着这份轻松，',
+      '换个视角看看刚才发生的事吧。'
     ],
     buttonText: '再读一句',
     action: 'next-round'
   },
   3: {
+    phaseTitle: '行动指南',
     lines: [
-      '视角的转变，\n已经让你在当下重新获得了力量。\n有了觉察，改变就会自然发生。\n深呼吸，\n让我们看看现在可以做点什么微小的事，\n重新连接彼此。'
+      '视角的转变，',
+      '已经让你在当下重新获得了力量。',
+      '有了觉察，改变就会自然发生。',
+      '深呼吸，',
+      '让我们看看现在可以做点什么微小的事，',
+      '重新连接彼此。'
     ],
     buttonText: '再读一句',
     action: 'next-round'
   },
   4: {
+    phaseTitle: '重塑自我',
     lines: [
-      '读到这里，你已经掌握了应对当下的方法，\n你真的太棒了！\n其实，你愿意在这里停下来向内看，\n就已经证明了一件事——\n你是一个充满爱的父母。\n现在，让我们回到一切的起点，\n去拥抱那个真实且足够好的自己。'
+      '读到这里，你已经掌握了应对当下的方法，',
+      '你真的太棒了！',
+      '其实，你愿意在这里停下来向内看，',
+      '就已经证明了一件事——',
+      '你是一个充满爱的父母。',
+      '现在，让我们回到一切的起点，',
+      '去拥抱那个真实且足够好的自己。'
     ],
     buttonText: '读最后一句',
     action: 'next-round'
   },
   5: {
+    phaseTitle: '',
     lines: [
-      '恭喜你，完成了一次充满力量的内心探索。🎉\n\n偶尔情绪失控，\n并不代表你是个糟糕的父母。\n不必追求完美无瑕的育儿，\n真实的碰撞和及时的修复，\n才是给孩子最好的滋养。\n\n\n现在，带着这份平和与确信，\n去抱一抱你的孩子；\n或者去喝杯水，抱一抱辛苦了的自己吧。\n\n当你需要力量时，随时回来，\n我们在这里陪你稳稳地向前走。'
+      '恭喜你，完成了一次充满力量的内心探索。🎉',
+      '偶尔情绪失控，',
+      '并不代表你是个糟糕的父母。',
+      '不必追求完美无瑕的育儿，',
+      '真实的碰撞和及时的修复，',
+      '才是给孩子最好的滋养。',
+      '',
+      '现在，带着这份平和与确信，',
+      '去抱一抱你的孩子；',
+      '或者去喝杯水，抱一抱辛苦了的自己吧。',
+      '当你需要力量时，随时回来，',
+      '我们在这里陪你稳稳地向前走。'
     ],
     buttonText: '去复盘',
     action: 'enter-final-state'
@@ -86,6 +122,7 @@ Page({
     readingTransitionLines: [],
     readingTransitionButtonText: '',
     readingTransitionAction: '',
+    phaseTitle: '', // 过渡页翻转后显示的阶段标题
     closingOverlay: '', // '' | start | transition
     stampHintText: '', // 提示文字（已废弃）
     typewriterTimer: null,
@@ -939,6 +976,60 @@ Page({
     });
   },
 
+  getPracticeDateString(date = new Date()) {
+    const targetDate = date instanceof Date ? date : new Date(date);
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  getStoredEnergyData() {
+    const rawEnergyData = wx.getStorageSync('energyData') || {};
+    const legacyTotalEnergy = Number(wx.getStorageSync('totalEnergy') || 0);
+    const legacyCurrentStreak = Number(wx.getStorageSync('currentStreak') || 0);
+
+    return {
+      totalEnergy: Number(
+        rawEnergyData.totalEnergy !== undefined ? rawEnergyData.totalEnergy : (legacyTotalEnergy || 0)
+      ),
+      todayEnergy: Number(rawEnergyData.todayEnergy || 0),
+      todaySentences: Number(rawEnergyData.todaySentences || 0),
+      consecutiveDays: Number(
+        rawEnergyData.consecutiveDays !== undefined ? rawEnergyData.consecutiveDays : (legacyCurrentStreak || 0)
+      ),
+      lastCheckInDate: rawEnergyData.lastCheckInDate || null,
+      lastEnergyResetDate: rawEnergyData.lastEnergyResetDate || null
+    };
+  },
+
+  calculateConsecutiveDays(checkInMap = {}) {
+    const today = this.getPracticeDateString();
+    if (!checkInMap[today]) {
+      return 0;
+    }
+
+    let streak = 0;
+    const cursor = new Date(`${today}T12:00:00`);
+
+    while (checkInMap[this.getPracticeDateString(cursor)]) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  },
+
+  syncLocalPracticeStats(energyData, checkInMap = wx.getStorageSync('checkInMap') || {}) {
+    const totalDays = Object.keys(checkInMap).length;
+    const totalEnergy = Number((energyData && energyData.totalEnergy) || 0);
+    const currentStreak = Number((energyData && energyData.consecutiveDays) || 0);
+
+    wx.setStorageSync('totalDays', totalDays);
+    wx.setStorageSync('totalEnergy', totalEnergy);
+    wx.setStorageSync('currentStreak', currentStreak);
+  },
+
   // 检查免费用户权限限制
   checkAccessLimit() {
     return; // 强制移除免费用户权限限制
@@ -1041,39 +1132,19 @@ Page({
 
   // 加载能量数据
   loadEnergyData() {
-    const energyData = wx.getStorageSync('energyData') || {
-      totalEnergy: 0,
-      todayEnergy: 0,
-      todaySentences: 0,
-      consecutiveDays: 0,
-      lastCheckInDate: null
-    };
+    const energyData = this.getStoredEnergyData();
+    const checkInMap = wx.getStorageSync('checkInMap') || {};
+    const today = this.getPracticeDateString();
 
-    // 检查是否是新的一天
-    const today = new Date().toDateString();
-    if (energyData.lastCheckInDate !== today) {
-      // 新的一天，重置今日能量
+    // 只在跨天时重置“今日数据”，不改动真实打卡日期
+    if (energyData.lastEnergyResetDate !== today) {
       energyData.todayEnergy = 0;
       energyData.todaySentences = 0;
-
-      // 检查连续打卡
-      const lastDate = energyData.lastCheckInDate ? new Date(energyData.lastCheckInDate) : null;
-      if (lastDate) {
-        const diffTime = new Date().getTime() - lastDate.getTime();
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 1) {
-          // 连续打卡
-          energyData.consecutiveDays += 1;
-        } else if (diffDays > 1) {
-          // 中断，重置连续天数
-          energyData.consecutiveDays = 0;
-        }
-      }
-
-      energyData.lastCheckInDate = today;
-      this.saveEnergyData(energyData);
+      energyData.lastEnergyResetDate = today;
     }
+
+    energyData.consecutiveDays = this.calculateConsecutiveDays(checkInMap);
+    this.saveEnergyData(energyData);
 
     this.setData({
       totalEnergy: energyData.totalEnergy,
@@ -1086,16 +1157,20 @@ Page({
 
   // 增加能量
   addEnergy(amount, isDailyBonus = false) {
-    const newTotalEnergy = this.data.totalEnergy + amount;
-    const newTodayEnergy = this.data.todayEnergy + amount;
-    const newTodaySentences = this.data.todaySentences + 1;
+    const today = this.getPracticeDateString();
+    const baseEnergyData = this.getStoredEnergyData();
+    const isSameDay = baseEnergyData.lastEnergyResetDate === today;
+    const newTotalEnergy = baseEnergyData.totalEnergy + amount;
+    const newTodayEnergy = (isSameDay ? baseEnergyData.todayEnergy : 0) + amount;
+    const newTodaySentences = (isSameDay ? baseEnergyData.todaySentences : 0) + 1;
 
     const energyData = {
       totalEnergy: newTotalEnergy,
       todayEnergy: newTodayEnergy,
       todaySentences: newTodaySentences,
       consecutiveDays: this.data.consecutiveDays,
-      lastCheckInDate: this.data.lastCheckInDate
+      lastCheckInDate: baseEnergyData.lastCheckInDate,
+      lastEnergyResetDate: today
     };
 
     this.setData({
@@ -1118,13 +1193,17 @@ Page({
 
   // 保存能量数据
   saveEnergyData(data) {
-    wx.setStorageSync('energyData', data || {
+    const normalizedData = data || {
       totalEnergy: this.data.totalEnergy,
       todayEnergy: this.data.todayEnergy,
       todaySentences: this.data.todaySentences,
       consecutiveDays: this.data.consecutiveDays,
-      lastCheckInDate: this.data.lastCheckInDate
-    });
+      lastCheckInDate: this.data.lastCheckInDate,
+      lastEnergyResetDate: this.getPracticeDateString()
+    };
+
+    wx.setStorageSync('energyData', normalizedData);
+    this.syncLocalPracticeStats(normalizedData);
   },
 
   // ========== 直接进入朗读阶段（跳过长按止颤）==========
@@ -1146,6 +1225,7 @@ Page({
       readingTransitionLines: [],
       readingTransitionButtonText: '',
       readingTransitionAction: '',
+      phaseTitle: '',
       closingOverlay: '',
       readingRound: 1,
       backgroundBrightness: 30,
@@ -1283,6 +1363,7 @@ Page({
       readingTransitionLines: [],
       readingTransitionButtonText: '',
       readingTransitionAction: '',
+      phaseTitle: '',
       closingOverlay: '',
       readingRound: 1, // 从第一轮开始
       backgroundBrightness: 30, // 第一轮最暗
@@ -1362,6 +1443,7 @@ Page({
       readingTransitionLines: transitionConfig.lines,
       readingTransitionButtonText: transitionConfig.buttonText,
       readingTransitionAction: transitionConfig.action,
+      phaseTitle: transitionConfig.phaseTitle || '', // 添加阶段标题
       closingOverlay: ''
     });
   },
@@ -1632,9 +1714,10 @@ Page({
     // 所有场景：每句朗读后进入复述流程
     if (isRoundRetellMode && !skipRetellForRemainingRounds) {
       if (readingRound >= totalRounds) {
-        this.addEnergy(60, true);
-        this.setData({ anchorTime: new Date() });
-        this.updateCheckIn();
+        const completedAt = new Date();
+        this.addEnergy(20, true);
+        this.setData({ anchorTime: completedAt });
+        this.updateCheckIn(completedAt);
 
         setTimeout(() => {
           this.startPostReadingFlow(readingRound);
@@ -1650,11 +1733,12 @@ Page({
 
     // 跳过复述后，直接走纯朗读流程，最后一轮进入本心对话
     if (readingRound >= totalRounds) {
-      this.addEnergy(60, true);
+      const completedAt = new Date();
+      this.addEnergy(20, true);
       this.setData({
-        anchorTime: new Date()
+        anchorTime: completedAt
       });
-      this.updateCheckIn();
+      this.updateCheckIn(completedAt);
 
       setTimeout(() => {
         this.showReadingTransition(readingRound);
@@ -1752,6 +1836,7 @@ Page({
       readingTransitionLines: [],
       readingTransitionButtonText: '',
       readingTransitionAction: '',
+      phaseTitle: '',
       isPlaying: false,
       guideText: '长按开始朗读'
     });
@@ -1880,6 +1965,7 @@ Page({
       readingTransitionLines: [],
       readingTransitionButtonText: '',
       readingTransitionAction: '',
+      phaseTitle: '',
       closingOverlay: '',
       selectedFinalState: '',
       selectedFinalStates: [],
@@ -2083,28 +2169,71 @@ Page({
   },
 
   // 更新打卡记录
-  updateCheckIn() {
+  updateCheckIn(practiceTime = new Date()) {
     try {
-      const now = new Date();
-      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const dateStr = this.getPracticeDateString(practiceTime);
       
-      // 2. 更新总天数 (如果是今天第一次打卡)
       const checkInMap = wx.getStorageSync('checkInMap') || {};
-      if (!checkInMap[dateStr]) {
+      const isFirstToday = !checkInMap[dateStr];
+
+      if (isFirstToday) {
         checkInMap[dateStr] = true;
         wx.setStorageSync('checkInMap', checkInMap);
-        
-        const totalDays = (wx.getStorageSync('totalDays') || 0) + 1;
-        wx.setStorageSync('totalDays', totalDays);
       }
+
+      const totalDays = Object.keys(checkInMap).length;
+      const consecutiveDays = this.calculateConsecutiveDays(checkInMap);
+      const energyData = this.getStoredEnergyData();
+
+      energyData.consecutiveDays = consecutiveDays;
+      energyData.lastCheckInDate = dateStr;
+      energyData.lastEnergyResetDate = energyData.lastEnergyResetDate || dateStr;
+
+      wx.setStorageSync('totalDays', totalDays);
+      this.saveEnergyData(energyData);
+      this.setData({
+        consecutiveDays,
+        lastCheckInDate: dateStr
+      });
       
-      // 3. 更新总次数
       const totalCount = (wx.getStorageSync('totalCount') || 0) + 1;
       wx.setStorageSync('totalCount', totalCount);
+
+      this.syncPracticeRecord(practiceTime);
       
       console.log('首页呼吸练习打卡成功:', dateStr);
     } catch (e) {
       console.error('更新打卡记录失败', e);
+    }
+  },
+
+  async syncPracticeRecord(practiceTime = new Date()) {
+    const isLoggedIn = typeof app.isLoggedIn === 'function'
+      ? app.isLoggedIn()
+      : !!(wx.getStorageSync('token') && wx.getStorageSync('openid'));
+    const scenarioId = this.data.scenario && this.data.scenario.id;
+
+    if (!isLoggedIn || !scenarioId) {
+      return;
+    }
+
+    const duration = this.data.stormTime
+      ? Math.max(new Date(practiceTime).getTime() - new Date(this.data.stormTime).getTime(), 0)
+      : 0;
+
+    try {
+      await api.post(
+        '/scenarios/practice',
+        {
+          scenarioId,
+          duration,
+          energy: 60
+        },
+        true,
+        true
+      );
+    } catch (error) {
+      console.warn('同步练习记录失败，已保留本地数据', error);
     }
   },
 
@@ -2131,6 +2260,7 @@ Page({
       readingTransitionLines: [],
       readingTransitionButtonText: '',
       readingTransitionAction: '',
+      phaseTitle: '',
       closingOverlay: '',
       guideText: this.getGuideText(nextRound), // 更新引导语
       isRecording: false,

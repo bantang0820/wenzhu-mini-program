@@ -1,5 +1,8 @@
 <!-- pages/card/card.wxml -->
 <view class="container">
+  <view class="back-btn" bindtap="onBack">
+    <view class="back-icon"></view>
+  </view>
 
   <!-- 加载状态 -->
   <view wx:if="{{!showCard}}" class="loading-container">
@@ -22,7 +25,12 @@
 
     <!-- 操作按钮区域 -->
     <view class="actions">
-      <button class="action-btn primary" bindtap="saveToAlbum">
+      <button
+        class="action-btn primary"
+        open-type="agreePrivacyAuthorization"
+        bindtap="onSaveButtonTap"
+        bindagreeprivacyauthorization="onAgreePrivacyAuthorization"
+      >
         <text class="icon">保存</text>
       </button>
 

@@ -28,7 +28,7 @@
   <view class="energy-glow {{isRecording ? 'active' : ''}}" style="transform: translate(-50%, -50%) scale({{energyScale || 1}});"></view>
 
   <!-- 返回按钮 -->
-  <view class="back-btn" style="{{backButtonStyle}}" bindtap="onBack" wx:if="{{!isCompleted}}">
+  <view class="back-btn" style="{{backButtonStyle}}" bindtap="onBack">
     <view class="back-icon"></view>
   </view>
 
@@ -98,8 +98,8 @@
             <text>先试一句</text>
           </view>
         </view>
-        <view class="back-face">
-          <text class="quote-reveal-text title-serif">{{allMantras[0] || currentText}}</text>
+        <view class="back-face phase-reveal-back">
+          <text class="phase-reveal-title title-serif">接纳情绪</text>
         </view>
       </view>
     </view>
@@ -111,14 +111,16 @@
       <view class="flipper">
         <view class="front-face">
           <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'transition'}}"></view>
-          <text class="reading-intro-kicker">0{{readingRound}} / 05</text>
-          <text class="reading-intro-body round-transition-body" wx:for="{{readingTransitionLines}}" wx:key="index">{{item}}</text>
+          <text class="reading-intro-kicker round-transition-kicker">0{{readingRound}} / 05</text>
+          <view class="round-transition-copy">
+            <text class="reading-intro-body round-transition-body" wx:for="{{readingTransitionLines}}" wx:key="index">{{item || ' '}}</text>
+          </view>
           <view class="reading-intro-button" bindtap="onConfirmReadingTransition">
             <text>{{readingTransitionButtonText}}</text>
           </view>
         </view>
-        <view class="back-face">
-          <text class="quote-reveal-text title-serif">{{readingTransitionAction === 'enter-final-state' ? '太棒了，完成所有朗读' : allMantras[readingRound]}}</text>
+        <view class="back-face phase-reveal-back">
+          <text class="phase-reveal-title title-serif">{{phaseTitle}}</text>
         </view>
       </view>
     </view>
@@ -308,7 +310,7 @@
           </view>
         </view>
 
-        <view class="reflection-btn {{isGeneratingJournal ? 'disabled' : ''}}" bindtap="onGenerateDiaryFromState">
+        <view class="reading-intro-button reflection-submit-button {{isGeneratingJournal ? 'disabled' : ''}}" bindtap="onGenerateDiaryFromState">
           <text>{{isGeneratingJournal ? '正在生成正念日记卡片...' : '生成正念日记卡片'}}</text>
         </view>
       </view>

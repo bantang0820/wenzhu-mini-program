@@ -14,10 +14,12 @@ Page({
     userInfo: { nickName: '我' },
     cardImage: '',
     showCard: false,
+    needPrivacyAuthorization: false,
   },
 
   onLoad(options) {
     console.log('情绪切片页面加载');
+    this.initPrivacySetting();
 
     const eventChannel = this.getOpenerEventChannel();
 
@@ -75,6 +77,35 @@ Page({
         this.generateWarmCard();
       }, 300);
     }
+  },
+
+  onShow() {
+    this.initPrivacySetting();
+  },
+
+  initPrivacySetting() {
+    if (typeof wx.getPrivacySetting !== 'function') return;
+
+    wx.getPrivacySetting({
+      success: (res) => {
+        this.setData({
+          needPrivacyAuthorization: !!res.needAuthorization
+        });
+      },
+      fail: (error) => {
+        console.warn('获取隐私设置失败', error);
+      }
+    });
+  },
+
+  onSaveButtonTap() {
+    if (this.data.needPrivacyAuthorization) return;
+    this.saveToAlbum();
+  },
+
+  onAgreePrivacyAuthorization() {
+    this.setData({ needPrivacyAuthorization: false });
+    this.saveToAlbum();
   },
 
   // 将5句话转换成连贯的日记
@@ -951,7 +982,7 @@ Page({
   },
 
   // 保存到相册
-  async saveToAlbum() {
+  async saveToAlbum(retryAfterPermission = true) {
     const { cardImage } = this.data;
     if (!cardImage) {
       wx.showToast({ title: '请先生成卡片', icon: 'none' });
@@ -959,16 +990,6 @@ Page({
     }
 
     try {
-      const hasPrivacyConsent = await this.ensurePrivacyConsent();
-      if (!hasPrivacyConsent) {
-        return;
-      }
-
-      const hasPermission = await this.ensureAlbumPermission();
-      if (!hasPermission) {
-        return;
-      }
-
       const filePath = await this.getSavableImagePath(cardImage);
       await this.saveImageToAlbum(filePath);
 
@@ -977,32 +998,21 @@ Page({
       console.error('保存失败', err);
 
       if (this.isPrivacyPermissionError(err)) {
+        this.setData({ needPrivacyAuthorization: true });
         await this.showPrivacyPermissionGuide();
         return;
       }
 
       if (this.isAlbumPermissionError(err)) {
-        await this.openAlbumPermissionSetting();
+        const hasPermission = await this.ensureAlbumPermission();
+        if (hasPermission && retryAfterPermission) {
+          await this.saveToAlbum(false);
+        }
         return;
       }
 
       wx.showToast({ title: '保存失败，请重试', icon: 'none' });
     }
-  },
-
-  async ensurePrivacyConsent() {
-    const app = getApp();
-
-    if (!app || typeof app.ensurePrivacyAuthorization !== 'function') {
-      return true;
-    }
-
-    const approved = await app.ensurePrivacyAuthorization();
-    if (!approved) {
-      await this.showPrivacyPermissionGuide();
-    }
-
-    return approved;
   },
 
   ensureAlbumPermission() {
@@ -1079,7 +1089,7 @@ Page({
     return new Promise((resolve) => {
       wx.showModal({
         title: '需要隐私授权',
-        content: '保存图片前，需要先同意小程序的隐私保护指引。请重新点击一次“保存”，并在弹出的隐私提示里点同意。',
+        content: '保存图片前，需要先同意小程序的隐私保护指引。请点击一次“保存”，并在微信弹出的授权提示里点同意。',
         showCancel: false,
         success: () => resolve(false),
         fail: () => resolve(false)
@@ -1177,6 +1187,19 @@ Page({
     wx.previewImage({
       current: cardImage,
       urls: [cardImage]
+    });
+  },
+
+  onBack() {
+    const pages = getCurrentPages();
+
+    if (pages.length > 1) {
+      wx.navigateBack();
+      return;
+    }
+
+    wx.reLaunch({
+      url: '/pages/index/index'
     });
   },
 

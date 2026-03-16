@@ -453,17 +453,104 @@
   text-align-last: center;
 }
 
+/* 阶段标题背面样式 */
+.phase-reveal-back {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 40rpx;
+}
+
+.phase-reveal-title {
+  font-size: 56rpx;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  background: linear-gradient(135deg, #F6E8D1 0%, #E8D0A9 50%, #F4E7D0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  text-align: center;
+  position: relative;
+}
+
+.phase-reveal-title::before {
+  content: '';
+  position: absolute;
+  top: -20rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 4rpx;
+  background: linear-gradient(90deg, transparent, #E8D0A9, transparent);
+  border-radius: 2rpx;
+}
+
+.phase-reveal-title::after {
+  content: '';
+  position: absolute;
+  bottom: -20rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 4rpx;
+  background: linear-gradient(90deg, transparent, #E8D0A9, transparent);
+  border-radius: 2rpx;
+}
+
+
 .reading-intro-card.is-dissolving {
   animation: introCardDissolve 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .round-transition-card {
-  /* wrapper itself doesn't have background now */
+  width: 100%;
+  max-width: 640rpx;
 }
 
 .round-transition-card .front-face,
 .round-transition-card .back-face {
-  /* Using the same card style as intro for consistency */
+  min-height: 760rpx;
+}
+
+.round-transition-card .front-face {
+  padding: 64rpx 48rpx 54rpx;
+}
+
+.round-transition-card .round-transition-kicker {
+  margin-bottom: 32rpx;
+  color: rgba(232, 208, 169, 0.64);
+  letter-spacing: 0.28em;
+}
+
+.round-transition-card .round-transition-copy {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.round-transition-card .round-transition-body {
+  width: 100%;
+  font-size: 30rpx;
+  line-height: 1.95;
+  color: rgba(244, 231, 208, 0.88);
+  letter-spacing: 0.03em;
+  text-align: center;
+  white-space: pre-wrap;
+}
+
+.round-transition-card .round-transition-body + .round-transition-body {
+  margin-top: 8rpx;
+}
+
+.round-transition-card .round-transition-button {
+  width: 280rpx;
+  min-height: 84rpx;
+  margin-top: 44rpx;
+  padding: 22rpx 0;
+  flex-shrink: 0;
 }
 
 .reading-intro-kicker {
@@ -489,11 +576,6 @@
   font-size: 28rpx;
   line-height: 1.9;
   color: rgba(244, 231, 208, 0.86);
-}
-
-.round-transition-body {
-  line-height: 2.15;
-  white-space: pre-wrap;
 }
 
 .reading-intro-dissolve {
@@ -527,6 +609,22 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-align: center;
+}
+
+.reflection-submit-button {
+  width: auto;
+  min-width: 260rpx;
+  padding: 20rpx 40rpx;
+  align-self: center;
+}
+
+.reading-intro-button.disabled,
+.reflection-submit-button.disabled {
+  opacity: 0.6;
+}
+
+.reflection-submit-button:active {
+  transform: scale(0.98);
 }
 
 .quote-reveal-container {

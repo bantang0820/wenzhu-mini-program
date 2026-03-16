@@ -11,6 +11,33 @@
   justify-content: center;
 }
 
+.back-btn {
+  position: fixed;
+  top: 60rpx;
+  left: 40rpx;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: all 0.2s ease;
+}
+
+.back-btn:active {
+  transform: scale(0.96);
+}
+
+.back-icon {
+  width: 22rpx;
+  height: 22rpx;
+  border-left: 3rpx solid #2B303A;
+  border-bottom: 3rpx solid #2B303A;
+  transform: rotate(45deg);
+  margin-left: 6rpx;
+  box-sizing: border-box;
+}
+
 /* 加载状态 */
 .loading-container {
   display: flex;

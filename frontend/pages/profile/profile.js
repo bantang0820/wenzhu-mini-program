@@ -147,55 +147,103 @@ Page({
     this.setData({ audioSettings, reminderSettings });
   },
 
+  getPracticeDateString(date = new Date()) {
+    const targetDate = date instanceof Date ? date : new Date(date);
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  calculateLocalContinuousDays(checkInMap = {}) {
+    const today = this.getPracticeDateString();
+    if (!checkInMap[today]) {
+      return 0;
+    }
+
+    let streak = 0;
+    const cursor = new Date(`${today}T12:00:00`);
+
+    while (checkInMap[this.getPracticeDateString(cursor)]) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  },
+
+  getLocalPracticeStats() {
+    const checkInMap = wx.getStorageSync('checkInMap') || {};
+    const energyData = wx.getStorageSync('energyData') || {};
+    const totalDays = Math.max(Object.keys(checkInMap).length, Number(wx.getStorageSync('totalDays') || 0));
+    const totalEnergy = Number(
+      energyData.totalEnergy !== undefined ? energyData.totalEnergy : (wx.getStorageSync('totalEnergy') || 0)
+    );
+    const currentStreak = Math.max(
+      this.calculateLocalContinuousDays(checkInMap),
+      Number(wx.getStorageSync('currentStreak') || 0)
+    );
+    const totalScenarios = Number(wx.getStorageSync('totalCount') || wx.getStorageSync('totalScenarios') || 0);
+
+    return {
+      totalDays,
+      totalEnergy,
+      totalScenarios,
+      currentStreak
+    };
+  },
+
+  persistLocalPracticeStats(stats = {}) {
+    wx.setStorageSync('totalDays', Number(stats.totalDays || 0));
+    wx.setStorageSync('totalEnergy', Number(stats.totalEnergy || 0));
+    wx.setStorageSync('currentStreak', Number(stats.currentStreak || 0));
+  },
+
   // ========== 加载用户数据 ==========
   async loadUserData() {
+    const localStats = this.getLocalPracticeStats();
+
     if (!this.data.isLoggedIn) {
-      this.loadLocalUserData();
+      this.loadLocalUserData(localStats);
       return;
     }
 
     try {
-      // 从后端API获取核心统计数据
+      // 从后端API获取统计数据
       const apiClient = app.globalData.api || api;
-      const response = await apiClient.get('/scenarios/core-statistics', null, true);
+      const response = await apiClient.get('/scenarios/statistics', null, true);
 
       if (response.success && response.data) {
-        const { totalCount, continuousDays, topScenarios, churnRisk } = response.data;
+        const mergedStats = {
+          totalDays: Math.max(localStats.totalDays, Number(response.data.totalDays || 0)),
+          totalEnergy: Math.max(localStats.totalEnergy, Number(response.data.totalEnergy || 0)),
+          totalScenarios: Math.max(localStats.totalScenarios, Number(response.data.totalCount || 0)),
+          currentStreak: Math.max(localStats.currentStreak, Number(response.data.continuousDays || 0))
+        };
 
-        // 更新统计数据
+        this.persistLocalPracticeStats(mergedStats);
         this.setData({
-          stats: {
-            totalCount: totalCount || 0,
-            continuousDays: continuousDays || 0,
-            topScenarios: topScenarios || [],
-            churnRisk: churnRisk || { hasRisk: false }
-          }
+          stats: mergedStats
         });
 
-        // 计算等级（基于连续天数）
-        this.calculateLevel(continuousDays || 0);
-
-        // 流失预警提醒
-        if (churnRisk && churnRisk.hasRisk) {
-          this.showChurnWarning(churnRisk.daysSinceLastPractice);
-        }
+        this.calculateLevel(mergedStats.totalDays);
       } else {
-        // 如果API调用失败，降级到本地存储
-        this.loadLocalUserData();
+        this.loadLocalUserData(localStats);
       }
     } catch (error) {
       console.error('加载统计数据失败:', error);
-      // 降级到本地存储
-      this.loadLocalUserData();
+      this.loadLocalUserData(localStats);
     }
   },
 
   // 降级方案：从本地存储加载用户数据
-  loadLocalUserData() {
-    const totalDays = wx.getStorageSync('totalDays') || 0;
-    const totalEnergy = wx.getStorageSync('totalEnergy') || 0;
-    const totalScenarios = wx.getStorageSync('totalScenarios') || 0;
-    const currentStreak = wx.getStorageSync('currentStreak') || 0;
+  loadLocalUserData(localStats = this.getLocalPracticeStats()) {
+    const {
+      totalDays,
+      totalEnergy,
+      totalScenarios,
+      currentStreak
+    } = localStats;
 
     this.setData({
       stats: {
