@@ -9,14 +9,14 @@
  * node test-api.js
  *
  * 环境要求：
- * - 后端服务必须运行在 https://1dt2po0565100.vicp.fun
+ * - 后端服务必须运行在 https://api.wenzhuyuer.com
  */
 
 const https = require('https');
 const http = require('http');
 
 // API 配置
-const API_BASE_URL = 'https://1dt2po0565100.vicp.fun/api';
+const API_BASE_URL = 'https://api.wenzhuyuer.com/api';
 const USE_HTTPS = true;
 
 // 测试结果统计

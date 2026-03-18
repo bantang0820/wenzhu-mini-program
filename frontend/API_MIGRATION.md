@@ -2,7 +2,7 @@
 
 ## ✅ 修改完成
 
-已成功将前端 API 地址修改为：`https://1dt2po0565100.vicp.fun`
+已成功将前端 API 地址修改为：`https://api.wenzhuyuer.com`
 
 ## 📝 修改内容
 
@@ -15,7 +15,7 @@
 
 ```javascript
 module.exports = {
-  baseURL: 'https://1dt2po0565100.vicp.fun/api',
+  baseURL: 'https://api.wenzhuyuer.com/api',
   timeout: 30000,
   debug: true
 };
@@ -114,7 +114,7 @@ debug: false  // 关闭调试日志
 ## 🚀 测试步骤
 
 ### 1. 确认后端运行
-确保后端服务在 `https://1dt2po0565100.vicp.fun` 正常运行
+确保后端服务在 `https://api.wenzhuyuer.com` 正常运行
 
 ### 2. 测试 API 连接
 在微信小程序开发工具中：
@@ -163,7 +163,7 @@ A:
 1. 登录微信公众平台
 2. 进入"开发" → "开发管理" → "开发设置"
 3. 配置服务器域名白名单
-4. 添加：`https://1dt2po0565100.vicp.fun`
+4. 添加：`https://api.wenzhuyuer.com`
 
 ## 📝 待完成工作
 
@@ -206,4 +206,4 @@ A:
 ---
 
 **修改时间**: 2026-03-02
-**API 地址**: https://1dt2po0565100.vicp.fun
+**API 地址**: https://api.wenzhuyuer.com

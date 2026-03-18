@@ -46,7 +46,7 @@ Page({
       }
 
       const album = this.normalizeAlbum(albumResult.data, albumId);
-      const chapters = (chaptersResult.data || []).map((item) => this.normalizeChapter(item));
+      const chapters = (chaptersResult.data || []).slice(0, 10).map((item) => this.normalizeChapter(item));
       this.applyAlbumData(album, chapters);
 
       console.log('专辑数据加载成功:', album.id);
@@ -117,8 +117,12 @@ Page({
   normalizeChapter(rawChapter) {
     if (!rawChapter) return null;
 
+    // 确保章节ID在1-10范围内
+    const chapterId = Number(rawChapter.id) || 1;
+    const safeId = chapterId > 10 ? 10 : (chapterId < 1 ? 1 : chapterId);
+
     return {
-      id: rawChapter.id,
+      id: safeId,
       title: rawChapter.title || '',
       subtitle: rawChapter.subtitle || '',
       locked: !!(rawChapter.locked === true || rawChapter.locked === 1 || rawChapter.locked === '1'),
@@ -207,7 +211,7 @@ Page({
       '让爱在家庭流动'
     ];
 
-    const chapters = chapterTitles.map((title, index) => ({
+    const chapters = chapterTitles.slice(0, 10).map((title, index) => ({
       id: index + 1,
       title,
       subtitle: chapterSubtitles[index],

@@ -8,7 +8,7 @@
 
 ### 1. 确保后端服务运行
 
-后端服务必须运行在：`https://1dt2po0565100.vicp.fun`
+后端服务必须运行在：`https://api.wenzhuyuer.com`
 
 ### 2. 运行测试脚本
 
@@ -48,7 +48,7 @@ node test-api.js
 ║          稳住小程序 API 接口测试                          ║
 ╚════════════════════════════════════════════════════════════════╝
 
-📍 API 地址: https://1dt2po0565100.vicp.fun/api
+📍 API 地址: https://api.wenzhuyuer.com/api
 🕐 开始时间: 2026-03-02 22:30:00
 
 🧪 1. 健康检查
@@ -112,7 +112,7 @@ node test-api.js
 - 如果前面的测试失败，后续相关测试会被跳过
 
 ### 3. 网络要求
-- 确保能够访问 `https://1dt2po0565100.vicp.fun`
+- 确保能够访问 `https://api.wenzhuyuer.com`
 - 如果使用本地服务器，需要修改 `API_BASE_URL`
 
 ### 4. 数据库状态

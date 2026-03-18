@@ -13,7 +13,7 @@ import type {
   UserItem
 } from './types';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://1dt2po0565100.vicp.fun').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://api.wenzhuyuer.com').replace(/\/$/, '');
 
 const buildApiUrl = (path: string): string => `${API_BASE_URL}/api${path}`;
 

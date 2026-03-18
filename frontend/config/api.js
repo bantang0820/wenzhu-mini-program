@@ -1,5 +1,5 @@
 // API 配置文件
-const API_BASE_URL = 'https://1dt2po0565100.vicp.fun/api';
+const API_BASE_URL = 'https://api.wenzhuyuer.com/api';
 
 module.exports = {
   // 小程序默认走线上后端，便于真机直接登录

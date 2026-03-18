@@ -10,7 +10,7 @@ Page({
         subtitle: 'Micro Course',
         desc: '爱的语言，让理解自然发生',
         actionText: '点击开启沟通之旅 >',
-        progress: 12,
+        progress: 0,
         tag: '沟通技巧',
         isFree: true
       },
@@ -55,11 +55,13 @@ Page({
     this.checkProStatus();
     this.setDailyDate();
     this.loadLastRead();
+    this.loadAlbumProgress(); // 加载实际学习进度
     this.refreshQuote(); // 初始加载一个随机金句
   },
 
   onShow: function() {
     this.checkProStatus();
+    this.loadAlbumProgress(); // 每次显示时更新进度
   },
 
   // 检查会员状态并更新列表显示
@@ -111,6 +113,37 @@ Page({
       }
     } catch (e) {
       console.log('读取最近在读失败', e);
+    }
+  },
+
+  // 加载专辑学习进度
+  loadAlbumProgress: function() {
+    try {
+      const albumProgress = wx.getStorageSync('albumProgress') || {};
+      const albums = this.data.albums.map(album => {
+        const progressData = albumProgress[album.id];
+
+        if (progressData && progressData.completedChapters) {
+          // 计算实际完成进度：已完成章节数 / 总章节数(10) * 100
+          const completedChapters = progressData.completedChapters.length;
+          const progress = Math.round((completedChapters / 10) * 100);
+
+          return {
+            ...album,
+            progress: progress
+          };
+        }
+
+        return album;
+      });
+
+      this.setData({
+        albums
+      });
+
+      console.log('专辑进度更新:', albums.map(a => `${a.id}: ${a.progress}%`));
+    } catch (e) {
+      console.log('读取专辑进度失败', e);
     }
   },
 

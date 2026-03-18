@@ -1,5 +1,5 @@
 import express, { Application } from 'express';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import dotenv from 'dotenv';
 import { IncomingMessage } from 'http';
 import { config } from './config/app';
@@ -14,8 +14,16 @@ dotenv.config();
 // 创建Express应用
 const app: Application = express();
 
+const corsOptions: CorsOptions = {
+  origin: '*',
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['*'],
+  exposedHeaders: ['*']
+};
+
 // 中间件配置
-app.use(cors()); // 跨域支持
+app.use(cors(corsOptions)); // 跨域支持（全放开）
+app.options('*', cors(corsOptions)); // 处理预检请求
 app.use(express.json({
   verify: (req, _res, buf) => {
     (req as IncomingMessage & { rawBody?: string }).rawBody = buf.toString('utf8');
@@ -58,7 +66,7 @@ const startServer = async (): Promise<void> => {
     }
 
     // 启动HTTP服务器
-    const host = config.host || '127.0.0.1';
+    const host = config.host || '0.0.0.0';
     const server = app.listen(config.port, host, () => {
       logger.info(`🚀 服务器启动成功`);
       logger.info(`📝 环境: ${config.nodeEnv}`);

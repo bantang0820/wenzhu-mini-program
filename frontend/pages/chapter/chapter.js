@@ -29,15 +29,20 @@ Page({
 
   // 加载章节详情
   loadChapterDetail(albumId, chapterId) {
+    console.log('加载章节详情:', { albumId, chapterId, 'parseInt(chapterId)': parseInt(chapterId) });
+
     // 模拟章节数据
+    const parsedChapterId = parseInt(chapterId);
     const chapterData = {
-      title: this.getChapterTitle(parseInt(chapterId)),
-      subtitle: this.getChapterSubtitle(parseInt(chapterId)),
-      id: chapterId
+      title: this.getChapterTitle(parsedChapterId),
+      subtitle: this.getChapterSubtitle(parsedChapterId),
+      id: parsedChapterId // 使用数字而不是字符串
     };
 
+    console.log('章节数据:', chapterData);
+
     // 生成10个微课
-    const lessons = this.generateLessons(albumId, parseInt(chapterId));
+    const lessons = this.generateLessons(albumId, parsedChapterId);
 
     // 计算完成数
     const completedCount = lessons.filter(l => l.completed).length;
@@ -63,7 +68,9 @@ Page({
       '学会说"不"',
       '重获生活热情'
     ];
-    return titles[chapterId - 1] || '章节标题';
+    // 确保chapterId在1-10范围内
+    const safeId = Math.max(1, Math.min(10, chapterId));
+    return titles[safeId - 1] || '章节标题';
   },
 
   // 获取章节副标题
@@ -80,7 +87,9 @@ Page({
       '温和而坚定地拒绝',
       '让爱在家庭流动'
     ];
-    return subtitles[chapterId - 1] || '章节副标题';
+    // 确保chapterId在1-10范围内
+    const safeId = Math.max(1, Math.min(10, chapterId));
+    return subtitles[safeId - 1] || '章节副标题';
   },
 
   // 生成微课内容（破-立-行三段式结构）
@@ -97,7 +106,7 @@ Page({
         insight: '印度哲人克里希那穆提说："不带评论的观察是人类智力的最高形式。"\n观察就像摄像机一样，只记录事实，不加评判。当我看到孩子把玩具撒满地，我的第一反应是说"你真邋遢！"——这是评论，孩子听到的是指责。\n但如果我说"我看到地板上有三辆小汽车和五个积木"——这是观察，是客观事实。\n观察让我们连结，评论让我们对抗。',
         action: '当我想评价孩子时，先深吸一口气，只用"我看见/我注意到"开头，描述我眼睛看到的事实，不加任何形容词。',
         completed: false,
-        locked: false // 第一章第一节永远免费
+        locked: !isPro // 第一节：会员免费，非会员也免费
       },
       {
         id: 2,
@@ -107,7 +116,7 @@ Page({
         insight: '标签会阻碍我们真正看见孩子。\n当我们给孩子贴上"邋遢""懒惰""调皮"这些标签时，我们看到的不再是鲜活的孩子，而是这些标签。\n孩子把颜料弄得满桌子都是，我会脱口而出："你总是这么邋遢！"这个词"邋遢"是一个标签，它否定了孩子作为独立个体的存在。\n当我试着去掉标签，只描述："我看到桌子上和你的手上都有蓝色的颜料。"奇迹发生了，他的肩膀放松了下来，主动说："妈妈，我们一起来擦干净吧。"\n标签会让孩子觉得被否定，观察会让孩子觉得被看见。',
         action: '下次遇到混乱场景，试着只用"我看见"开头，描述事实，不用"总是、从来不、这么"这类标签化词语。',
         completed: false,
-        locked: true
+        locked: !isPro
       },
       {
         id: 3,
@@ -117,7 +126,7 @@ Page({
         insight: '事实引发思考，观点引发反抗。\n事实是客观发生的，观点是我们主观的判断。当我们说"你从来不写作业"时，这是观点，孩子会本能地反驳："我才没有！"\n但当我们说"我看到你今天还没有开始写作业"时，这是事实，他无法反驳。\n观点让孩子觉得被指责，会立刻启动防御机制。但事实摆在眼前，孩子反而会思考："哦，我确实还没开始写。"\n当我们学会区分这两者，孩子更容易接受我们的建议。',
         action: '把"你总是/从来不/每次都"改成"我看到这次/今天/现在"。用事实说话，而不是用观点评判。',
         completed: false,
-        locked: true
+        locked: !isPro
       },
       {
         id: 4,
@@ -127,7 +136,7 @@ Page({
         insight: '被看见，是人类最基本的需求。\n以前孩子哭闹时，我会急着问："你怎么了？又怎么了？"这些问题背后藏着我的评判 and 焦虑。\n现在 I 术会了先观察："我看到你紧紧抱着小熊，眼泪掉了下来。"这种中性的描述，让他感觉到我真的在看他，而不是在评判他。\n奇妙的是，当我这样说话时，他反而愿意告诉我发生了什么。\n因为观察传递的是"我在乎你"，评论传递的是"我要纠正你"。',
         action: '当孩子情绪激动时，先描述你看到的，而不是急着问"为什么"或给出建议。',
         completed: false,
-        locked: true
+        locked: !isPro
       },
       {
         id: 5,
@@ -137,7 +146,7 @@ Page({
         insight: '具体的数字比模糊的形容词更有力量。\n"你在电视前坐了一整天"——孩子会立刻反驳："没有！我才看了一会儿！"\n"我看你在电视前坐了三个小时"——他没法反驳，因为这是事实。\n"一整天"是夸张，"三个小时"是观察。当我们用具体的时间、数量来描述时，孩子更容易接受现实。\n因为数字是中性的，它不会引发争吵，只会呈现事实。',
         action: '用具体的时间（30分钟/2小时）和数量（3次/5个）替代"总是、很久、很多"这些模糊的词。',
         completed: false,
-        locked: true
+        locked: !isPro
       },
       {
         id: 6,
@@ -147,7 +156,7 @@ Page({
         insight: '愤怒时，我们的"摄像机"会失灵。\n我发现一个有趣的现象：当我生气时，我的"摄像机"就坏了，我会直接跳到评论。只有当我先冷静下来，才能恢复观察的能力。\n因为愤怒会让我们戴上"有色眼镜"，看到的一切都是负面的。\n所以我学会了：有情绪时，先不说话。给自己三分钟，等脑子里的"摄像机"重新启动，再去描述事实。',
         action: '当你发现自己想批评时，停下来深呼吸三次，等情绪平复后，再尝试描述事实。',
         completed: false,
-        locked: true
+        locked: !isPro
       },
       {
         id: 7,
@@ -157,7 +166,7 @@ Page({
         insight: '基于事实的赞美，才能让孩子感受到真诚。\n观察和评论并不是非黑即白的。当我们想赞美孩子时，同样需要以观察为基础。\n与其说"你真棒"（空洞的评论），不如说"我看到你努力拼完了这个100片的拼图（观察），这真的很棒（评论）"。\n有观察作为基础的赞美，孩子能感受到我的认真和真诚，而不是随口的敷衍。\n观察是赞美的骨架，评论是赞美的血肉。',
         action: '试着用"我看到...这让我觉得..."的句式来表达欣赏，让赞美有具体的事实支撑。',
         completed: false,
-        locked: true
+        locked: !isPro
       },
       {
         id: 8,
@@ -167,7 +176,7 @@ Page({
         insight: '对自己也要用观察的语言，避免自责。\n我不仅是妈妈，我也是人。当我对自己说"我真是个糟糕的妈妈"时，我会陷入深深的自责。\n但当我对自己说"我今天对孩子发火了三次"时，我就能冷静地思考：为什么我会生气？下次可以怎么做？\n原来，观察的语言不仅对孩子有效，对我自己也同样重要。\n观察让我们接纳自己的不完美，评论让我们陷入自我否定的泥潭。',
         action: '当你想批评自己时，试试只描述事实，不加"糟糕、失败、太差"这些评判的词语。',
         completed: false,
-        locked: true
+        locked: !isPro
       },
       {
         id: 9,
@@ -177,7 +186,7 @@ Page({
         insight: '观察是解决问题的开始。\n当我用评论说话时，对话就结束了——孩子要么反抗，要么逃避。\n但当我用观察说话时，对话才刚刚开始——因为事实摆在面前，我们可以一起讨论它。\n观察不是为了批评，而是为了看见。看见是理解的开始，理解是改变的前提。\n当我学会了观察，我和孩子之间的沟通，从"我对你的指责"变成了"我们一起面对问题"。',
         action: '把目标从"让孩子承认错误"改成"让我们一起看看发生了什么，怎么解决会更好"。',
         completed: false,
-        locked: true
+        locked: !isPro
       },
       {
         id: 10,
@@ -187,15 +196,15 @@ Page({
         insight: '观察是一种能力，需要持续练习。\n这个月我一直在练习观察的语言。说实话，一开始真的很别扭，我总是忍不住想评价。\n但渐渐地，我发现家里的争吵变少了。因为当我学会了只说事实，孩子也学会了只说事实。\n我们之间的沟通，终于从相互指责，变成了相互理解。\n原来，改变的不是孩子，而是我看孩子的方式。观察让我看见真实的他，而不是我想象中的他。',
         action: '今天选一个场景，只用"我看见/我注意到"来描述，记录下孩子的反应。持续练习一周，观察变化。',
         completed: false,
-        locked: true
+        locked: !isPro
       }
     ];
 
     // 其他章节默认全部锁定（除非是会员）
     const getLockedStatus = (chapterIdx, lessonIdx) => {
       if (isPro) return false;
-      // 只有第一章（chapterId=1）的第一节（id=1）免费
-      return !(chapterId === 1 && lessonIdx === 1);
+      // 只有第一章（chapterId=1）的第一节（索引0）免费
+      return !(chapterId === 1 && lessonIdx === 0);
     };
 
     // 第二章：体会感受的力量
@@ -734,7 +743,6 @@ Page({
         completed: false
       },
       {
-        id: 7,
         id: 8,
         title: '愤怒后的修复',
         theory: '愤怒之后需要重建连接',
@@ -874,10 +882,6 @@ Page({
       return chapter7Lessons;
     } else if (chapterId === 8) {
       return chapter8Lessons;
-    } else if (chapterId === 9) {
-      return chapter9Lessons;
-    } else if (chapterId === 10) {
-      return chapter10Lessons;
     } else {
       // 其他章节暂时使用模板
       const otherLessons = Array.from({ length: 10 }, (_, i) => ({
@@ -888,27 +892,10 @@ Page({
         insight: '这是第' + (i + 1) + '课的内容区域。每课约100字，采用第一人称叙述，融入真实的育儿场景。这里会写一段具体的经历和感悟，让读者感觉像是读了一位有经验妈妈的日记。',
         action: '今日练习：写下这句话，贴在冰箱上，提醒自己每天实践。',
         completed: false,
-        locked: true // 其他章节的所有小节全部锁定
+        locked: !isPro // 其他章节的所有小节全部锁定
       }));
       return otherLessons;
     }
-  },
-
-  // 获取章节标题
-  getChapterTitle(chapterId) {
-    const titles = [
-      '区分观察与评论',
-      '体会感受的力量',
-      '看见内在的需要',
-      '提出具体的请求',
-      '全身心地倾听',
-      '爱自己的语言',
-      '表达愤怒',
-      '表达感激',
-      '学会说"不"',
-      '重获生活热情'
-    ];
-    return titles[chapterId - 1] || '章节标题';
   },
 
   // 点击练习按钮
@@ -1108,23 +1095,45 @@ Page({
     try {
       const now = new Date();
       const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      
+
       // 1. 更新打卡地图 (用于Stats页面日历显示)
       const checkInMap = wx.getStorageSync('checkInMap') || {};
       if (!checkInMap[dateStr]) {
         checkInMap[dateStr] = true;
         wx.setStorageSync('checkInMap', checkInMap);
-        
+
         // 2. 更新总天数 (如果是今天第一次打卡)
         const totalDays = wx.getStorageSync('totalDays') || 0;
         wx.setStorageSync('totalDays', totalDays + 1);
       }
-      
+
       // 3. 更新总次数 (每次点击完成都算一次修习)
       const totalCount = (wx.getStorageSync('totalCount') || 0) + 1;
       wx.setStorageSync('totalCount', totalCount);
-      
-      console.log('打卡成功:', { dateStr, lessonTitle });
+
+      // 4. 存储专辑学习进度（新增）
+      const albumProgress = wx.getStorageSync('albumProgress') || {};
+      const albumId = this.data.albumId;
+      const chapterId = this.data.chapterId;
+
+      if (!albumProgress[albumId]) {
+        albumProgress[albumId] = {
+          completedChapters: [],
+          totalLessons: 0
+        };
+      }
+
+      // 记录完成的章节（去重）
+      if (!albumProgress[albumId].completedChapters.includes(chapterId)) {
+        albumProgress[albumId].completedChapters.push(chapterId);
+      }
+
+      // 计算总完成微课数
+      albumProgress[albumId].totalLessons = this.data.completedCount;
+
+      wx.setStorageSync('albumProgress', albumProgress);
+
+      console.log('打卡成功:', { dateStr, lessonTitle, albumId, chapterId });
       
       // 发送全局事件，通知Stats页面更新 (可选)
       // wx.nextTick(() => {

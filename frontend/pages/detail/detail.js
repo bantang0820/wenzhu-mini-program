@@ -754,6 +754,9 @@ Page({
   },
 
   onSpeechRecordTouchStart() {
+    // 震动反馈，让用户知道开始录音
+    wx.vibrateShort({ type: 'light' });
+
     this.isSpeechTouching = true;
     this.lastSpeechTouchStartAt = Date.now();
     if (!this.data.isSpeechRecording) {
@@ -762,6 +765,11 @@ Page({
   },
 
   onSpeechRecordTouchEnd() {
+    // 震动反馈，让用户知道录音结束
+    if (this.data.isSpeechRecording) {
+      wx.vibrateShort({ type: 'light' });
+    }
+
     this.isSpeechTouching = false;
     this.lastSpeechTouchEndAt = Date.now();
     if (this.data.isSpeechRecording) {
@@ -1526,6 +1534,9 @@ Page({
   // ========== 录音功能 ==========
 
   onRecordTouchStart() {
+    // 震动反馈，让用户知道开始录音
+    wx.vibrateShort({ type: 'light' });
+
     this.isRecordTouching = true;
     this.lastRecordTouchStartAt = Date.now();
     if (!this.data.isRecording) {
@@ -1534,6 +1545,11 @@ Page({
   },
 
   onRecordTouchEnd() {
+    // 震动反馈，让用户知道录音结束
+    if (this.data.isRecording) {
+      wx.vibrateShort({ type: 'light' });
+    }
+
     this.isRecordTouching = false;
     this.lastRecordTouchEndAt = Date.now();
     if (this.data.isRecording) {
@@ -2112,8 +2128,8 @@ Page({
       if (diaryContent) return diaryContent;
       throw new Error('AI日记为空');
     } catch (error) {
-      console.log('调用AI日记失败，使用本地兜底（预期内行为）');
-      return this.mockGenerateJournal(payload);
+      console.error('调用AI日记失败:', error);
+      throw error;
     }
   },
 

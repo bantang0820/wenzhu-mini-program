@@ -6,7 +6,7 @@
 
 const https = require('https');
 
-const API_BASE_URL = 'https://1dt2po0565100.vicp.fun/api';
+const API_BASE_URL = 'https://api.wenzhuyuer.com/api';
 
 function request(method, endpoint, data = null, token = null) {
   return new Promise((resolve, reject) => {

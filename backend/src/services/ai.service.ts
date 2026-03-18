@@ -149,6 +149,8 @@ export class AIService {
    */
   async generateMindfulDiary(data: MindfulDiaryRequest): Promise<MindfulDiaryResponse> {
     try {
+      logger.info('开始生成正念日记', { scenarioTitle: data.scenarioTitle, finalStateLabel: data.finalStateLabel });
+
       const timeStart = moment(data.stormTime).format('HH:mm');
       const timeMid = moment(data.shiftTime).format('HH:mm');
       const timeEnd = moment(data.anchorTime).format('HH:mm');
@@ -161,16 +163,14 @@ export class AIService {
         .map((item, index) => `${index + 1}. ${item}`)
         .join('\n');
 
-      const prompt = `# Background & Context
+      const prompt = `# Role
+你是一位深谙“无条件接纳”与“阿德勒课题分离”的心理疗愈大师。你极度敏锐，能够看透父母在养育过程中产生的愤怒、崩溃与内疚，其实往往源于自身的“全能自恋”（渴望完美控制）以及内在小孩的匮乏。
+你的任务是化身为用户内心那个最温柔、最清醒的“高我”（Higher Self），以第一人称（“我”）的口吻，为刚刚经历过情绪风暴并完成自我平复的父母，撰写一篇专属的《正念日记》。
+
+# Background & Context
 1. 用户刚刚经历了一次与孩子的情绪冲突，没忍住发了脾气，随后感到懊悔和内疚。
 2. 用户刚刚在一个小程序里完成了5个步骤的阅读平复：接纳情绪 -> 课题分离 -> 成长型思维 -> 具体行动 -> 自我身份确认。
 3. 这篇日记是整个体验的“结案陈词”，是送给用户自己的一份情绪礼物。
-
-# Input Variables
-用户当前触发的场景是：${data.scenarioTitle}
-用户平复后选择的情绪标签是：${data.finalStateLabel}（${data.finalState}）
-用户的复述记录（供参考）：
-${retellsPreview || '（未提供）'}
 
 # Generation Rules (必须严格遵守)
 1. 绝对的第一人称：全篇只能用“我”为主语。就像是用户自己在心里默默写下的日记。
@@ -185,19 +185,25 @@ ${retellsPreview || '（未提供）'}
 
 # Diary Structure (四段式结构)
 请严格按照以下四个层次递进书写，段落之间自然过渡（记得遵守上述的换行规则）：
-- 【觉察·看见风暴】：用客观、抽离的视角描述刚才身体或心理的失控感（例如：胸腔发紧、疲惫感袭来），承认自己搞砸了，不带任何羞耻感。结合场景：${data.scenarioTitle}。
+- 【觉察·看见风暴】：用客观、抽离的视角描述刚才身体或心理的失控感（例如：胸腔发紧、疲惫感袭来），承认自己搞砸了，不带任何羞耻感。
 - 【向内·拥抱内在】：视线越过孩子，向内看见自己。承认刚才的愤怒其实是因为自己太累了、或者内在空间太拥挤了。对自己说一句允许和接纳的话。
 - 【分离·重塑界限】：进行深度的课题分离。确认孩子的试探、执拗或哭闹，是他生命力发展的自然呈现，是他的课题；而我的情绪，是我自己的功课。互不纠缠。
 - 【赋能·真实胜于完美】：结合用户输入的 [当前情绪标签]，以一句极具力量的短句收尾。确认真实的碰撞胜过虚假的完美，确认自己当下的身份和力量。
 
+# Input Variables
+用户当前触发的场景是：${data.scenarioTitle}
+用户平复后选择的情绪标签是：${data.finalStateLabel}
+
 # Output Format
 直接输出排版好的日记正文，绝不要输出任何标题、解析或多余的解释说明。`;
 
-      const diaryContent = await this.chatWithDeepseek(
+      logger.info('准备调用智谱AI', { promptLength: prompt.length });
+
+      const diaryContent = await this.chatWithZhipu(
         [
           {
             role: 'system',
-            content: '你是一位深谙“无条件接纳”与“阿德勒课题分离”的心理疗愈大师。你极度敏锐，能够看透父母在养育过程中产生的愤怒、崩溃与内疚，其实往往源于自身的“全能自恋”（渴望完美控制）以及内在小孩的匮乏。\n你的任务是化身为用户内心那个最温柔、最清醒的“高我”（Higher Self），以第一人称（“我”）的口吻，为刚刚经历过情绪风暴并完成自我平复的父母，撰写一篇专属的《正念日记》。'
+            content: '你是一位深谙”无条件接纳”与”阿德勒课题分离”的心理疗愈大师。你极度敏锐，能够看透父母在养育过程中产生的愤怒、崩溃与内疚，其实往往源于自身的”全能自恋”（渴望完美控制）以及内在小孩的匮乏。\n你的任务是化身为用户内心那个最温柔、最清醒的”高我”（Higher Self），以第一人称（”我”）的口吻，为刚刚经历过情绪风暴并完成自我平复的父母，撰写一篇专属的《正念日记》。'
           },
           {
             role: 'user',
@@ -205,8 +211,11 @@ ${retellsPreview || '（未提供）'}
           }
         ],
         0.8,
-        900
+        900,
+        30000 // 增加超时时间到30秒
       );
+
+      logger.info('智谱AI调用成功', { diaryLength: diaryContent.length });
 
       return {
         success: true,
@@ -216,7 +225,20 @@ ${retellsPreview || '（未提供）'}
       };
     } catch (error) {
       logger.error('生成正念日记失败:', error);
-      return this.getMindfulDiaryFallback(data);
+
+      // 类型安全的错误信息提取
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      const errorCode = (error as any).code;
+      const errorResponse = (error as any).response?.data;
+
+      logger.error('错误详情:', {
+        message: errorMessage,
+        stack: errorStack,
+        code: errorCode,
+        response: errorResponse
+      });
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -263,7 +285,8 @@ ${retellsPreview || '（未提供）'}
   private async chatWithZhipu(
     messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
     temperature = 0.7,
-    maxTokens = 800
+    maxTokens = 800,
+    timeout = 15000
   ): Promise<string> {
     if (!config.zhipu.apiKey || config.zhipu.apiKey.startsWith('your_')) {
       throw new Error('ZHIPU_API_KEY 未配置');
@@ -282,7 +305,7 @@ ${retellsPreview || '（未提供）'}
           Authorization: `Bearer ${config.zhipu.apiKey}`,
           'Content-Type': 'application/json'
         },
-        timeout: 15000
+        timeout: timeout
       }
     );
 
