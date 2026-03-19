@@ -41,7 +41,7 @@ const READING_TRANSITIONS = {
     action: 'next-round'
   },
   3: {
-    phaseTitle: '行动指南',
+    phaseTitle: '微小行动',
     lines: [
       '视角的转变，',
       '已经让你在当下重新获得了力量。',

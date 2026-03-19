@@ -7,9 +7,12 @@ upload/
 
 # 依赖
 node_modules/
+package-lock.json
 
 # 构建产物
 dist/
+backend/dist/
+frontend/dist/
 
 # 日志
 *.log
@@ -29,6 +32,25 @@ yarn-error.log*
 *.tmp
 *.temp
 .cache/
+*.tar.gz
+*.tgz
+*.zip
+
+# 环境变量（重要：不要提交API Key）
+.env
+.env.local
+.env.*.local
+
+# 测试文件
+test_*.js
+backend/test_*.js
+
+# 部署脚本
+backend/deploy_with_deepseek.sh
+
+# 文档
+部署说明.md
+正念日记配置_50句.txt
 
 # 云函数本地依赖
 cloudfunctions/**/node_modules/

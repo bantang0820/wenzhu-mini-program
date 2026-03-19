@@ -1,5 +1,10 @@
 // API 配置文件
-const API_BASE_URL = 'https://api.wenzhuyuer.com/api';
+// ⚠️ 生产模式：连接线上后端服务器
+const USE_LOCAL_API = false; // 🔴 上线前设为false
+
+const API_BASE_URL = USE_LOCAL_API
+  ? 'http://localhost:3000/api'  // 本地开发服务器
+  : 'https://api.wenzhuyuer.com/api'; // 线上生产服务器
 
 module.exports = {
   // 小程序默认走线上后端，便于真机直接登录
