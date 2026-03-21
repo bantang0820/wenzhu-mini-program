@@ -89,19 +89,19 @@
           <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'start'}}"></view>
           <text class="reading-intro-kicker">开始前</text>
           <text class="reading-intro-title title-serif">你可能在想，读出来有什么用</text>
-          <text class="reading-intro-body">其实，当你轻声把一句话念出来时，</text>
-          <text class="reading-intro-body">声音会经过耳朵再次回到大脑，</text>
-          <text class="reading-intro-body">身体也会瞬间沉静下来。</text>
-          <text class="reading-intro-body">不需要读的有感情，不需要念的好听，</text>
-          <text class="reading-intro-body">就像和自己说悄悄话那样就够了。</text>
-          <view class="reading-intro-button" bindtap="onConfirmReadingIntro">
-            <text>先试一句</text>
-          </view>
+          <text class="reading-intro-body">声音会经过耳朵，回到你心里</text>
+          <text class="reading-intro-body">那一刻，身体会得到安全感</text>
+          <text class="reading-intro-body">不用读得好听</text>
+          <text class="reading-intro-body">就像跟自己说悄悄话</text>
+          <text class="reading-intro-body">气声也算，嘴唇动一动也够了</text>
         </view>
         <view class="back-face phase-reveal-back">
           <text class="phase-reveal-title title-serif">接纳情绪</text>
         </view>
       </view>
+    </view>
+    <view class="reading-intro-button-new" bindtap="onConfirmReadingIntro">
+      <text>先试一句</text>
     </view>
   </view>
 
@@ -112,17 +112,18 @@
         <view class="front-face">
           <view class="reading-intro-dissolve" wx:if="{{closingOverlay === 'transition'}}"></view>
           <text class="reading-intro-kicker round-transition-kicker">0{{readingRound}} / 05</text>
+          <text class="reading-intro-title title-serif round-transition-title" wx:if="{{readingTransitionLines.length > 0}}">{{readingTransitionLines[0]}}</text>
           <view class="round-transition-copy">
-            <text class="reading-intro-body round-transition-body" wx:for="{{readingTransitionLines}}" wx:key="index">{{item || ' '}}</text>
-          </view>
-          <view class="reading-intro-button" bindtap="onConfirmReadingTransition">
-            <text>{{readingTransitionButtonText}}</text>
+            <text class="reading-intro-body round-transition-body" wx:for="{{readingTransitionLines}}" wx:key="index" wx:if="{{index > 0}}">{{item || ' '}}</text>
           </view>
         </view>
         <view class="back-face phase-reveal-back">
           <text class="phase-reveal-title title-serif">{{phaseTitle}}</text>
         </view>
       </view>
+    </view>
+    <view class="round-transition-button-new" bindtap="onConfirmReadingTransition">
+      <text>{{readingTransitionButtonText}}</text>
     </view>
   </view>
 

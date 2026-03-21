@@ -25,7 +25,7 @@
 .header-text {
   font-family: "Songti SC", "Times New Roman", serif;
   color: rgba(43, 48, 58, 0.6);
-  font-size: 26rpx;
+  font-size: 30rpx;
   letter-spacing: 4rpx;
   font-weight: 500;
 }

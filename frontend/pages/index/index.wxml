@@ -2,7 +2,7 @@
 <view class="container">
   <!-- ========== 天：顶层世界观 Slogan ========== -->
   <view class="top-header">
-    <text class="header-text">先 稳 住 自 己 · 再 拥 抱 孩 子</text>
+    <text class="header-text">在你崩溃那30秒，稳稳接住你</text>
   </view>
 
   <!-- ========== 人：呼吸之核 ========== -->
@@ -21,7 +21,7 @@
         <!-- 核心文字 -->
         <view class="core-text">
           <text class="core-main title-serif">稳住</text>
-          <text class="core-sub">点击日常朗读练习</text>
+          <text class="core-sub">点击进入正念朗读</text>
         </view>
 
         <!-- 涟漪效果 -->
@@ -44,7 +44,7 @@
         <text class="guide-line">——</text>
       </view>
 
-      <!-- 第一层：Top 6 高频急救区 -->
+      <!-- Top 6 高频急救区 -->
       <view class="hero-section">
         <view class="hero-grid">
           <view
@@ -56,21 +56,6 @@
           >
             <text class="hero-icon">{{item.icon}}</text>
             <text class="hero-title">{{item.title}}</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 第二层：Rest 低频检索区 -->
-      <view class="tags-section">
-        <view class="tag-grid">
-          <view
-            class="text-tag"
-            wx:for="{{restScenarios}}"
-            wx:key="id"
-            bindtap="onScenarioTap"
-            data-id="{{item.id}}"
-          >
-            <text class="tag-title">{{item.title}}</text>
           </view>
         </view>
       </view>

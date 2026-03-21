@@ -286,19 +286,8 @@ Page({
       { id: "006", title: "磨蹭发呆", icon: "✎", is_free: false, isHero: true },
     ];
 
-    // 其余场景
-    const restList = [
-      { id: "007", title: "被打不还手", is_free: false },
-      { id: "008", title: "孩子顶嘴", is_free: false },
-      { id: "009", title: "孩子冷漠", is_free: false },
-      { id: "010", title: "不想上学", is_free: false },
-      { id: "011", title: "吃饭挑食", is_free: false },
-      { id: "012", title: "俩娃争宠", is_free: false },
-      { id: "014", title: "内向社恐", is_free: false },
-      { id: "015", title: "孩子撒谎", is_free: false },
-      { id: "016", title: "爱发脾气", is_free: false },
-      { id: "017", title: "和人打架", is_free: false },
-    ];
+    // 其余场景（已清空）
+    const restList = [];
 
     const allScenarios = [...heroList, ...restList];
 

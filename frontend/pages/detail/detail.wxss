@@ -374,12 +374,21 @@
   inset: 0;
   z-index: 120;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 40rpx;
   background: rgba(15, 18, 23, 0.52);
   backdrop-filter: blur(8rpx);
   -webkit-backdrop-filter: blur(8rpx);
+}
+
+.reading-intro-card {
+  width: 100%;
+  max-width: 620rpx;
+  text-align: center;
+  position: relative;
+  transform: translateY(-100rpx);
 }
 
 .reading-intro-overlay.is-dissolving {
@@ -506,6 +515,7 @@
 .round-transition-card {
   width: 100%;
   max-width: 640rpx;
+  transform: translateY(-100rpx);
 }
 
 .round-transition-card .front-face,
@@ -528,29 +538,42 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
 }
 
 .round-transition-card .round-transition-body {
   width: 100%;
-  font-size: 30rpx;
-  line-height: 1.95;
-  color: rgba(244, 231, 208, 0.88);
+  font-size: 37rpx;
+  line-height: 1.5;
+  color: #F6E8D1;
+  font-family: 'Times New Roman', 'Songti SC', 'SimSun', serif;
+  font-weight: 700;
   letter-spacing: 0.03em;
   text-align: center;
   white-space: pre-wrap;
 }
 
 .round-transition-card .round-transition-body + .round-transition-body {
-  margin-top: 8rpx;
+  margin-top: 32rpx;
+}
+
+.round-transition-card .round-transition-title {
+  display: block;
+  font-size: 37rpx;
+  line-height: 1.5;
+  color: #F6E8D1;
+  margin-bottom: 32rpx;
+  white-space: nowrap;
 }
 
 .round-transition-card .round-transition-button {
   width: 280rpx;
-  min-height: 84rpx;
-  margin-top: 44rpx;
-  padding: 22rpx 0;
+  height: 140rpx;
+  margin-top: 120rpx;
+  padding: 0;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .reading-intro-kicker {
@@ -573,9 +596,11 @@
 
 .reading-intro-body {
   display: block;
-  font-size: 28rpx;
-  line-height: 1.9;
-  color: rgba(244, 231, 208, 0.86);
+  font-size: 37rpx;
+  line-height: 1.5;
+  color: #F6E8D1;
+  font-family: 'Times New Roman', 'Songti SC', 'SimSun', serif;
+  font-weight: 700;
 }
 
 .reading-intro-dissolve {
@@ -593,15 +618,18 @@
 }
 
 .reading-intro-body + .reading-intro-body {
-  margin-top: 10rpx;
+  margin-top: 32rpx;
 }
 
 .reading-intro-button {
+  position: fixed;
+  bottom: 80rpx;
+  left: 50%;
+  transform: translateX(-50%);
   width: 260rpx;
-  margin-top: 36rpx;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 20rpx 0;
+  height: 140rpx;
+  margin: 0;
+  padding: 0;
   border-radius: 999rpx;
   background: linear-gradient(135deg, rgba(232, 208, 169, 0.96) 0%, rgba(214, 185, 132, 0.96) 100%);
   color: #2B303A;
@@ -609,6 +637,54 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.reading-intro-button-new {
+  position: fixed;
+  bottom: 240rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240rpx;
+  height: 120rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, rgba(232, 208, 169, 0.96) 0%, rgba(214, 185, 132, 0.96) 100%);
+  color: #2B303A;
+  font-size: 28rpx;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.round-transition-button-new {
+  position: fixed;
+  bottom: 240rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240rpx;
+  height: 120rpx;
+  margin: 0;
+  padding: 0;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, rgba(232, 208, 169, 0.96) 0%, rgba(214, 185, 132, 0.96) 100%);
+  color: #2B303A;
+  font-size: 28rpx;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
 .reflection-submit-button {
