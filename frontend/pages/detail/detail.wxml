@@ -247,10 +247,6 @@
   <!-- 朗读后复盘流程 (仅保留最后的日记卡片部分) -->
   <view class="phase-reflection" wx:if="{{postReadingStep === 'state' || postReadingStep === 'feedback'}}">
     <view class="reflection-card">
-      <view class="reflection-head">
-        <text class="reflection-title title-serif">把刚才朗读获得的力量，记录下来吧。</text>
-      </view>
-
       <!-- 第2步：AI抱持反馈（虽然由于逻辑跳过，但保留结构防错） -->
       <view wx:if="{{postReadingStep === 'feedback'}}" class="reflection-block">
         <view class="feedback-mini-title">
@@ -311,7 +307,7 @@
           </view>
         </view>
 
-        <view class="reading-intro-button reflection-submit-button {{isGeneratingJournal ? 'disabled' : ''}}" bindtap="onGenerateDiaryFromState">
+        <view class="reading-intro-button reflection-submit-button-inline {{isGeneratingJournal ? 'disabled' : ''}}" bindtap="onGenerateDiaryFromState">
           <text>{{isGeneratingJournal ? '正在生成正念日记卡片...' : '生成正念日记卡片'}}</text>
         </view>
       </view>
