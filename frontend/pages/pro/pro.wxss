@@ -105,8 +105,8 @@
 .price-card {
   width: 100%;
   background: #FFFFFF;
-  border-radius: 32rpx;
-  padding: 40rpx;
+  border-radius: 24rpx;
+  padding: 24rpx 32rpx;
   display: flex;
   justify-content: space-between;
   align-items: center;
