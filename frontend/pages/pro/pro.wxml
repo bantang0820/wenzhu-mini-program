@@ -24,7 +24,7 @@
       <view class="privilege-item">
         <view class="item-icon">📂</view>
         <view class="item-content">
-          <text class="item-title">解锁 30+ 急救场景</text>
+          <text class="item-title">解锁全部急救场景</text>
           <text class="item-desc">涵盖磨蹭、叛逆、作业等所有高频痛点</text>
         </view>
       </view>
@@ -40,8 +40,8 @@
       <view class="privilege-item">
         <view class="item-icon">✨</view>
         <view class="item-content">
-          <text class="item-title">专属治愈皮肤</text>
-          <text class="item-desc">更多呼吸卡片皮肤与音效即将上线</text>
+          <text class="item-title">好事发生每日打卡</text>
+          <text class="item-desc">每天记录好事，好事自然发生</text>
         </view>
       </view>
     </view>
@@ -57,7 +57,7 @@
       <view class="card-right">
         <text class="currency">¥</text>
         <text class="price">99</text>
-        <text class="original">¥299</text>
+        <text class="original">¥365</text>
       </view>
     </view>
 
