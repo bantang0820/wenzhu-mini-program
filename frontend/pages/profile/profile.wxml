@@ -21,7 +21,6 @@
         <view class="user-info">
           <text class="user-name">{{userInfo.nickname || '用户昵称'}}</text>
           <view class="user-tags" wx:if="{{isLoggedIn}}">
-            <view class="level-tag">{{userInfo.levelName || '觉察者'}}</view>
             <view class="pro-badge-text" wx:if="{{isPro}}">Pro 年卡会员</view>
           </view>
           <text class="guest-desc" wx:else>稳住，我们能赢。</text>
@@ -40,7 +39,7 @@
   <view class="share-banner" bindtap="onShareInvite">
     <view class="share-content">
       <text class="share-title">传递稳住的力量</text>
-      <text class="share-subtitle">邀请 1 位好友加入，双方各得 7 天 Pro 会员</text>
+      <text class="share-subtitle">邀请 1 位好友加入，双方各得 3 天 Pro 会员</text>
     </view>
     <view class="share-icon">
       <text class="icon-emoji">🎁</text>

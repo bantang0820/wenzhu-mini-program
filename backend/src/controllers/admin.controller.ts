@@ -128,6 +128,34 @@ export class AdminController {
     }
   }
 
+  /**
+   * 取消用户会员
+   * POST /api/admin/cancel-membership
+   */
+  async cancelMembership(req: Request, res: Response): Promise<void> {
+    try {
+      const { userId } = req.body;
+
+      if (!userId) {
+        res.status(400).json({
+          success: false,
+          error: '缺少用户ID'
+        } as ApiResponse);
+        return;
+      }
+
+      const result = await AdminService.cancelMembership(userId);
+
+      res.json({
+        success: true,
+        message: result.message,
+        data: result
+      } as ApiResponse);
+    } catch (error) {
+      this.handleError(error, res, '取消会员失败');
+    }
+  }
+
   private handleError(error: unknown, res: Response, fallbackMessage: string): void {
     logger.error(fallbackMessage + ':', error);
 

@@ -3,10 +3,73 @@ import { AppError } from '../middlewares/error';
 import logger from '../utils/logger';
 import moment from 'moment';
 
+const INVITE_REWARD_DAYS = 3;
+
 /**
  * 分享和解锁服务
  */
 export class ShareService {
+  private async ensureInviteRewardTable(connection: any): Promise<void> {
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS invite_rewards (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sharer_user_id INT NOT NULL COMMENT '邀请人用户ID',
+        sharer_openid VARCHAR(100) NOT NULL COMMENT '邀请人OpenID',
+        friend_user_id INT NOT NULL COMMENT '被邀请人用户ID',
+        friend_openid VARCHAR(100) NOT NULL COMMENT '被邀请人OpenID',
+        reward_days INT NOT NULL DEFAULT 3 COMMENT '奖励天数',
+        status ENUM('rewarded') DEFAULT 'rewarded' COMMENT '奖励状态',
+        rewarded_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '奖励发放时间',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        UNIQUE KEY uk_friend_user_id (friend_user_id),
+        UNIQUE KEY uk_sharer_friend (sharer_user_id, friend_user_id),
+        INDEX idx_sharer_user_id (sharer_user_id),
+        INDEX idx_friend_user_id (friend_user_id),
+        INDEX idx_rewarded_at (rewarded_at),
+        CONSTRAINT fk_invite_rewards_sharer FOREIGN KEY (sharer_user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_invite_rewards_friend FOREIGN KEY (friend_user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='邀请奖励记录表';
+    `);
+  }
+
+  private async grantVipDays(
+    connection: any,
+    user: any,
+    days: number,
+    type: string,
+    code: string
+  ): Promise<Date> {
+    const now = new Date();
+    const currentExpireTime = user.vip_expire_time ? new Date(user.vip_expire_time) : null;
+    const isCurrentVip = user.is_vip === 1 && currentExpireTime !== null && currentExpireTime > now;
+    const startDate = isCurrentVip && currentExpireTime ? currentExpireTime : now;
+    const endDate = new Date(startDate);
+
+    endDate.setDate(endDate.getDate() + days);
+
+    await connection.execute(
+      `UPDATE users
+       SET is_vip = 1, vip_expire_time = ?
+       WHERE id = ?`,
+      [endDate, user.id]
+    );
+
+    await connection.execute(
+      `UPDATE memberships
+       SET status = 'inactive'
+       WHERE user_id = ? AND status = 'active'`,
+      [user.id]
+    );
+
+    await connection.execute(
+      `INSERT INTO memberships (user_id, openid, code, status, type, start_date, end_date)
+       VALUES (?, ?, ?, 'active', ?, ?, ?)`,
+      [user.id, user.openid, code, type, startDate, endDate]
+    );
+
+    return endDate;
+  }
+
   /**
    * 检查用户练习次数和状态
    * @param openid 用户OpenID
@@ -252,15 +315,18 @@ export class ShareService {
   async handleInviteShare(sharerOpenid: string, newFriendOpenid: string): Promise<{
     success: boolean;
     message: string;
-    unlocked: boolean;
+    rewarded: boolean;
+    rewardDays: number;
+    friendVipExpireTime?: string;
   }> {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
+      await this.ensureInviteRewardTable(connection);
 
       // 检查分享者是否存在
       const [sharerRows] = await connection.execute(
-        'SELECT * FROM users WHERE openid = ?',
+        'SELECT * FROM users WHERE openid = ? FOR UPDATE',
         [sharerOpenid]
       );
 
@@ -270,7 +336,8 @@ export class ShareService {
         return {
           success: false,
           message: '分享者不存在',
-          unlocked: false
+          rewarded: false,
+          rewardDays: INVITE_REWARD_DAYS
         };
       }
 
@@ -278,7 +345,7 @@ export class ShareService {
 
       // 检查好友是否存在
       const [friendRows] = await connection.execute(
-        'SELECT * FROM users WHERE openid = ?',
+        'SELECT * FROM users WHERE openid = ? FOR UPDATE',
         [newFriendOpenid]
       );
 
@@ -289,50 +356,77 @@ export class ShareService {
         return {
           success: false,
           message: '请先登录',
-          unlocked: false
+          rewarded: false,
+          rewardDays: INVITE_REWARD_DAYS
         };
       }
 
       const friend = friends[0];
-      const today = moment().format('YYYY-MM-DD');
-
-      // 检查今天是否已经通过分享链接获得过解锁
-      const [existingUnlockRows] = await connection.execute(
-        `SELECT * FROM unlock_records
-         WHERE user_id = ?
-           AND unlock_type = 'invite'
-           AND created_at >= ?
-         ORDER BY created_at DESC
-         LIMIT 1`,
-        [friend.id, moment().startOf('day').format('YYYY-MM-DD HH:mm:ss')]
-      );
-
-      const existingUnlocks = existingUnlockRows as any[];
-
-      if (existingUnlocks.length > 0) {
+      if (sharer.id === friend.id) {
         await connection.rollback();
         return {
           success: true,
-          message: '欢迎回来！',
-          unlocked: false
+          message: '不能邀请自己哦',
+          rewarded: false,
+          rewardDays: INVITE_REWARD_DAYS
         };
       }
 
-      // 给好友创建解锁记录
+      // 好友只能通过邀请奖励一次，避免重复领取
+      const [existingRewardRows] = await connection.execute(
+        `SELECT * FROM invite_rewards
+         WHERE friend_user_id = ?
+         LIMIT 1
+         FOR UPDATE`,
+        [friend.id]
+      );
+
+      const existingRewards = existingRewardRows as any[];
+
+      if (existingRewards.length > 0) {
+        await connection.rollback();
+        return {
+          success: true,
+          message: '这个好友已经领取过邀请奖励了',
+          rewarded: false,
+          rewardDays: INVITE_REWARD_DAYS
+        };
+      }
+
+      const rewardCode = `invite_${sharer.id}_${friend.id}`;
+      const sharerExpireTime = await this.grantVipDays(
+        connection,
+        sharer,
+        INVITE_REWARD_DAYS,
+        'invite_reward',
+        `${rewardCode}_sharer`
+      );
+      const friendExpireTime = await this.grantVipDays(
+        connection,
+        friend,
+        INVITE_REWARD_DAYS,
+        'invite_reward',
+        `${rewardCode}_friend`
+      );
+
       await connection.execute(
-        `INSERT INTO unlock_records (user_id, user_openid, unlock_type, expire_date)
-         VALUES (?, ?, 'invite', ?)`,
-        [friend.id, newFriendOpenid, today]
+        `INSERT INTO invite_rewards (sharer_user_id, sharer_openid, friend_user_id, friend_openid, reward_days)
+         VALUES (?, ?, ?, ?, ?)`,
+        [sharer.id, sharerOpenid, friend.id, newFriendOpenid, INVITE_REWARD_DAYS]
       );
 
       await connection.commit();
 
-      logger.info(`好友通过分享链接获得解锁: sharer=${sharerOpenid}, friend=${newFriendOpenid}`);
+      logger.info(
+        `好友邀请奖励发放成功: sharer=${sharerOpenid}, friend=${newFriendOpenid}, days=${INVITE_REWARD_DAYS}, sharerExpire=${sharerExpireTime.toISOString()}, friendExpire=${friendExpireTime.toISOString()}`
+      );
 
       return {
         success: true,
-        message: '欢迎！已获得1次额外练习机会（今日有效）',
-        unlocked: true
+        message: `邀请成功，双方各获得 ${INVITE_REWARD_DAYS} 天 Pro 会员`,
+        rewarded: true,
+        rewardDays: INVITE_REWARD_DAYS,
+        friendVipExpireTime: friendExpireTime.toISOString()
       };
     } catch (error) {
       await connection.rollback();

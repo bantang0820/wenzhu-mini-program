@@ -8,11 +8,6 @@
     </view>
 
     <view class="auth-section">
-      <view class="welcome-text">
-        <text class="greeting">你好，亲爱的家长</text>
-        <text class="sub-greeting">邀请你开启这段正念育儿之旅</text>
-      </view>
-
       <!-- 快速登录按钮 -->
       <button
         class="login-btn primary"
@@ -22,7 +17,7 @@
         bindtap="onQuickLoginTap"
         bindagreeprivacyauthorization="onAgreePrivacyAuthorization"
       >
-        {{loading ? '开启中...' : '一键开启'}}
+        {{loading ? '登录中...' : '一键登录'}}
       </button>
 
       <view class="privacy-note">

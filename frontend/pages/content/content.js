@@ -157,17 +157,7 @@ Page({
 
     // 检查权限
     if (album && !album.isFree && !isPro) {
-      wx.showModal({
-        title: 'Pro 专属课程',
-        content: '该专题课程为 Pro 会员专属深度学习内容，开通后即可解锁全站所有主题。',
-        confirmText: '去开通',
-        confirmColor: '#D4AF37',
-        success: (res) => {
-          if (res.confirm) {
-            wx.navigateTo({ url: '/pages/pro/pro' });
-          }
-        }
-      });
+      this.safeNavigate('/pages/pro/pro');
       return;
     }
 

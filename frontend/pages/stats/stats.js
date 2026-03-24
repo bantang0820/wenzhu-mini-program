@@ -1,6 +1,10 @@
 // pages/stats/stats.js - 觉察（日历+雷达图）
 const app = getApp();
 const api = require('../../utils/api.js');
+const {
+  DEFAULT_GOOD_THING_PROMPT,
+  getRandomGoodThingPrompt
+} = require('../../utils/goodThingPrompts.js');
 
 Page({
   data: {
@@ -17,6 +21,14 @@ Page({
       progress: 0
     },
 
+    // ========== 好事发生 ==========
+    goodThingSummary: {
+      hasRecords: false,
+      latestText: '',
+      previewText: DEFAULT_GOOD_THING_PROMPT
+    },
+    isGoodThingUnlocked: false,
+
     // ========== 日历数据 ==========
     currentYear: 0,
     currentMonth: 0,
@@ -31,14 +43,22 @@ Page({
   },
 
   onLoad() {
+    this.hasShownStatsPage = false;
+    this.syncGoodThingAccess();
     this.initData();
   },
 
   onShow() {
+    this.syncGoodThingAccess();
     // 每次显示时刷新数据
     this.loadUserData();
     this.loadCalendarData();
     this.loadMedalData();
+    if (this.hasShownStatsPage) {
+      this.loadGoodThingSummary();
+    }
+
+    this.hasShownStatsPage = true;
   },
 
   // 初始化数据
@@ -52,7 +72,50 @@ Page({
     this.loadUserData();
     this.loadCalendarData();
     this.loadMedalData();
+    this.loadGoodThingSummary();
     this.setData({ loading: false });
+  },
+
+  loadGoodThingSummary() {
+    const currentPreviewText = this.hasShownStatsPage
+      ? this.data.goodThingSummary.previewText
+      : '';
+
+    this.setData({
+      goodThingSummary: {
+        hasRecords: false,
+        latestText: '',
+        previewText: getRandomGoodThingPrompt(currentPreviewText)
+      }
+    });
+  },
+
+  getGoodThingAccessState() {
+    const cachedUser = app.globalData.userInfo || wx.getStorageSync('userInfo') || {};
+    const rawExpireTime = cachedUser.vipExpireTime || cachedUser.vip_expire_time || wx.getStorageSync('proExpireTime');
+
+    if (rawExpireTime) {
+      const expireTimestamp = typeof rawExpireTime === 'number'
+        ? rawExpireTime
+        : new Date(rawExpireTime).getTime();
+
+      if (!Number.isNaN(expireTimestamp)) {
+        return expireTimestamp > Date.now();
+      }
+    }
+
+    return !!(
+      app.globalData.isMember ||
+      wx.getStorageSync('isMember') ||
+      cachedUser.isVip ||
+      cachedUser.is_vip
+    );
+  },
+
+  syncGoodThingAccess() {
+    this.setData({
+      isGoodThingUnlocked: this.getGoodThingAccessState()
+    });
   },
 
   getPracticeDateString(date = new Date()) {
@@ -324,5 +387,11 @@ Page({
         icon: 'none'
       });
     }
+  },
+
+  onGoodThingTap() {
+    wx.navigateTo({
+      url: '/pages/good-things/good-things'
+    });
   }
 });

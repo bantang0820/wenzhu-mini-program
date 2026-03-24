@@ -454,12 +454,15 @@ Page({
   onShareInvite() {
     wx.vibrateShort({ type: 'light' });
 
+    if (!this.data.isLoggedIn) {
+      wx.navigateTo({
+        url: `/pages/login/login?redirect=${encodeURIComponent(LOGIN_REDIRECT_PROFILE)}&scene=invite`
+      });
+      return;
+    }
+
     // 生成分享内容
-    const shareContent = {
-      title: '带娃崩溃时，我用这个小程序稳住了自己',
-      path: '/pages/index/index',
-      imageUrl: '' // TODO: 分享海报图片
-    };
+    const shareContent = this.getInviteShareContent();
 
     // 唤起微信分享
     wx.showShareMenu({
@@ -468,15 +471,27 @@ Page({
     });
 
     wx.showToast({
-      title: '点击右上角分享给好友',
+      title: '点击右上角分享，双方各得3天Pro',
       icon: 'none',
-      duration: 2000
+      duration: 2200
     });
 
     // 保存分享内容供分享时使用
     this.setData({
       shareContent
     });
+  },
+
+  getInviteShareContent() {
+    const sharerOpenid = wx.getStorageSync('openid') || app.globalData.openid || '';
+
+    return {
+      title: '送你 3 天 Pro 会员，一起把家稳住',
+      path: sharerOpenid
+        ? `/pages/index/index?from=invite&inviter=${encodeURIComponent(sharerOpenid)}`
+        : '/pages/index/index',
+      imageUrl: ''
+    };
   },
 
   // 执行兑换逻辑
@@ -698,7 +713,7 @@ Page({
 
   // 分享给好友
   onShareAppMessage() {
-    const { shareContent } = this.data;
+    const shareContent = this.data.shareContent || this.getInviteShareContent();
     return {
       title: shareContent.title || '传递稳住的力量',
       path: shareContent.path || '/pages/index/index',
@@ -708,10 +723,14 @@ Page({
 
   // 分享到朋友圈
   onShareTimeline() {
-    const { shareContent } = this.data;
+    const shareContent = this.data.shareContent || this.getInviteShareContent();
+    const query = shareContent.path && shareContent.path.includes('?')
+      ? shareContent.path.split('?')[1]
+      : '';
+
     return {
       title: shareContent.title || '传递稳住的力量',
-      query: '',
+      query,
       imageUrl: shareContent.imageUrl || ''
     };
   }

@@ -1,0 +1,71 @@
+<view class="container">
+  <view class="page-note">
+    <text class="page-note-text">你记下来的每一件小事</text>
+    <text class="page-note-text">都是生活在对你说——我很好</text>
+  </view>
+
+  <view class="timeline-list" wx:if="{{hasRecords}}">
+    <view class="timeline-star-drop" wx:if="{{showRecordStar}}">✦</view>
+    <view class="timeline-item {{index === records.length - 1 ? 'timeline-item-last' : ''}}" wx:for="{{records}}" wx:key="id">
+      <view class="timeline-axis">
+        <view class="timeline-line timeline-line-top {{index === 0 ? 'timeline-line-hidden' : ''}}"></view>
+        <view class="timeline-dot"></view>
+        <view class="timeline-line timeline-line-bottom"></view>
+      </view>
+      <view class="timeline-main">
+        <text class="timeline-day">{{item.displayDay}}</text>
+        <view class="timeline-content">
+          <text class="timeline-text">{{item.content}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:else>
+    <view class="timeline-item empty-item">
+      <view class="timeline-axis">
+        <view class="timeline-line timeline-line-top timeline-line-hidden"></view>
+        <view class="timeline-dot empty-dot"></view>
+        <view class="timeline-line timeline-line-bottom timeline-line-hidden"></view>
+      </view>
+      <view class="timeline-main empty-main">
+        <text class="empty-day">今天</text>
+        <view class="timeline-content empty-content">
+          <text class="empty-text">还没有记下小好事，点下面按钮写第一件吧。</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer-space"></view>
+
+  <view class="action-bar">
+    <button class="add-btn" bindtap="onOpenComposer">
+      <text class="add-btn-icon">✦</text>
+      <text class="add-btn-label">记录好事发生</text>
+    </button>
+  </view>
+
+  <view class="composer-mask" wx:if="{{showComposer}}" bindtap="onCloseComposer">
+    <view class="composer-sheet" catchtap="noop">
+      <view class="composer-editor">
+        <textarea
+          class="composer-input"
+          placeholder="{{promptText}}"
+          placeholder-class="composer-placeholder"
+          maxlength="200"
+          auto-height
+          cursor-spacing="36"
+          focus="{{inputFocus}}"
+          value="{{draft}}"
+          bindinput="onDraftInput"
+          bindkeyboardheightchange="onKeyboardHeightChange"
+        />
+
+        <button class="composer-submit {{saving ? 'is-saving' : ''}}" bindtap="onSaveTap" loading="{{saving}}" disabled="{{saving}}">
+          {{saving ? '保存中...' : '记下来了'}}
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

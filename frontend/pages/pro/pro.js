@@ -1,8 +1,9 @@
 const api = require('../../utils/api.js');
-const virtualPayment = require('../../utils/virtualPayment.js');
 const app = getApp();
 
 const ANNUAL_PRODUCT_TYPE = 'annual';
+const LOGIN_REDIRECT_PRO = '/pages/pro/pro';
+const SESSION_EXPIRED_HINT = '登录态已过期';
 
 Page({
   data: {
@@ -14,15 +15,28 @@ Page({
     console.log('=== Pro 页面 onLoad ===');
     console.log('当前文件: frontend/pages/pro/pro.js (新版支付)');
 
-    // 🔴 测试模式：强制显示支付按钮（测试完成后改回原代码）
-    this.setData({
-      isPro: false  // 强制设为false，显示支付按钮
-    });
+    this.syncMembershipView();
+  },
 
-    // 正式代码（测试完成后用这个）：
-    // this.setData({
-    //   isPro: !!app.globalData.isMember
-    // });
+  onShow() {
+    this.syncMembershipView();
+  },
+
+  syncMembershipView() {
+    this.setData({
+      isPro: !!app.globalData.isMember
+    });
+  },
+
+  redirectToLogin(force = false) {
+    if (force && typeof app.clearAuthSession === 'function') {
+      app.clearAuthSession();
+    }
+
+    const forceQuery = force ? '&force=1' : '';
+    wx.navigateTo({
+      url: `/pages/login/login?redirect=${encodeURIComponent(LOGIN_REDIRECT_PRO)}&scene=membership-pay${forceQuery}`
+    });
   },
 
   // 立即开通 - 调用虚拟支付
@@ -40,9 +54,7 @@ Page({
         icon: 'none'
       });
       setTimeout(() => {
-        wx.navigateTo({
-          url: '/pages/login/login'
-        });
+        this.redirectToLogin(false);
       }, 400);
       return;
     }
@@ -61,31 +73,29 @@ Page({
       const orderNo = orderRes.data.orderNo;
       console.log('订单号:', orderNo);
 
-      // 2. 调用云函数获取虚拟支付签名
-      const signRes = await wx.cloud.callFunction({
-        name: 'getVirtualPaymentSign',
-        data: {
-          orderNo: orderNo,
-          productId: 'wenzhu_coin_100',     // ⚠️ 改为代币ID（需要在后台配置）
-          quantity: 100,                    // 购买100个代币
-          mode: 'short_series_coin',        // ⚠️ 使用代币充值模式
-          env: 1 // 沙箱环境测试
-        }
-      });
+      // 2. 从后端获取虚拟支付签名参数
+      const signRes = await api.post(
+        '/virtual-payment/create',
+        {
+          productType: ANNUAL_PRODUCT_TYPE,
+          orderNo
+        },
+        true
+      );
 
       wx.hideLoading();
 
-      console.log('云函数完整返回:', signRes);
-      console.log('云函数result:', signRes.result);
+      console.log('支付签名接口返回:', signRes);
 
-      if (!signRes.result || !signRes.result.success) {
-        throw new Error(signRes.result?.error || '获取支付签名失败');
+      if (!signRes.success || !signRes.data) {
+        throw new Error(signRes.error || '获取支付签名失败');
       }
 
-      const { signData, paySig, mode } = signRes.result.data;
+      const { signData, paySig, signature, mode } = signRes.data;
       console.log('=== 调试信息 ===');
       console.log('解构后的 signData:', signData);
       console.log('解构后的 paySig:', paySig);
+      console.log('解构后的 signature:', signature);
       console.log('支付模式:', mode);
       console.log('paySig 类型:', typeof paySig);
       console.log('paySig 长度:', paySig ? paySig.length : 'undefined');
@@ -102,11 +112,11 @@ Page({
       }
 
       wx.requestVirtualPayment({
-        mode: mode || 'short_series_coin',   // 使用代币充值模式
+        mode: mode || 'short_series_goods',
         env: signData.env,                  // 环境配置
         signData: JSON.stringify(signData), // signData必须是JSON字符串
-        paySig: paySig,                     // 支付签名（由云函数生成）
-        signature: paySig,                  // ⚠️ 用户态签名（沙箱环境可使用相同值）
+        paySig: paySig,
+        signature: signature,
         success: () => {
           wx.showToast({
             title: '支付成功',
@@ -136,8 +146,22 @@ Page({
     } catch (error) {
       wx.hideLoading();
       console.error('支付流程错误:', error);
+
+      const errorMessage = error && error.message ? error.message : '';
+      if (errorMessage.includes(SESSION_EXPIRED_HINT)) {
+        wx.showModal({
+          title: '请重新登录',
+          content: '支付登录状态已过期，需要重新登录一次，然后会自动回到会员开通页面。',
+          showCancel: false,
+          success: () => {
+            this.redirectToLogin(true);
+          }
+        });
+        return;
+      }
+
       wx.showToast({
-        title: error.message || '支付失败',
+        title: errorMessage || '支付失败',
         icon: 'none'
       });
     } finally {
@@ -148,49 +172,60 @@ Page({
   // 检查支付状态
   async checkPaymentStatus(orderNo, attempt = 0) {
     try {
-      // 使用云函数查询虚拟支付订单
-      const res = await wx.cloud.callFunction({
-        name: 'queryVirtualPaymentOrder',
-        data: {
-          orderNo: orderNo,
-          env: 1 // 沙箱环境
-        }
-      });
+      const res = await api.post('/virtual-payment/query', { orderNo }, true, true);
+      const result = res.data || {};
 
-      const result = res.result;
-
-      if (result.success && (result.data.trade_state === 'SUCCESS' || result.data.isPaid)) {
+      if (res.success && (result.trade_state === 'SUCCESS' || result.isPaid)) {
         const token = wx.getStorageSync('token');
         const openid = wx.getStorageSync('openid');
         const cachedUser = wx.getStorageSync('userInfo') || app.globalData.userInfo || {};
-        const vipExpireTime = res.data.vipExpireTime;
+        let vipExpireTime = result.vipExpireTime;
 
-        // TODO: 需要调用后端API或云函数来更新用户会员状态
-        // 这里暂时只更新本地状态
+        // 先用当前支付查询结果更新本地状态，确保界面及时切换
         app.globalData.isMember = true;
         if (cachedUser) {
           cachedUser.isVip = true;
           cachedUser.vip_expire_time = vipExpireTime;
+          cachedUser.vipExpireTime = vipExpireTime;
         }
 
-        if (typeof app.setAuthSession === 'function') {
-          app.setAuthSession({
-            token,
-            openid,
-            user: {
-              ...cachedUser,
-              openid,
-              isVip: true,
-              vipExpireTime
-            }
-          });
-        }
-
-        // 调用后端API同步会员状态
+        // 再向后端同步一次，拿到数据库里最终落库后的会员信息
         try {
-          await api.post('/auth/sync-profile', {}, true);
+          const syncRes = await api.post('/auth/sync-profile', {}, true);
+          const latestUser = syncRes?.data?.user;
+
+          if (latestUser) {
+            vipExpireTime = latestUser.vipExpireTime || latestUser.vip_expire_time || vipExpireTime;
+          }
+
+          if (typeof app.setAuthSession === 'function') {
+            app.setAuthSession({
+              token,
+              openid,
+              user: {
+                ...cachedUser,
+                ...latestUser,
+                openid,
+                isVip: true,
+                vipExpireTime
+              }
+            });
+          }
         } catch (syncError) {
           console.warn('支付成功后刷新会员状态失败', syncError);
+
+          if (typeof app.setAuthSession === 'function') {
+            app.setAuthSession({
+              token,
+              openid,
+              user: {
+                ...cachedUser,
+                openid,
+                isVip: true,
+                vipExpireTime
+              }
+            });
+          }
         }
 
         this.setData({

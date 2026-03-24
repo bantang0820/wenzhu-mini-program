@@ -109,6 +109,16 @@ Page({
     });
   },
 
+  onNicknameBlur(e) {
+    const nickname = (e?.detail?.value || this.data.form.nickname || '').trim();
+
+    this.setData({
+      'form.nickname': nickname
+    });
+
+    this.saveProfile(true);
+  },
+
   onChooseAvatar(e) {
     const avatarUrl = e?.detail?.avatarUrl;
     if (!avatarUrl) return;
@@ -116,24 +126,11 @@ Page({
     this.setData({
       'form.avatarUrl': avatarUrl
     });
+
+    this.saveProfile(true);
   },
 
-  onPickAvatar() {
-    wx.chooseImage({
-      count: 1,
-      sizeType: ['compressed'],
-      sourceType: ['album', 'camera'],
-      success: (res) => {
-        const avatarUrl = (res.tempFilePaths && res.tempFilePaths.length > 0 && res.tempFilePaths[0]) || '';
-        if (!avatarUrl) return;
-        this.setData({
-          'form.avatarUrl': avatarUrl
-        });
-      }
-    });
-  },
-
-  async onSaveProfile() {
+  async saveProfile(silent = false) {
     if (!this.data.isLoggedIn || this.data.saving) return;
 
     const nickname = (this.data.form.nickname || '').trim() || '正念家长';
@@ -181,10 +178,12 @@ Page({
         'form.avatarUrl': normalizedUser.avatarUrl || normalizedUser.avatar_url || avatarUrl
       });
 
-      wx.showToast({
-        title: '保存成功',
-        icon: 'success'
-      });
+      if (!silent) {
+        wx.showToast({
+          title: '保存成功',
+          icon: 'success'
+        });
+      }
     } catch (error) {
       console.error('保存用户信息失败:', error);
       wx.showToast({
@@ -195,6 +194,10 @@ Page({
       wx.hideLoading();
       this.setData({ saving: false });
     }
+  },
+
+  onSaveProfile() {
+    this.saveProfile(false);
   },
 
   onLogoutTap() {

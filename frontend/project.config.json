@@ -57,5 +57,11 @@
   },
   "cloudfunctionTemplateRoot": "cloudfunctionTemplate/",
   "cloudfunctionRoot": "cloud/functions/",
-  "simulatorPluginLibVersion": {}
+  "cloudbaseRoot": "./cloudbase/",
+  "simulatorPluginLibVersion": {},
+  "cloudFunctionRoot": "cloud/functions/",
+  "wechatLogin": {
+    "addr": "index.html"
+  },
+  "env": "cloud1-2gn3b64i07457528"
 }

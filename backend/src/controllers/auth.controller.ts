@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import WechatService from '../services/wechat.service';
+import WechatSessionService from '../services/wechatSession.service';
 import UserService from '../services/user.service';
 import { generateToken } from '../utils/jwt';
 import { ApiResponse } from '../types';
@@ -26,6 +27,9 @@ export class AuthController {
 
       // 1. 通过code换取openid
       const session = await WechatService.code2Session(code);
+
+      // 缓存session_key，供虚拟支付用户态签名使用
+      WechatSessionService.setSessionKey(session.openid, session.session_key);
 
       // 2. 同步用户信息
       const { user, action } = await UserService.syncUserProfile(session.openid, {});

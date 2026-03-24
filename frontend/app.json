@@ -3,6 +3,7 @@
     "pages/index/index",
     "pages/content/content",
     "pages/stats/stats",
+    "pages/good-things/good-things",
     "pages/profile/profile",
     "pages/login/login",
     "pages/account/account",

@@ -11,25 +11,18 @@
     </view>
   </view>
 
-  <!-- ========== 心灵状态（原等级进度） ========== -->
-  <view class="state-section">
-    <view class="state-header">
-      <text class="state-current">{{userInfo.levelName}}</text>
+  <!-- ========== 好事发生 ========== -->
+  <view class="good-thing-section" bindtap="onGoodThingTap">
+    <view class="good-thing-header">
+      <text class="good-thing-title">好事发生</text>
+      <view class="good-thing-header-right">
+        <text class="good-thing-badge" wx:if="{{!isGoodThingUnlocked}}">Pro</text>
+        <text class="good-thing-arrow">›</text>
+      </view>
     </view>
 
-    <view class="state-progress-box">
-      <view class="state-progress-bar">
-        <view class="state-progress-fill" style="width: {{userInfo.progress}}%;"></view>
-        <!-- 呼吸感的光点 -->
-        <view class="progress-glow" style="left: {{userInfo.progress}}%;"></view>
-      </view>
-      
-      <view class="state-hint" wx:if="{{userInfo.nextLevelName}}">
-        再修习 <text class="highlight">{{userInfo.remainingDays}}</text> 天，遇见 <text class="highlight">{{userInfo.nextLevelName}}</text>
-      </view>
-      <view class="state-hint" wx:else>
-        您已达到最平和安稳的状态
-      </view>
+    <view class="good-thing-content">
+      <text class="good-thing-text">{{goodThingSummary.previewText}}</text>
     </view>
   </view>
 

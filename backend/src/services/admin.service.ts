@@ -99,6 +99,33 @@ export class AdminService {
     }
   }
 
+  /**
+   * 取消用户会员
+   */
+  async cancelMembership(userId: number): Promise<{ success: boolean; message: string }> {
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      // 更新用户表
+      await connection.execute(
+        'UPDATE users SET is_vip = 0, vip_expire_time = NULL WHERE id = ?',
+        [userId]
+      );
+
+      await connection.commit();
+
+      return { success: true, message: '会员已取消' };
+    } catch (error) {
+      await connection.rollback();
+      logger.error('取消会员失败:', error);
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
   async updateMembership(
     userId: number,
     duration: number,

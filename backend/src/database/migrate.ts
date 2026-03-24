@@ -110,6 +110,29 @@ const createTables = async () => {
     `);
     console.log('✅ 反馈表创建成功');
 
+    // 5.1 创建邀请奖励表
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS invite_rewards (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sharer_user_id INT NOT NULL COMMENT '邀请人用户ID',
+        sharer_openid VARCHAR(100) NOT NULL COMMENT '邀请人OpenID',
+        friend_user_id INT NOT NULL COMMENT '被邀请人用户ID',
+        friend_openid VARCHAR(100) NOT NULL COMMENT '被邀请人OpenID',
+        reward_days INT NOT NULL DEFAULT 3 COMMENT '奖励天数',
+        status ENUM('rewarded') DEFAULT 'rewarded' COMMENT '奖励状态',
+        rewarded_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '奖励发放时间',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        UNIQUE KEY uk_friend_user_id (friend_user_id),
+        UNIQUE KEY uk_sharer_friend (sharer_user_id, friend_user_id),
+        INDEX idx_sharer_user_id (sharer_user_id),
+        INDEX idx_friend_user_id (friend_user_id),
+        INDEX idx_rewarded_at (rewarded_at),
+        FOREIGN KEY (sharer_user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (friend_user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='邀请奖励记录表';
+    `);
+    console.log('✅ 邀请奖励表创建成功');
+
     // 6. 创建场景表
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS scenarios (

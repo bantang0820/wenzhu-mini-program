@@ -25,6 +25,14 @@ Page({
 
   onLoad(options) {
     console.log('首页 onLoad 执行', options);
+
+    if (options && options.inviter && typeof app.captureInviteFromOptions === 'function') {
+      const captured = app.captureInviteFromOptions(options);
+      if (captured && typeof app.processPendingInvite === 'function' && app.isLoggedIn()) {
+        app.processPendingInvite({ silent: false });
+      }
+    }
+
     // 处理分享进入的新用户奖励（+1次机会）
     if (options && options.shareBonus) {
       wx.setStorageSync('hasShareBonus', true);
@@ -44,6 +52,9 @@ Page({
     // 每次显示页面时重新加载已解锁的场景和会员状态
     this.loadUnlockedScenarios();
     this.checkProStatus();
+    if (typeof app.processPendingInvite === 'function' && app.isLoggedIn()) {
+      app.processPendingInvite({ silent: false });
+    }
     // 清除选中状态
     this.setData({
       selectedId: null

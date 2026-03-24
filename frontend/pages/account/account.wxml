@@ -1,42 +1,36 @@
 <view class="container">
-  <view class="card" wx:if="{{isLoggedIn}}">
-    <view class="section">
-      <text class="label">头像</text>
-      <view class="avatar-row">
-        <button class="avatar-picker" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
-          <image class="avatar-img" wx:if="{{form.avatarUrl}}" src="{{form.avatarUrl}}" mode="aspectFill"></image>
-          <text class="avatar-fallback" wx:else>🧘</text>
-        </button>
-        <button class="secondary-btn" bindtap="onPickAvatar">从相册选择</button>
-      </view>
+  <view class="info-card" wx:if="{{isLoggedIn}}">
+    <view class="info-row">
+      <text class="row-label">头像</text>
+      <button class="avatar-picker" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <image class="avatar-img" wx:if="{{form.avatarUrl}}" src="{{form.avatarUrl}}" mode="aspectFill"></image>
+        <view class="avatar-placeholder" wx:else></view>
+      </button>
     </view>
 
-    <view class="section">
-      <text class="label">昵称</text>
+    <view class="row-divider"></view>
+
+    <view class="info-row">
+      <text class="row-label">名字</text>
       <input
-        class="nickname-input"
-        placeholder="请输入昵称"
+        class="nickname-value"
+        type="nickname"
+        placeholder="请输入名字"
         maxlength="20"
         value="{{form.nickname}}"
         bindinput="onNicknameInput"
+        bindblur="onNicknameBlur"
       />
     </view>
+  </view>
 
-    <view class="section">
-      <text class="label">账号标识</text>
-      <text class="openid">{{openid}}</text>
-    </view>
-
-    <button class="save-btn" bindtap="onSaveProfile" loading="{{saving}}" disabled="{{saving}}">
-      保存资料
-    </button>
+  <view class="logout-card" wx:if="{{isLoggedIn}}">
+    <button class="logout-btn" bindtap="onLogoutTap">退出登录</button>
   </view>
 
   <view class="card empty" wx:else>
     <text class="empty-title">尚未登录</text>
     <text class="empty-desc">请先登录后再设置昵称和头像</text>
-    <button class="save-btn" bindtap="onGoLogin">去登录</button>
+    <button class="login-btn" bindtap="onGoLogin">去登录</button>
   </view>
-
-  <button class="logout-btn" wx:if="{{isLoggedIn}}" bindtap="onLogoutTap">退出登录</button>
 </view>

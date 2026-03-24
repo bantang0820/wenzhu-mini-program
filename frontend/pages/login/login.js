@@ -14,19 +14,34 @@ Page({
   data: {
     loading: false,
     needPrivacyAuthorization: false,
-    privacyContractName: '《隐私政策》'
+    privacyContractName: '《隐私政策》',
+    forceLogin: false
   },
 
   onLoad(options = {}) {
     this.redirectTarget = options.redirect ? decodeURIComponent(options.redirect) : '';
     this.loginScene = options.scene || '';
     this.loginInFlight = false;
-    this.redirectIfLoggedIn();
+    this.forceLogin = options.force === '1';
+
+    if (this.forceLogin && typeof app.clearAuthSession === 'function') {
+      app.clearAuthSession();
+    }
+
+    this.setData({
+      forceLogin: this.forceLogin
+    });
+
+    if (!this.forceLogin) {
+      this.redirectIfLoggedIn();
+    }
     this.initPrivacySetting();
   },
 
   onShow() {
-    this.redirectIfLoggedIn();
+    if (!this.forceLogin) {
+      this.redirectIfLoggedIn();
+    }
   },
 
   redirectIfLoggedIn() {
@@ -35,6 +50,25 @@ Page({
     if (token && openid) {
       this.navigateAfterLogin();
     }
+  },
+
+  normalizeTargetPath(target = '') {
+    return (target || '').split('?')[0];
+  },
+
+  openTargetPage(target, targetPath) {
+    if (TAB_BAR_PAGES.includes(targetPath)) {
+      wx.switchTab({ url: targetPath });
+      return;
+    }
+
+    wx.reLaunch({
+      url: target,
+      fail: (error) => {
+        console.warn('reLaunch 跳转失败，改用 redirectTo', error);
+        wx.redirectTo({ url: target });
+      }
+    });
   },
 
   initPrivacySetting() {
@@ -107,7 +141,7 @@ Page({
 
     this.loginInFlight = true;
     this.setData({ loading: true });
-    wx.showLoading({ title: '正在开启...', mask: true });
+    wx.showLoading({ title: '正在登录...', mask: true });
 
     try {
       // 1. 获取微信登录凭证 code
@@ -176,9 +210,14 @@ Page({
         console.warn('同步用户资料失败，但登录已成功', syncError);
       }
 
+      let inviteResult = null;
+      if (typeof app.processPendingInvite === 'function') {
+        inviteResult = await app.processPendingInvite({ silent: true });
+      }
+
       // 5. 成功跳转
       wx.showToast({
-        title: '欢迎回来',
+        title: inviteResult && inviteResult.rewarded ? `已获${inviteResult.rewardDays || 3}天Pro` : '欢迎回来',
         icon: 'success',
         duration: 1200
       });
@@ -205,12 +244,21 @@ Page({
     const target = hasPendingRedeem
       ? '/pages/profile/profile'
       : (this.redirectTarget || '/pages/index/index');
+    const targetPath = this.normalizeTargetPath(target);
+    const pageStack = getCurrentPages();
+    const previousPage = pageStack.length > 1 ? pageStack[pageStack.length - 2] : null;
+    const previousPath = previousPage ? `/${previousPage.route}` : '';
 
-    if (TAB_BAR_PAGES.includes(target)) {
-      wx.switchTab({ url: target });
+    if (previousPath && previousPath === targetPath) {
+      wx.navigateBack({
+        delta: 1,
+        fail: () => {
+          this.openTargetPage(target, targetPath);
+        }
+      });
       return;
     }
 
-    wx.reLaunch({ url: target });
+    this.openTargetPage(target, targetPath);
   }
 });

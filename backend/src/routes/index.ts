@@ -8,6 +8,7 @@ import feedbackController from '../controllers/feedback.controller';
 import courseController from '../controllers/course.controller';
 import shareController from '../controllers/share.controller';
 import paymentController from '../controllers/payment.controller';
+import virtualPaymentController from '../controllers/virtualPayment.controller';
 import { adminAuthMiddleware, authMiddleware, optionalAuth } from '../middlewares/auth';
 import { validate, validationSchemas } from '../middlewares/validate';
 
@@ -36,6 +37,9 @@ router.post(
   validate(validationSchemas.adminUpdateMembership),
   adminController.updateMembership
 );
+
+// 取消用户会员（需要认证）
+router.post('/admin/cancel-membership', adminAuthMiddleware, adminController.cancelMembership);
 
 // ========== 认证相关 ==========
 // 微信一键登录
@@ -152,5 +156,18 @@ router.post('/payment/callback', paymentController.paymentCallback);
 
 // 申请退款（需要认证）
 router.post('/payment/refund', authMiddleware, validate(validationSchemas.refund), paymentController.refund);
+
+// ========== 虚拟支付相关 ==========
+// 创建虚拟支付订单（需要认证）
+router.post('/virtual-payment/create', authMiddleware, virtualPaymentController.createPayment);
+
+// 查询虚拟支付订单（需要认证）
+router.post('/virtual-payment/query', authMiddleware, virtualPaymentController.queryOrder);
+
+// 虚拟支付发货通知（不需要认证，微信直接调用）
+router.post('/virtual-payment/notify', virtualPaymentController.paymentNotify);
+
+// 申请虚拟支付退款（需要认证）
+router.post('/virtual-payment/refund', authMiddleware, virtualPaymentController.refund);
 
 export default router;

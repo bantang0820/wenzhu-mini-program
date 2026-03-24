@@ -91,7 +91,9 @@ function request(endpoint, options = {}) {
           }
 
           if (res.statusCode < 200 || res.statusCode >= 300) {
-            reject(new Error(`接口响应异常(${res.statusCode})：${url}`));
+            const backendError = res.data?.error || res.data?.message || '';
+            const suffix = backendError ? `，原因：${backendError}` : '';
+            reject(new Error(`接口响应异常(${res.statusCode})：${url}${suffix}`));
             return;
           }
 

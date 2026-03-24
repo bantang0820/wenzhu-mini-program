@@ -3,9 +3,24 @@
 const api = require('./utils/api.js');
 const apiConfig = require('./config/api.js');
 
+const PENDING_INVITER_KEY = 'pendingInviteOpenid';
+
 App({
   onLaunch() {
-    // 1. 配置 API
+    // 1. 初始化云开发
+    if (!wx.cloud) {
+      console.error('[App] wx.cloud 未定义，请使用支持云开发的微信开发者工具');
+      return;
+    }
+
+    wx.cloud.init({
+      env: 'cloud1-2gn3b64i07457528', // 云开发环境ID
+      traceUser: true
+    });
+
+    console.log('[App] 云开发初始化成功');
+
+    // 2. 配置 API
     if (typeof wx === 'undefined') {
       // 开发环境，补最小化 storage 能力
       global.wx = {
@@ -24,7 +39,7 @@ App({
     console.log('[App] API 地址:', apiConfig.baseURL);
     this.globalData.api = api;
 
-    // 2. 检查本地登录状态
+    // 3. 检查本地登录状态
     this.checkLoginStatus();
   },
 
@@ -99,6 +114,79 @@ App({
     this.globalData.isMember = false;
   },
 
+  captureInviteFromOptions(options = {}) {
+    const inviter = options.inviter || options.sharerOpenid || '';
+    const currentOpenid = wx.getStorageSync('openid');
+
+    if (!inviter || (currentOpenid && currentOpenid === inviter)) {
+      return false;
+    }
+
+    wx.setStorageSync(PENDING_INVITER_KEY, inviter);
+    return true;
+  },
+
+  async processPendingInvite({ silent = false } = {}) {
+    const inviter = wx.getStorageSync(PENDING_INVITER_KEY);
+    const token = wx.getStorageSync('token');
+    const openid = wx.getStorageSync('openid');
+
+    if (!inviter || !token || !openid) {
+      return null;
+    }
+
+    if (inviter === openid) {
+      wx.removeStorageSync(PENDING_INVITER_KEY);
+      return null;
+    }
+
+    try {
+      const res = await api.post(
+        '/share/handle-invite',
+        { sharerOpenid: inviter },
+        true,
+        true
+      );
+
+      if (!res.success) {
+        return null;
+      }
+
+      wx.removeStorageSync(PENDING_INVITER_KEY);
+
+      const data = res.data || {};
+      if (data.friendVipExpireTime) {
+        const localUser = this.normalizeUserProfile(
+          wx.getStorageSync('userInfo') || this.globalData.userInfo || {}
+        );
+
+        this.setAuthSession({
+          token,
+          openid,
+          user: {
+            ...localUser,
+            openid,
+            isVip: true,
+            vipExpireTime: data.friendVipExpireTime
+          }
+        });
+      }
+
+      if (!silent && data.message) {
+        wx.showToast({
+          title: data.rewarded ? `已获${data.rewardDays || 3}天Pro` : data.message,
+          icon: 'none',
+          duration: 2500
+        });
+      }
+
+      return data;
+    } catch (error) {
+      console.error('处理邀请奖励失败', error);
+      return null;
+    }
+  },
+
   // 检查登录状态
   async checkLoginStatus() {
     const token = wx.getStorageSync('token');
@@ -129,6 +217,7 @@ App({
           openid,
           user: res.result.user || res.result
         });
+        await this.processPendingInvite({ silent: true });
         console.log('同步云端状态成功:', this.globalData.isMember);
         return;
       }

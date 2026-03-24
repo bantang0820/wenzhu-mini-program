@@ -46,7 +46,10 @@ Page({
       }
 
       const album = this.normalizeAlbum(albumResult.data, albumId);
-      const chapters = (chaptersResult.data || []).slice(0, 10).map((item) => this.normalizeChapter(item));
+      const chapters = (chaptersResult.data || [])
+        .slice(0, 10)
+        .map((item) => this.normalizeChapter(item))
+        .sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
       this.applyAlbumData(album, chapters);
 
       console.log('专辑数据加载成功:', album.id);
@@ -117,16 +120,73 @@ Page({
   normalizeChapter(rawChapter) {
     if (!rawChapter) return null;
 
-    // 确保章节ID在1-10范围内
-    const chapterId = Number(rawChapter.id) || 1;
-    const safeId = chapterId > 10 ? 10 : (chapterId < 1 ? 1 : chapterId);
+    const orderId = Number(rawChapter.order || rawChapter.id) || 1;
+    const safeId = orderId > 10 ? 10 : (orderId < 1 ? 1 : orderId);
+    const fallbackMeta = this.getFallbackChapterMeta(safeId);
+    const chapterTitle = (rawChapter.title || '').trim();
+    const chapterSubtitle = (rawChapter.subtitle || '').trim();
+    const shouldUseFallbackTitle = !chapterTitle || this.isPlaceholderChapterTitle(chapterTitle, safeId);
+    const shouldUseFallbackSubtitle = !chapterSubtitle || this.isPlaceholderChapterSubtitle(chapterSubtitle, safeId);
 
     return {
       id: safeId,
-      title: rawChapter.title || '',
-      subtitle: rawChapter.subtitle || '',
+      title: shouldUseFallbackTitle ? fallbackMeta.title : chapterTitle,
+      subtitle: shouldUseFallbackSubtitle ? fallbackMeta.subtitle : chapterSubtitle,
       locked: !!(rawChapter.locked === true || rawChapter.locked === 1 || rawChapter.locked === '1'),
       completedCount: Number(rawChapter.completedCount || rawChapter.completed_count || 0)
+    };
+  },
+
+  isPlaceholderChapterTitle(title, chapterId) {
+    if (!title) return true;
+
+    const normalizedTitle = String(title).replace(/\s+/g, '');
+    return normalizedTitle === `第${chapterId}课` || normalizedTitle === `第${chapterId}章`;
+  },
+
+  isPlaceholderChapterSubtitle(subtitle, chapterId) {
+    if (!subtitle) return true;
+
+    const normalizedSubtitle = String(subtitle).replace(/\s+/g, '');
+    return (
+      normalizedSubtitle === `专辑章节${chapterId}` ||
+      normalizedSubtitle === `专题章节${chapterId}` ||
+      normalizedSubtitle === `MicroCourse${chapterId}`
+    );
+  },
+
+  getFallbackChapterMeta(chapterId) {
+    const chapterTitles = [
+      '区分观察与评论',
+      '体会感受的力量',
+      '看见内在的需要',
+      '提出具体的请求',
+      '全身心地倾听',
+      '爱自己的语言',
+      '表达愤怒',
+      '表达感激',
+      '学会说"不"',
+      '重获生活热情'
+    ];
+
+    const chapterSubtitles = [
+      '我看见在那，而不是我认为',
+      '因为在乎，所以有情绪',
+      '情绪背后，匮乏了什么',
+      '我要什么，而不是不要什么',
+      '先不急着建议，先听',
+      '对自己也要非暴力',
+      '愤怒是受伤的呐喊',
+      '具体的赞美更有力量',
+      '温和而坚定地拒绝',
+      '让爱在家庭流动'
+    ];
+
+    const index = Math.max(0, Math.min(chapterTitles.length - 1, Number(chapterId || 1) - 1));
+
+    return {
+      title: chapterTitles[index],
+      subtitle: chapterSubtitles[index]
     };
   },
 
@@ -185,39 +245,17 @@ Page({
     const baseAlbum = fallbackAlbums[albumId] || fallbackAlbums.nvc;
     const isMember = !!(getApp().globalData.isMember);
 
-    const chapterTitles = [
-      '区分观察与评论',
-      '体会感受的力量',
-      '看见内在的需要',
-      '提出具体的请求',
-      '全身心地倾听',
-      '爱自己的语言',
-      '表达愤怒',
-      '表达感激',
-      '学会说"不"',
-      '重获生活热情'
-    ];
+    const chapters = Array.from({ length: 10 }, (_, index) => {
+      const chapterMeta = this.getFallbackChapterMeta(index + 1);
 
-    const chapterSubtitles = [
-      '我看见在那，而不是我认为',
-      '因为在乎，所以有情绪',
-      '情绪背后，匮乏了什么',
-      '我要什么，而不是不要什么',
-      '先不急着建议，先听',
-      '对自己也要非暴力',
-      '愤怒是受伤的呐喊',
-      '具体的赞美更有力量',
-      '温和而坚定地拒绝',
-      '让爱在家庭流动'
-    ];
-
-    const chapters = chapterTitles.slice(0, 10).map((title, index) => ({
-      id: index + 1,
-      title,
-      subtitle: chapterSubtitles[index],
-      locked: !isMember && index > 0,
-      completedCount: 0
-    }));
+      return {
+        id: index + 1,
+        title: chapterMeta.title,
+        subtitle: chapterMeta.subtitle,
+        locked: !isMember && index > 0,
+        completedCount: 0
+      };
+    });
 
     return {
       album: baseAlbum,

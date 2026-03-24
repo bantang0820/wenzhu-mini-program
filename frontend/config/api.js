@@ -1,9 +1,9 @@
 // API 配置文件
-// ⚠️ 生产模式：连接线上后端服务器
-const USE_LOCAL_API = false; // 🔴 上线前设为false
+// ⚠️ 本地测试模式：连接本地后端服务器（通过花生壳内网穿透）
+const USE_LOCAL_API = true; // ✅ 本地测试时设为true
 
 const API_BASE_URL = USE_LOCAL_API
-  ? 'http://localhost:3000/api'  // 本地开发服务器
+  ? 'https://1dt2po0565100.vicp.fun/api'  // 本地测试（花生壳域名）
   : 'https://api.wenzhuyuer.com/api'; // 线上生产服务器
 
 module.exports = {

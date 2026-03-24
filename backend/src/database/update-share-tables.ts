@@ -63,6 +63,29 @@ async function updateShareTables() {
     `);
     logger.info('✓ unlock_records 表创建成功');
 
+    logger.info('4. 创建 invite_rewards 表...');
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS invite_rewards (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sharer_user_id INT NOT NULL COMMENT '邀请人用户ID',
+        sharer_openid VARCHAR(100) NOT NULL COMMENT '邀请人OpenID',
+        friend_user_id INT NOT NULL COMMENT '被邀请人用户ID',
+        friend_openid VARCHAR(100) NOT NULL COMMENT '被邀请人OpenID',
+        reward_days INT NOT NULL DEFAULT 3 COMMENT '奖励天数',
+        status ENUM('rewarded') DEFAULT 'rewarded' COMMENT '奖励状态',
+        rewarded_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '奖励发放时间',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        UNIQUE KEY uk_friend_user_id (friend_user_id),
+        UNIQUE KEY uk_sharer_friend (sharer_user_id, friend_user_id),
+        INDEX idx_sharer_user_id (sharer_user_id),
+        INDEX idx_friend_user_id (friend_user_id),
+        INDEX idx_rewarded_at (rewarded_at),
+        FOREIGN KEY (sharer_user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (friend_user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='邀请奖励记录表';
+    `);
+    logger.info('✓ invite_rewards 表创建成功');
+
     // 查看表结构
     console.log('\nusers 表结构（新增字段）:');
     const [userCols] = await pool.execute('SHOW COLUMNS FROM users WHERE Field LIKE "daily_%"');
@@ -75,6 +98,10 @@ async function updateShareTables() {
     console.log('\nunlock_records 表结构:');
     const [unlockStruct] = await pool.execute('SHOW CREATE TABLE unlock_records');
     console.log((unlockStruct as any)[0]['Create Table']);
+
+    console.log('\ninvite_rewards 表结构:');
+    const [inviteStruct] = await pool.execute('SHOW CREATE TABLE invite_rewards');
+    console.log((inviteStruct as any)[0]['Create Table']);
 
     logger.info('分享和解锁相关表更新完成！');
     process.exit(0);
