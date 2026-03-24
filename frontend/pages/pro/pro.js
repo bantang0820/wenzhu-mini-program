@@ -1,4 +1,5 @@
 const api = require('../../utils/api.js');
+const virtualPayment = require('../../utils/virtualPayment.js');
 const app = getApp();
 
 const ANNUAL_PRODUCT_TYPE = 'annual';
@@ -12,12 +13,19 @@ Page({
   onLoad() {
     console.log('=== Pro 页面 onLoad ===');
     console.log('当前文件: frontend/pages/pro/pro.js (新版支付)');
+
+    // 🔴 测试模式：强制显示支付按钮（测试完成后改回原代码）
     this.setData({
-      isPro: !!app.globalData.isMember
+      isPro: false  // 强制设为false，显示支付按钮
     });
+
+    // 正式代码（测试完成后用这个）：
+    // this.setData({
+    //   isPro: !!app.globalData.isMember
+    // });
   },
 
-  // 立即开通 - 直接调用微信支付
+  // 立即开通 - 调用虚拟支付
   async onPayTap() {
     console.log('=== onPayTap 被调用 ===');
     wx.vibrateShort({ type: 'medium' });
@@ -51,28 +59,54 @@ Page({
       }
 
       const orderNo = orderRes.data.orderNo;
+      console.log('订单号:', orderNo);
 
-      // 2. 创建支付订单
-      const payRes = await api.post('/payment/create', {
-        productType: ANNUAL_PRODUCT_TYPE,
-        orderNo: orderNo
-      }, true);
+      // 2. 调用云函数获取虚拟支付签名
+      const signRes = await wx.cloud.callFunction({
+        name: 'getVirtualPaymentSign',
+        data: {
+          orderNo: orderNo,
+          productId: 'wenzhu_coin_100',     // ⚠️ 改为代币ID（需要在后台配置）
+          quantity: 100,                    // 购买100个代币
+          mode: 'short_series_coin',        // ⚠️ 使用代币充值模式
+          env: 1 // 沙箱环境测试
+        }
+      });
 
       wx.hideLoading();
 
-      if (!payRes.success) {
-        throw new Error(payRes.error || '创建支付订单失败');
+      console.log('云函数完整返回:', signRes);
+      console.log('云函数result:', signRes.result);
+
+      if (!signRes.result || !signRes.result.success) {
+        throw new Error(signRes.result?.error || '获取支付签名失败');
       }
 
-      const { payParams } = payRes.data;
+      const { signData, paySig, mode } = signRes.result.data;
+      console.log('=== 调试信息 ===');
+      console.log('解构后的 signData:', signData);
+      console.log('解构后的 paySig:', paySig);
+      console.log('支付模式:', mode);
+      console.log('paySig 类型:', typeof paySig);
+      console.log('paySig 长度:', paySig ? paySig.length : 'undefined');
 
-      // 3. 调起微信支付
-      wx.requestPayment({
-        timeStamp: payParams.timeStamp,
-        nonceStr: payParams.nonceStr,
-        package: payParams.package,
-        signType: payParams.signType,
-        paySign: payParams.paySign,
+      // 3. 调起虚拟支付
+      if (!paySig || typeof paySig !== 'string') {
+        console.error('❌ paySig 无效，无法调起支付');
+        wx.showModal({
+          title: '调试信息',
+          content: `paySig: ${paySig}, 类型: ${typeof paySig}`,
+          showCancel: false
+        });
+        return;
+      }
+
+      wx.requestVirtualPayment({
+        mode: mode || 'short_series_coin',   // 使用代币充值模式
+        env: signData.env,                  // 环境配置
+        signData: JSON.stringify(signData), // signData必须是JSON字符串
+        paySig: paySig,                     // 支付签名（由云函数生成）
+        signature: paySig,                  // ⚠️ 用户态签名（沙箱环境可使用相同值）
         success: () => {
           wx.showToast({
             title: '支付成功',
@@ -84,8 +118,8 @@ Page({
           }, 1200);
         },
         fail: (err) => {
-          console.error('支付失败:', err);
-          if (err.errMsg.includes('cancel')) {
+          console.error('虚拟支付失败:', err);
+          if (err.errMsg && err.errMsg.includes('cancel')) {
             wx.showToast({
               title: '已取消支付',
               icon: 'none'
@@ -114,15 +148,30 @@ Page({
   // 检查支付状态
   async checkPaymentStatus(orderNo, attempt = 0) {
     try {
-      const res = await api.post('/payment/query', {
-        orderNo: orderNo
-      }, true);
+      // 使用云函数查询虚拟支付订单
+      const res = await wx.cloud.callFunction({
+        name: 'queryVirtualPaymentOrder',
+        data: {
+          orderNo: orderNo,
+          env: 1 // 沙箱环境
+        }
+      });
 
-      if (res.success && (res.data.trade_state === 'SUCCESS' || res.data.isPaid)) {
+      const result = res.result;
+
+      if (result.success && (result.data.trade_state === 'SUCCESS' || result.data.isPaid)) {
         const token = wx.getStorageSync('token');
         const openid = wx.getStorageSync('openid');
         const cachedUser = wx.getStorageSync('userInfo') || app.globalData.userInfo || {};
         const vipExpireTime = res.data.vipExpireTime;
+
+        // TODO: 需要调用后端API或云函数来更新用户会员状态
+        // 这里暂时只更新本地状态
+        app.globalData.isMember = true;
+        if (cachedUser) {
+          cachedUser.isVip = true;
+          cachedUser.vip_expire_time = vipExpireTime;
+        }
 
         if (typeof app.setAuthSession === 'function') {
           app.setAuthSession({
@@ -137,10 +186,11 @@ Page({
           });
         }
 
-        if (typeof app.checkLoginStatus === 'function') {
-          app.checkLoginStatus().catch((syncError) => {
-            console.warn('支付成功后刷新会员状态失败', syncError);
-          });
+        // 调用后端API同步会员状态
+        try {
+          await api.post('/auth/sync-profile', {}, true);
+        } catch (syncError) {
+          console.warn('支付成功后刷新会员状态失败', syncError);
         }
 
         this.setData({
