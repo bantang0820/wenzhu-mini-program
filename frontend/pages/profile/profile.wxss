@@ -59,7 +59,7 @@
   z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between; /* 撑开内容 */
+  justify-content: space-between;
   width: 100%;
 }
 

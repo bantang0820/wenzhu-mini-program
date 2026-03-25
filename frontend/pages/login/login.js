@@ -15,7 +15,9 @@ Page({
     loading: false,
     needPrivacyAuthorization: false,
     privacyContractName: '《隐私政策》',
-    forceLogin: false
+    forceLogin: false,
+    privacyChecked: false,
+    privacyShake: ''
   },
 
   onLoad(options = {}) {
@@ -107,6 +109,11 @@ Page({
     });
   },
 
+  onPrivacyCheckboxChange(e) {
+    const checked = e.detail.value.includes('privacy');
+    this.setData({ privacyChecked: checked });
+  },
+
   // 获取微信登录 code
   getWechatLoginCode() {
     return new Promise((resolve, reject) => {
@@ -127,11 +134,53 @@ Page({
 
   onQuickLoginTap() {
     if (this.data.loading || this.data.needPrivacyAuthorization) return;
+
+    // 检查是否勾选了隐私政策
+    if (!this.data.privacyChecked) {
+      // 震动提醒
+      wx.vibrateShort({
+        type: 'heavy'
+      });
+      // 添加抖动动画
+      this.setData({ privacyShake: 'shake' });
+      setTimeout(() => {
+        this.setData({ privacyShake: '' });
+      }, 500);
+      // 提示用户
+      wx.showToast({
+        title: '请先阅读并同意隐私政策',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
     this.handleQuickLogin();
   },
 
   onAgreePrivacyAuthorization() {
     this.setData({ needPrivacyAuthorization: false });
+
+    // 检查是否勾选了隐私政策
+    if (!this.data.privacyChecked) {
+      // 震动提醒
+      wx.vibrateShort({
+        type: 'heavy'
+      });
+      // 添加抖动动画
+      this.setData({ privacyShake: 'shake' });
+      setTimeout(() => {
+        this.setData({ privacyShake: '' });
+      }, 500);
+      // 提示用户
+      wx.showToast({
+        title: '请先阅读并同意隐私政策',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
     this.handleQuickLogin();
   },
 

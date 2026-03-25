@@ -22,7 +22,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 36rpx;
+  padding: 0 16rpx 0 36rpx;
 }
 
 .row-label {

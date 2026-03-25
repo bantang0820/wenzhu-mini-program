@@ -8,6 +8,36 @@ import moment from 'moment';
  * 场景服务类
  */
 export class ScenarioService {
+  private calculateContinuousPracticeDays(checkins: any[] = []): number {
+    if (!Array.isArray(checkins) || checkins.length === 0) {
+      return 0;
+    }
+
+    const distinctDates = Array.from(new Set(
+      checkins
+        .map((checkin) => moment(checkin.practice_date).format('YYYY-MM-DD'))
+        .filter(Boolean)
+    )).sort((a, b) => moment(b).valueOf() - moment(a).valueOf());
+
+    if (distinctDates.length === 0) {
+      return 0;
+    }
+
+    let expectedDate = moment().startOf('day');
+    let continuousDays = 0;
+
+    for (const practiceDate of distinctDates) {
+      if (practiceDate === expectedDate.format('YYYY-MM-DD')) {
+        continuousDays += 1;
+        expectedDate = expectedDate.clone().subtract(1, 'day');
+      } else {
+        break;
+      }
+    }
+
+    return continuousDays;
+  }
+
   /**
    * 获取所有场景
    * @param isFree 是否只获取免费场景
@@ -278,31 +308,12 @@ export class ScenarioService {
 
       // 计算连续打卡天数
       const [checkinRows] = await pool.execute(
-        'SELECT practice_date FROM practice_records WHERE user_id = ? ORDER BY practice_date DESC',
+        'SELECT DISTINCT practice_date FROM practice_records WHERE user_id = ? ORDER BY practice_date DESC',
         [user.id]
       );
 
       const checkins = checkinRows as any[];
-      let continuousDays = 0;
-
-      if (checkins.length > 0) {
-        let checkDate = moment();
-
-        for (const checkin of checkins) {
-          const practiceDate = moment(checkin.practice_date).format('YYYY-MM-DD');
-
-          if (practiceDate === checkDate.format('YYYY-MM-DD')) {
-            continuousDays++;
-            checkDate.subtract(1, 'day');
-          } else if (practiceDate === checkDate.add(1, 'day').format('YYYY-MM-DD')) {
-            // 允许中间断一天
-            continuousDays++;
-            checkDate.subtract(1, 'day');
-          } else {
-            break;
-          }
-        }
-      }
+      const continuousDays = this.calculateContinuousPracticeDays(checkins);
 
       return {
         totalDays: user.total_days || 0,
@@ -355,22 +366,7 @@ export class ScenarioService {
       );
 
       const checkins = checkinRows as any[];
-      let continuousDays = 0;
-
-      if (checkins.length > 0) {
-        let checkDate = moment();
-
-        for (const checkin of checkins) {
-          const practiceDate = moment(checkin.practice_date).format('YYYY-MM-DD');
-
-          if (practiceDate === checkDate.format('YYYY-MM-DD')) {
-            continuousDays++;
-            checkDate.subtract(1, 'day');
-          } else {
-            break;
-          }
-        }
-      }
+      const continuousDays = this.calculateContinuousPracticeDays(checkins);
 
       // 3. 获取最常练的场景Top3
       const [scenarioRows] = await pool.execute(

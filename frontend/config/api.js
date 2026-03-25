@@ -3,7 +3,7 @@
 const USE_LOCAL_API = true; // ✅ 本地测试时设为true
 
 const API_BASE_URL = USE_LOCAL_API
-  ? 'https://1dt2po0565100.vicp.fun/api'  // 本地测试（花生壳域名）
+  ? 'https://api.wenzhuyuer.com/api'  // 本地测试（花生壳域名）
   : 'https://api.wenzhuyuer.com/api'; // 线上生产服务器
 
 module.exports = {

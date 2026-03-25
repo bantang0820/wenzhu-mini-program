@@ -1075,17 +1075,32 @@ Page({
       if (!checkInMap[dateStr]) {
         checkInMap[dateStr] = true;
         wx.setStorageSync('checkInMap', checkInMap);
-        
-        // 2. 更新总天数
-        const totalDays = wx.getStorageSync('totalDays') || 0;
-        wx.setStorageSync('totalDays', totalDays + 1);
       }
+
+      const sortedDates = Object.keys(checkInMap).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+      let currentStreak = 0;
+      let expectedDate = new Date(`${dateStr}T12:00:00`);
+
+      for (const practiceDate of sortedDates) {
+        const expectedDateStr = `${expectedDate.getFullYear()}-${String(expectedDate.getMonth() + 1).padStart(2, '0')}-${String(expectedDate.getDate()).padStart(2, '0')}`;
+
+        if (practiceDate === expectedDateStr) {
+          currentStreak += 1;
+          expectedDate.setDate(expectedDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
+      // 2. 更新总天数与连续练习天数
+      wx.setStorageSync('totalDays', Object.keys(checkInMap).length);
+      wx.setStorageSync('currentStreak', currentStreak);
       
       // 3. 更新总次数
       const totalCount = wx.getStorageSync('totalCount') || 0;
       wx.setStorageSync('totalCount', totalCount + 1);
       
-      console.log('打卡成功:', { dateStr, lessonTitle });
+      console.log('打卡成功:', { dateStr, lessonTitle, currentStreak });
     } catch (e) {
       console.error('更新打卡记录失败', e);
     }
