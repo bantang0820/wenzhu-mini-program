@@ -2,7 +2,7 @@ import express, { Application } from 'express';
 import cors, { CorsOptions } from 'cors';
 import dotenv from 'dotenv';
 import { IncomingMessage } from 'http';
-import { config } from './config/app';
+import { config, validateSecurityConfig } from './config/app';
 import { testConnection } from './config/database';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middlewares/error';
@@ -13,6 +13,10 @@ dotenv.config();
 
 // 创建Express应用
 const app: Application = express();
+
+if (config.trustProxy) {
+  app.set('trust proxy', true);
+}
 
 const corsOptions: CorsOptions = {
   origin: '*',
@@ -56,6 +60,8 @@ app.use(errorHandler);
 // 启动服务器
 const startServer = async (): Promise<void> => {
   try {
+    validateSecurityConfig();
+
     // 测试数据库连接
     logger.info('正在连接数据库...');
     const dbConnected = await testConnection();

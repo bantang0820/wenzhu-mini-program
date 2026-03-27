@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "migrate": "ts-node src/database/migrate.ts",
     "seed": "ts-node src/database/seed.ts",
-    "sync:scenarios": "ts-node src/database/sync-scenarios.ts"
+    "sync:scenarios": "ts-node src/database/sync-scenarios.ts",
+    "security:rotate-admin": "bash scripts/emergency_rotate_admin.sh"
   },
   "keywords": [
     "wechat",

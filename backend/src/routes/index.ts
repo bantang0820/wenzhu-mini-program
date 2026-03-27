@@ -10,6 +10,7 @@ import shareController from '../controllers/share.controller';
 import paymentController from '../controllers/payment.controller';
 import virtualPaymentController from '../controllers/virtualPayment.controller';
 import { adminAuthMiddleware, authMiddleware, optionalAuth } from '../middlewares/auth';
+import { adminLoginRateLimit } from '../middlewares/adminLoginRateLimit';
 import { validate, validationSchemas } from '../middlewares/validate';
 
 const router = Router();
@@ -20,7 +21,7 @@ router.get('/health', (_req, res) => {
 });
 
 // ========== Admin相关 ==========
-router.post('/admin/login', validate(validationSchemas.adminLogin), adminController.login);
+router.post('/admin/login', adminLoginRateLimit, validate(validationSchemas.adminLogin), adminController.login);
 router.get('/admin/profile', adminAuthMiddleware, adminController.getProfile);
 router.get('/admin/users', adminAuthMiddleware, adminController.getUsers);
 router.get('/admin/redeem-codes', adminAuthMiddleware, adminController.getRedeemCodes);
@@ -104,7 +105,7 @@ router.post('/ai/mindful-diary', validate(validationSchemas.generateMindfulDiary
 router.post('/feedbacks', optionalAuth, validate(validationSchemas.submitFeedback), feedbackController.submitFeedback);
 
 // 获取反馈列表（管理员功能，需要认证）
-router.get('/feedbacks', authMiddleware, feedbackController.getFeedbackList);
+router.get('/feedbacks', adminAuthMiddleware, feedbackController.getFeedbackList);
 
 // ========== 课程相关 ==========
 // 获取所有专辑

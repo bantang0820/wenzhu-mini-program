@@ -4,14 +4,17 @@ import { AppError } from '../middlewares/error';
 import AdminService from '../services/admin.service';
 import { ApiResponse } from '../types';
 import { generateAdminToken } from '../utils/jwt';
+import { getClientIp } from '../utils/clientIp';
 import logger from '../utils/logger';
 
 export class AdminController {
   async login(req: Request, res: Response): Promise<void> {
     try {
       const { username, password } = req.body;
+      const clientIp = getClientIp(req);
 
       if (username !== config.admin.username || password !== config.admin.password) {
+        logger.warn(`管理员登录失败: username=${String(username || '')}, ip=${clientIp}`);
         res.status(401).json({
           success: false,
           error: '管理员账号或密码错误'
@@ -23,6 +26,8 @@ export class AdminController {
         username,
         role: 'admin'
       });
+
+      logger.info(`管理员登录成功: username=${username}, ip=${clientIp}`);
 
       res.json({
         success: true,
@@ -83,6 +88,12 @@ export class AdminController {
     try {
       const { count, type, duration } = req.body;
       const codes = await AdminService.generateRedeemCodes(count, type || 'manual', duration);
+      const operator = req.admin?.username || 'unknown';
+      const clientIp = getClientIp(req);
+
+      logger.warn(
+        `管理员生成兑换码: operator=${operator}, ip=${clientIp}, count=${count}, type=${type || 'manual'}, duration=${duration}`
+      );
 
       res.json({
         success: true,

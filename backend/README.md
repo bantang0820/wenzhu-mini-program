@@ -66,8 +66,22 @@ WECHAT_APP_ID=wxc271e812faa3f43b
 WECHAT_APP_SECRET=3e098c09e000867b29ff95b12d5867f5
 
 # JWT配置
-JWT_SECRET=your_jwt_secret_key_change_in_production
+JWT_SECRET=请替换为32位以上随机字符串
 JWT_EXPIRES_IN=30d
+
+# 管理员配置（必填）
+ADMIN_USERNAME=请替换管理员账号
+ADMIN_PASSWORD=请替换12位以上强密码
+ADMIN_JWT_SECRET=请替换为32位以上随机字符串
+ADMIN_JWT_EXPIRES_IN=12h
+
+# 管理员登录安全策略（可选）
+ADMIN_LOGIN_MAX_FAILURES=5
+ADMIN_LOGIN_WINDOW_MS=600000
+ADMIN_LOGIN_BLOCK_MS=1800000
+
+# 如果服务在反向代理（Nginx/Caddy）后，建议开启
+TRUST_PROXY=true
 
 # DeepSeek AI配置（可选）
 DEEPSEEK_API_KEY=your_deepseek_api_key
@@ -99,6 +113,21 @@ npm run dev
 npm run build
 npm start
 ```
+
+## 安全应急（管理员泄露）
+
+如果怀疑管理员地址/凭据泄露，可以先在服务器执行：
+
+```bash
+npm run security:rotate-admin
+```
+
+脚本会自动：
+- 备份当前 `.env`
+- 轮换 `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_JWT_SECRET`
+- 轮换 `JWT_SECRET`（立即使旧 token 失效）
+- 设置管理员登录限流相关环境变量
+- 提示你新的管理员账号密码
 
 ## API 接口文档
 

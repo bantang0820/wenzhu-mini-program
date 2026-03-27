@@ -32,7 +32,7 @@ export const verifyToken = (token: string): JwtPayload => {
 export const generateAdminToken = (payload: AdminJwtPayload): string => {
   return jwt.sign(
     payload,
-    config.jwt.secret,
+    config.admin.jwtSecret,
     { expiresIn: config.admin.tokenExpiresIn } as jwt.SignOptions
   );
 };
@@ -43,5 +43,5 @@ export const generateAdminToken = (payload: AdminJwtPayload): string => {
  * @returns 解码后的payload
  */
 export const verifyAdminToken = (token: string): AdminJwtPayload => {
-  return jwt.verify(token, config.jwt.secret) as AdminJwtPayload;
+  return jwt.verify(token, config.admin.jwtSecret) as AdminJwtPayload;
 };
