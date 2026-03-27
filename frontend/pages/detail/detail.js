@@ -89,6 +89,8 @@ const READING_TRANSITIONS = {
   }
 };
 
+const PENDING_MINDFUL_CARD_KEY = 'pendingMindfulCardPayload';
+
 Page({
   data: {
     scenario: {}, // 场景数据
@@ -1636,9 +1638,6 @@ Page({
       this.pendingStopAfterRecordStart = false;
       this.recorderManager.start({
         duration: 60000,
-        sampleRate: 16000,
-        numberOfChannels: 1,
-        encodeBitRate: 96000,
         format: 'aac'
       });
     } catch (error) {
@@ -1727,6 +1726,7 @@ Page({
   onConfirmRecord() {
     wx.vibrateShort({ type: 'heavy' });
     const { readingRound, totalRounds, isRoundRetellMode, skipRetellForRemainingRounds } = this.data;
+    this.ensureDailyPracticeCheckIn();
 
     // 所有场景：每句朗读后进入复述流程
     if (isRoundRetellMode && !skipRetellForRemainingRounds) {
@@ -2185,6 +2185,37 @@ Page({
     return `${hour}:${minute}`;
   },
 
+  ensureDailyPracticeCheckIn(practiceTime = new Date()) {
+    try {
+      const dateStr = this.getPracticeDateString(practiceTime);
+      const checkInMap = wx.getStorageSync('checkInMap') || {};
+
+      if (checkInMap[dateStr]) {
+        return;
+      }
+
+      checkInMap[dateStr] = true;
+      wx.setStorageSync('checkInMap', checkInMap);
+
+      const totalDays = Object.keys(checkInMap).length;
+      const consecutiveDays = this.calculateConsecutiveDays(checkInMap);
+      const energyData = this.getStoredEnergyData();
+
+      energyData.consecutiveDays = consecutiveDays;
+      energyData.lastCheckInDate = dateStr;
+      energyData.lastEnergyResetDate = energyData.lastEnergyResetDate || dateStr;
+
+      wx.setStorageSync('totalDays', totalDays);
+      this.saveEnergyData(energyData);
+      this.setData({
+        consecutiveDays,
+        lastCheckInDate: dateStr
+      });
+    } catch (error) {
+      console.error('标记当日练习失败', error);
+    }
+  },
+
   // 更新打卡记录
   updateCheckIn(practiceTime = new Date()) {
     try {
@@ -2309,23 +2340,27 @@ Page({
       mindfulJournal
     } = this.data;
 
+    const cardPayload = {
+      scenario,
+      stormTime,
+      shiftTime,
+      anchorTime,
+      allMantras,
+      generatedDiaryContent: mindfulJournal || '',
+      reflectionData: {
+        retellText,
+        retellFeedback,
+        feelingText,
+        mindfulJournal
+      }
+    };
+
+    wx.setStorageSync(PENDING_MINDFUL_CARD_KEY, cardPayload);
+
     wx.navigateTo({
       url: '/pages/card/card',
       success: (res) => {
-        res.eventChannel.emit('acceptData', {
-          scenario: scenario,
-          stormTime: stormTime,
-          shiftTime: shiftTime,
-          anchorTime: anchorTime,
-          allMantras: allMantras,  // 传递5层朗读的句子
-          generatedDiaryContent: mindfulJournal || '',
-          reflectionData: {
-            retellText,
-            retellFeedback,
-            feelingText,
-            mindfulJournal
-          }
-        });
+        res.eventChannel.emit('acceptData', cardPayload);
       },
       fail: (err) => {
         console.error('跳转失败', err);

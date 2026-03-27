@@ -1,4 +1,16 @@
 // pages/chapter/chapter.js - 章节详情页（微课模式）
+const {
+  hasCustomCourse,
+  getCustomCourseChapterMeta,
+  getCustomCourseLessons
+} = require('../../data/adler-course.js');
+
+const ALBUM_PROGRESS_KEY = 'albumProgress';
+const LAST_READ_POSITION_KEY = 'last_read_position';
+const LAST_READ_LESSON_KEY = 'last_read_lesson';
+const LESSONS_PER_CHAPTER = 10;
+const LESSONS_PER_ALBUM = 100;
+
 Page({
   data: {
     albumId: '',
@@ -33,16 +45,21 @@ Page({
 
     // 模拟章节数据
     const parsedChapterId = parseInt(chapterId);
+    const chapterMeta = this.getChapterMeta(albumId, parsedChapterId);
     const chapterData = {
-      title: this.getChapterTitle(parsedChapterId),
-      subtitle: this.getChapterSubtitle(parsedChapterId),
+      title: chapterMeta.title,
+      subtitle: chapterMeta.subtitle,
       id: parsedChapterId // 使用数字而不是字符串
     };
 
     console.log('章节数据:', chapterData);
 
     // 生成10个微课
-    const lessons = this.generateLessons(albumId, parsedChapterId);
+    const lessons = this.applySavedLessonProgress(
+      albumId,
+      parsedChapterId,
+      this.generateLessons(albumId, parsedChapterId)
+    );
 
     // 计算完成数
     const completedCount = lessons.filter(l => l.completed).length;
@@ -52,6 +69,152 @@ Page({
       lessons,
       completedCount
     });
+  },
+
+  getAlbumProgressMap() {
+    return wx.getStorageSync(ALBUM_PROGRESS_KEY) || {};
+  },
+
+  getChapterCompletedLessonIds(albumId, chapterId) {
+    const albumProgress = this.getAlbumProgressMap();
+    const chapterMap = albumProgress[albumId]?.completedLessonsByChapter || {};
+    const chapterKey = String(chapterId);
+    return this.normalizeIdList(chapterMap[chapterKey]);
+  },
+
+  applySavedLessonProgress(albumId, chapterId, lessons = []) {
+    const completedIds = new Set(this.getChapterCompletedLessonIds(albumId, chapterId));
+    return lessons.map((lesson) => ({
+      ...lesson,
+      completed: completedIds.has(Number(lesson.id))
+    }));
+  },
+
+  syncAlbumProgressByLessons(lessons = []) {
+    const { albumId, chapterId } = this.data;
+    if (!albumId) return;
+
+    const chapterKey = String(chapterId);
+    const albumProgress = this.getAlbumProgressMap();
+    const currentAlbumProgress = albumProgress[albumId] || {};
+    const completedLessonsByChapter = { ...(currentAlbumProgress.completedLessonsByChapter || {}) };
+    const completedIds = lessons
+      .filter((lesson) => lesson.completed)
+      .map((lesson) => Number(lesson.id));
+
+    if (completedIds.length > 0) {
+      completedLessonsByChapter[chapterKey] = completedIds;
+    } else {
+      delete completedLessonsByChapter[chapterKey];
+    }
+
+    const chapterKeys = Object.keys(completedLessonsByChapter);
+    const completedLessonCount = chapterKeys.reduce((sum, key) => {
+      const ids = this.normalizeIdList(completedLessonsByChapter[key]);
+      return sum + new Set(ids).size;
+    }, 0);
+    const completedChapters = chapterKeys.filter((key) => (completedLessonsByChapter[key] || []).length >= LESSONS_PER_CHAPTER);
+
+    albumProgress[albumId] = {
+      ...currentAlbumProgress,
+      completedLessonsByChapter,
+      completedLessonCount,
+      completedChapters,
+      totalLessons: LESSONS_PER_ALBUM,
+      lastUpdatedAt: Date.now()
+    };
+
+    wx.setStorageSync(ALBUM_PROGRESS_KEY, albumProgress);
+  },
+
+  markLessonVisited(lessonId) {
+    const { albumId, chapterId } = this.data;
+    if (!albumId || !chapterId || !lessonId) return;
+
+    const chapterKey = String(chapterId);
+    const albumProgress = this.getAlbumProgressMap();
+    const currentAlbumProgress = albumProgress[albumId] || {};
+    const visitedLessonsByChapter = { ...(currentAlbumProgress.visitedLessonsByChapter || {}) };
+    const chapterVisitedIds = new Set((visitedLessonsByChapter[chapterKey] || []).map((id) => Number(id)));
+
+    chapterVisitedIds.add(Number(lessonId));
+    visitedLessonsByChapter[chapterKey] = Array.from(chapterVisitedIds).sort((a, b) => a - b);
+
+    const visitedLessonCount = Object.keys(visitedLessonsByChapter).reduce((sum, key) => {
+      const ids = this.normalizeIdList(visitedLessonsByChapter[key]);
+      return sum + new Set(ids).size;
+    }, 0);
+
+    albumProgress[albumId] = {
+      ...currentAlbumProgress,
+      visitedLessonsByChapter,
+      visitedLessonCount,
+      totalLessons: currentAlbumProgress.totalLessons || LESSONS_PER_ALBUM,
+      lastUpdatedAt: Date.now()
+    };
+
+    wx.setStorageSync(ALBUM_PROGRESS_KEY, albumProgress);
+  },
+
+  saveLastReadPosition(lesson = {}, lessonId) {
+    const { albumId, chapterId, chapter } = this.data;
+    if (!albumId || !chapterId) return;
+
+    const safeLessonId = Number(lessonId || lesson.id || 1);
+    const lessonTitle = lesson.breakthrough || lesson.title || `第${safeLessonId}小节`;
+    const chapterTitle = (chapter && chapter.title) || `第${chapterId}章`;
+    const display = `${chapterTitle} · ${lessonTitle}`;
+
+    const lastReadPosition = {
+      albumId,
+      chapterId: Number(chapterId),
+      lessonId: safeLessonId,
+      display,
+      updatedAt: Date.now()
+    };
+
+    wx.setStorageSync(LAST_READ_POSITION_KEY, lastReadPosition);
+    wx.setStorageSync(LAST_READ_LESSON_KEY, display);
+  },
+
+  normalizeIdList(rawValue) {
+    if (Array.isArray(rawValue)) {
+      return rawValue.map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+    }
+
+    if (rawValue === null || rawValue === undefined) {
+      return [];
+    }
+
+    if (typeof rawValue === 'number') {
+      return Number.isNaN(rawValue) ? [] : [rawValue];
+    }
+
+    if (typeof rawValue === 'string') {
+      return rawValue
+        .split(',')
+        .map((item) => Number(String(item).trim()))
+        .filter((id) => !Number.isNaN(id));
+    }
+
+    if (typeof rawValue === 'object') {
+      return Object.values(rawValue)
+        .map((id) => Number(id))
+        .filter((id) => !Number.isNaN(id));
+    }
+
+    return [];
+  },
+
+  getChapterMeta(albumId, chapterId) {
+    if (hasCustomCourse(albumId)) {
+      return getCustomCourseChapterMeta(albumId, chapterId);
+    }
+
+    return {
+      title: this.getChapterTitle(chapterId),
+      subtitle: this.getChapterSubtitle(chapterId)
+    };
   },
 
   // 获取章节标题
@@ -95,6 +258,13 @@ Page({
   // 生成微课内容（破-立-行三段式结构）
   generateLessons(albumId, chapterId) {
     const isPro = getApp().globalData.isMember;
+
+    if (hasCustomCourse(albumId)) {
+      return getCustomCourseLessons(albumId, chapterId).map((lesson) => ({
+        ...lesson,
+        locked: !isPro
+      }));
+    }
 
     // 第一章：区分观察与评论的微课
     const chapter1Lessons = [
@@ -1003,6 +1173,8 @@ Page({
     }
 
     wx.vibrateShort({ type: 'light' });
+    this.markLessonVisited(id);
+    this.saveLastReadPosition(lesson, id);
 
     wx.navigateTo({
       url: `/pages/lesson/lesson?id=${id}&albumId=${this.data.albumId}&chapterId=${this.data.chapterId}`
@@ -1074,6 +1246,7 @@ Page({
     const completedCount = lessons.filter(l => l.completed).length;
 
     this.setData({ lessons, completedCount });
+    this.syncAlbumProgressByLessons(lessons);
 
     const isNowCompleted = lessons.find(l => l.id === id).completed;
     if (isNowCompleted) {
@@ -1090,50 +1263,59 @@ Page({
     }
   },
 
+  getPracticeDateString(date = new Date()) {
+    const targetDate = date instanceof Date ? date : new Date(date);
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  calculateConsecutiveDays(checkInMap = {}) {
+    const today = this.getPracticeDateString();
+    if (!checkInMap[today]) {
+      return 0;
+    }
+
+    let streak = 0;
+    const cursor = new Date(`${today}T12:00:00`);
+
+    while (checkInMap[this.getPracticeDateString(cursor)]) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  },
+
   // 更新打卡记录
   updateCheckIn(lessonTitle) {
     try {
-      const now = new Date();
-      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const dateStr = this.getPracticeDateString();
 
       // 1. 更新打卡地图 (用于Stats页面日历显示)
       const checkInMap = wx.getStorageSync('checkInMap') || {};
       if (!checkInMap[dateStr]) {
         checkInMap[dateStr] = true;
         wx.setStorageSync('checkInMap', checkInMap);
-
-        // 2. 更新总天数 (如果是今天第一次打卡)
-        const totalDays = wx.getStorageSync('totalDays') || 0;
-        wx.setStorageSync('totalDays', totalDays + 1);
       }
+      const currentStreak = this.calculateConsecutiveDays(checkInMap);
+
+      // 2. 更新总天数与连续练习天数
+      wx.setStorageSync('totalDays', Object.keys(checkInMap).length);
+      wx.setStorageSync('currentStreak', currentStreak);
+
+      const energyData = wx.getStorageSync('energyData') || {};
+      energyData.consecutiveDays = currentStreak;
+      energyData.lastCheckInDate = dateStr;
+      energyData.lastEnergyResetDate = energyData.lastEnergyResetDate || dateStr;
+      wx.setStorageSync('energyData', energyData);
 
       // 3. 更新总次数 (每次点击完成都算一次修习)
       const totalCount = (wx.getStorageSync('totalCount') || 0) + 1;
       wx.setStorageSync('totalCount', totalCount);
 
-      // 4. 存储专辑学习进度（新增）
-      const albumProgress = wx.getStorageSync('albumProgress') || {};
-      const albumId = this.data.albumId;
-      const chapterId = this.data.chapterId;
-
-      if (!albumProgress[albumId]) {
-        albumProgress[albumId] = {
-          completedChapters: [],
-          totalLessons: 0
-        };
-      }
-
-      // 记录完成的章节（去重）
-      if (!albumProgress[albumId].completedChapters.includes(chapterId)) {
-        albumProgress[albumId].completedChapters.push(chapterId);
-      }
-
-      // 计算总完成微课数
-      albumProgress[albumId].totalLessons = this.data.completedCount;
-
-      wx.setStorageSync('albumProgress', albumProgress);
-
-      console.log('打卡成功:', { dateStr, lessonTitle, albumId, chapterId });
+      console.log('打卡成功:', { dateStr, lessonTitle, albumId: this.data.albumId, chapterId: this.data.chapterId });
       
       // 发送全局事件，通知Stats页面更新 (可选)
       // wx.nextTick(() => {
@@ -1144,5 +1326,19 @@ Page({
     } catch (e) {
       console.error('更新打卡记录失败', e);
     }
+  },
+
+  updateLessonStatus(lessonId, completed) {
+    const lessons = this.data.lessons.map((item) => {
+      if (Number(item.id) !== Number(lessonId)) return item;
+      return {
+        ...item,
+        completed: !!completed
+      };
+    });
+
+    const completedCount = lessons.filter((lesson) => lesson.completed).length;
+    this.setData({ lessons, completedCount });
+    this.syncAlbumProgressByLessons(lessons);
   }
 });

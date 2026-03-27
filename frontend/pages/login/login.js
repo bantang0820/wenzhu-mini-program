@@ -21,7 +21,8 @@ Page({
   },
 
   onLoad(options = {}) {
-    this.redirectTarget = options.redirect ? decodeURIComponent(options.redirect) : '';
+    this.redirectTarget = this.ensureAbsolutePagePath(options.redirect ? decodeURIComponent(options.redirect) : '');
+    this.loginSource = options.from || ''; // 记录来源页面
     this.loginScene = options.scene || '';
     this.loginInFlight = false;
     this.forceLogin = options.force === '1';
@@ -46,6 +47,11 @@ Page({
     }
   },
 
+  ensureAbsolutePagePath(target = '') {
+    if (!target) return '';
+    return target.startsWith('/') ? target : `/${target}`;
+  },
+
   redirectIfLoggedIn() {
     const token = wx.getStorageSync('token');
     const openid = wx.getStorageSync('openid');
@@ -55,20 +61,22 @@ Page({
   },
 
   normalizeTargetPath(target = '') {
-    return (target || '').split('?')[0];
+    return this.ensureAbsolutePagePath((target || '').split('?')[0]);
   },
 
   openTargetPage(target, targetPath) {
+    const safeTarget = this.ensureAbsolutePagePath(target);
+
     if (TAB_BAR_PAGES.includes(targetPath)) {
       wx.switchTab({ url: targetPath });
       return;
     }
 
     wx.reLaunch({
-      url: target,
+      url: safeTarget,
       fail: (error) => {
         console.warn('reLaunch 跳转失败，改用 redirectTo', error);
-        wx.redirectTo({ url: target });
+        wx.redirectTo({ url: safeTarget });
       }
     });
   },
@@ -133,53 +141,61 @@ Page({
   },
 
   onQuickLoginTap() {
-    if (this.data.loading || this.data.needPrivacyAuthorization) return;
-
-    // 检查是否勾选了隐私政策
-    if (!this.data.privacyChecked) {
-      // 震动提醒
-      wx.vibrateShort({
-        type: 'heavy'
-      });
-      // 添加抖动动画
-      this.setData({ privacyShake: 'shake' });
-      setTimeout(() => {
-        this.setData({ privacyShake: '' });
-      }, 500);
-      // 提示用户
-      wx.showToast({
-        title: '请先阅读并同意隐私政策',
-        icon: 'none',
-        duration: 2000
-      });
-      return;
-    }
-
-    this.handleQuickLogin();
+    this.startQuickLoginFlow();
   },
 
   onAgreePrivacyAuthorization() {
     this.setData({ needPrivacyAuthorization: false });
+    this.startQuickLoginFlow();
+  },
 
-    // 检查是否勾选了隐私政策
+  showPrivacyAgreementReminder() {
+    wx.vibrateShort({
+      type: 'heavy'
+    });
+    this.setData({ privacyShake: 'shake' });
+    setTimeout(() => {
+      this.setData({ privacyShake: '' });
+    }, 500);
+    wx.showModal({
+      title: '请先勾选协议',
+      content: '登录前需要先勾选《服务协议》和隐私政策。',
+      showCancel: false,
+      confirmText: '我知道了'
+    });
+  },
+
+  async ensureLoginPrivacyAuthorized() {
+    if (!this.data.needPrivacyAuthorization) {
+      return true;
+    }
+
+    if (app && typeof app.ensurePrivacyAuthorization === 'function') {
+      const authorized = await app.ensurePrivacyAuthorization();
+      if (authorized) {
+        this.setData({ needPrivacyAuthorization: false });
+        return true;
+      }
+    }
+
+    wx.showToast({
+      title: '请先完成隐私授权',
+      icon: 'none',
+      duration: 2000
+    });
+    return false;
+  },
+
+  async startQuickLoginFlow() {
+    if (this.data.loading || this.loginInFlight) return;
+
     if (!this.data.privacyChecked) {
-      // 震动提醒
-      wx.vibrateShort({
-        type: 'heavy'
-      });
-      // 添加抖动动画
-      this.setData({ privacyShake: 'shake' });
-      setTimeout(() => {
-        this.setData({ privacyShake: '' });
-      }, 500);
-      // 提示用户
-      wx.showToast({
-        title: '请先阅读并同意隐私政策',
-        icon: 'none',
-        duration: 2000
-      });
+      this.showPrivacyAgreementReminder();
       return;
     }
+
+    const privacyAuthorized = await this.ensureLoginPrivacyAuthorized();
+    if (!privacyAuthorized) return;
 
     this.handleQuickLogin();
   },
@@ -298,7 +314,28 @@ Page({
     const previousPage = pageStack.length > 1 ? pageStack[pageStack.length - 2] : null;
     const previousPath = previousPage ? `/${previousPage.route}` : '';
 
+    // 检查是否从card页面来登录的
+    const fromCard = this.loginSource === 'card';
+
     if (previousPath && previousPath === targetPath) {
+      // 如果是从card页面来的，使用redirectTo并带上from=login参数
+      if (fromCard) {
+        wx.redirectTo({
+          url: `${targetPath}?from=login`,
+          fail: () => {
+            // 如果redirectTo失败，尝试navigateBack
+            wx.navigateBack({
+              delta: 1,
+              fail: () => {
+                this.openTargetPage(target, targetPath);
+              }
+            });
+          }
+        });
+        return;
+      }
+
+      // 正常返回上一页
       wx.navigateBack({
         delta: 1,
         fail: () => {
@@ -308,6 +345,6 @@ Page({
       return;
     }
 
-    this.openTargetPage(target, targetPath);
+    this.openTargetPage(targetPath, targetPath);
   }
 });

@@ -42,7 +42,7 @@
 </view>
 
 <!-- ========== 底部：正在修习（玻璃拟态胶囊）========== -->
-<view class="reading-capsule" bindtap="onAlbumTap" data-id="nvc" data-index="0">
+<view class="reading-capsule" bindtap="onContinueRead">
   <view class="capsule-content">
     <view class="capsule-icon">📖</view>
     <view class="capsule-text">{{lastReadLesson ? '正在修习' : '开始学习'}}</view>

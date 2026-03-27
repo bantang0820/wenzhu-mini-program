@@ -1,5 +1,9 @@
 // pages/album/album.js - 专辑详情页
 const api = require('../../utils/api.js');
+const {
+  hasCustomCourse,
+  getCustomCourseChapterMeta
+} = require('../../data/adler-course.js');
 
 Page({
   data: {
@@ -58,10 +62,13 @@ Page({
       console.error('加载专辑详情失败:', err);
       const fallback = this.getFallbackAlbumData(albumId);
       this.applyAlbumData(fallback.album, fallback.chapters);
-      wx.showToast({
-        title: '已加载离线章节',
-        icon: 'none'
-      });
+      const shouldShowFallbackToast = !['nvc', 'adler', 'self', 'growth'].includes(albumId);
+      if (shouldShowFallbackToast) {
+        wx.showToast({
+          title: '已加载离线章节',
+          icon: 'none'
+        });
+      }
     } finally {
       wx.hideLoading();
     }
@@ -122,7 +129,7 @@ Page({
 
     const orderId = Number(rawChapter.order || rawChapter.id) || 1;
     const safeId = orderId > 10 ? 10 : (orderId < 1 ? 1 : orderId);
-    const fallbackMeta = this.getFallbackChapterMeta(safeId);
+    const fallbackMeta = this.getFallbackChapterMeta(this.data.albumId, safeId);
     const chapterTitle = (rawChapter.title || '').trim();
     const chapterSubtitle = (rawChapter.subtitle || '').trim();
     const shouldUseFallbackTitle = !chapterTitle || this.isPlaceholderChapterTitle(chapterTitle, safeId);
@@ -155,7 +162,11 @@ Page({
     );
   },
 
-  getFallbackChapterMeta(chapterId) {
+  getFallbackChapterMeta(albumId, chapterId) {
+    if (hasCustomCourse(albumId)) {
+      return getCustomCourseChapterMeta(albumId, chapterId);
+    }
+
     const chapterTitles = [
       '区分观察与评论',
       '体会感受的力量',
@@ -246,7 +257,7 @@ Page({
     const isMember = !!(getApp().globalData.isMember);
 
     const chapters = Array.from({ length: 10 }, (_, index) => {
-      const chapterMeta = this.getFallbackChapterMeta(index + 1);
+      const chapterMeta = this.getFallbackChapterMeta(albumId, index + 1);
 
       return {
         id: index + 1,

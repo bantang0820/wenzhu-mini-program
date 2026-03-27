@@ -30,13 +30,12 @@ export function LoginPage() {
         <div className="login-card__header">
           <Typography.Title level={2}>稳住 Admin</Typography.Title>
           <Typography.Paragraph type="secondary">
-            最简单可用的管理后台，默认管理员账号为 admin，密码为 admin123。
+            管理后台登录
           </Typography.Paragraph>
         </div>
 
         <Form
           layout="vertical"
-          initialValues={{ username: 'admin', password: 'admin123' }}
           onFinish={handleFinish}
         >
           <Form.Item
@@ -44,7 +43,12 @@ export function LoginPage() {
             name="username"
             rules={[{ required: true, message: '请输入管理员账号' }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="请输入账号" size="large" />
+            <Input
+              prefix={<UserOutlined />}
+              placeholder="请输入账号"
+              size="large"
+              autoComplete="off"
+            />
           </Form.Item>
 
           <Form.Item
@@ -52,7 +56,12 @@ export function LoginPage() {
             name="password"
             rules={[{ required: true, message: '请输入管理员密码' }]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="请输入密码" size="large" />
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="请输入密码"
+              size="large"
+              autoComplete="new-password"
+            />
           </Form.Item>
 
           <Button type="primary" htmlType="submit" block size="large" loading={loading}>

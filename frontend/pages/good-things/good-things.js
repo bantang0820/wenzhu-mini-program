@@ -17,6 +17,52 @@ Page({
     showRecordStar: false
   },
 
+  getPracticeDateString(date = new Date()) {
+    const targetDate = date instanceof Date ? date : new Date(date);
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  calculateConsecutiveDays(checkInMap = {}) {
+    const today = this.getPracticeDateString();
+    if (!checkInMap[today]) {
+      return 0;
+    }
+
+    let streak = 0;
+    const cursor = new Date(`${today}T12:00:00`);
+
+    while (checkInMap[this.getPracticeDateString(cursor)]) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  },
+
+  markPracticeCheckIn(practiceTime = new Date()) {
+    const dateStr = this.getPracticeDateString(practiceTime);
+    const checkInMap = wx.getStorageSync('checkInMap') || {};
+
+    if (!checkInMap[dateStr]) {
+      checkInMap[dateStr] = true;
+      wx.setStorageSync('checkInMap', checkInMap);
+    }
+
+    const totalDays = Object.keys(checkInMap).length;
+    const currentStreak = this.calculateConsecutiveDays(checkInMap);
+    wx.setStorageSync('totalDays', totalDays);
+    wx.setStorageSync('currentStreak', currentStreak);
+
+    const energyData = wx.getStorageSync('energyData') || {};
+    energyData.consecutiveDays = currentStreak;
+    energyData.lastCheckInDate = dateStr;
+    energyData.lastEnergyResetDate = energyData.lastEnergyResetDate || dateStr;
+    wx.setStorageSync('energyData', energyData);
+  },
+
   onLoad() {
     this.refreshPromptText();
     this.loadRecords();
@@ -142,13 +188,13 @@ Page({
   onKeyboardHeightChange(e) {
     const keyboardHeight = Number((e && e.detail && e.detail.height) || 0);
 
-    if (!this.data.showComposer || this.data.saving || this.preventKeyboardClose) {
+    if (!this.data.showComposer || this.data.saving) {
       return;
     }
 
-    if (keyboardHeight === 0) {
-      this.onCloseComposer();
-    }
+    // 仅记录键盘变化，不再在键盘收起时自动关闭编辑面板。
+    // 避免用户点击“记下来了”时，先触发键盘收起导致内容丢失。
+    this.lastKeyboardHeight = keyboardHeight;
   },
 
   triggerTimelineStar() {
@@ -218,6 +264,7 @@ Page({
       .slice(0, 200);
     this.saveStoredRecords(records);
     const formattedRecords = records.map(item => this.formatRecord(item));
+    this.markPracticeCheckIn(new Date());
 
     this.setData({
       records: formattedRecords,
@@ -229,6 +276,10 @@ Page({
     }, () => {
       this.preventKeyboardClose = false;
       this.triggerTimelineStar();
+      wx.showToast({
+        title: '已记录到时间轴',
+        icon: 'success'
+      });
     });
   }
 });

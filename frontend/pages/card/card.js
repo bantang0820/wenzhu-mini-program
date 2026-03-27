@@ -1,6 +1,7 @@
 // pages/card/card.js - 简化版（用于调试）
 const DIARY_HANDWRITING_FONT = '"HanziPen SC", "STXingkai", "Kaiti SC", "STKaiti", "KaiTi", "DFKai-SB", cursive, serif';
 const DIARY_SERIF_FONT = '"Songti SC", "STSong", serif';
+const PENDING_MINDFUL_CARD_KEY = 'pendingMindfulCardPayload';
 
 Page({
   data: {
@@ -21,38 +22,95 @@ Page({
     console.log('情绪切片页面加载');
     this.initPrivacySetting();
 
+    // 检查是否是从登录页面返回的
+    const fromLogin = options.from === 'login';
+
+    // 从全局获取用户信息
+    const app = getApp();
+
+    // 尝试多种方式获取用户名
+    let userName = null; // 改为null，方便判断是否获取到
+
+    try {
+      // 方法1: 从全局数据获取
+      if (app.globalData && app.globalData.userInfo) {
+        userName = app.globalData.userInfo.nickName ||
+                   app.globalData.userInfo.nickname ||
+                   app.globalData.userInfo.name ||
+                   null;
+        console.log('从全局获取用户名:', userName);
+      }
+
+      // 方法2: 从本地存储获取
+      const storageUser = wx.getStorageSync('userInfo');
+      if (storageUser) {
+        userName = storageUser.nickName ||
+                   storageUser.nickname ||
+                   storageUser.name ||
+                   userName;
+        console.log('从存储获取用户名:', userName);
+      }
+    } catch (error) {
+      console.warn('获取用户名失败:', error);
+      userName = null;
+    }
+
+    console.log('最终用户名:', userName);
+
+    const isLoggedIn = typeof app.isLoggedIn === 'function'
+      ? app.isLoggedIn()
+      : !!(wx.getStorageSync('token') && wx.getStorageSync('openid'));
+
+    // 未登录时才引导登录，避免把“昵称为空”误判成“未登录”
+    if (!isLoggedIn) {
+      console.log('未获取到用户名，引导用户登录');
+
+      // 获取当前页面路径，用于登录后跳回
+      const currentPage = getCurrentPages();
+      const currentRoute = currentPage[currentPage.length - 1].route;
+
+      wx.showModal({
+        title: '需要登录',
+        content: '生成正念日记需要先登录，请先完成登录授权',
+        confirmText: '去登录',
+        cancelText: '返回',
+        success: (res) => {
+          if (res.confirm) {
+            // 跳转到登录页面，并携带回跳参数
+            wx.navigateTo({
+              url: `/pages/login/login?redirect=${encodeURIComponent(`/${currentRoute}`)}&from=card`
+            });
+          } else {
+            // 返回上一页
+            wx.navigateBack();
+          }
+        }
+      });
+      return;
+    }
+
+    // 已登录但昵称缺失时，使用兜底昵称继续流程
+    if (!userName) {
+      userName = '正念家长';
+      console.log('已登录但昵称为空，使用兜底昵称:', userName);
+    }
+
+    const pendingPayload = this.getPendingCardPayload();
+
+    if (fromLogin && pendingPayload) {
+      this.applyCardPayload(pendingPayload, userName);
+      return;
+    }
+
     const eventChannel = this.getOpenerEventChannel();
 
     if (eventChannel) {
       eventChannel.on('acceptData', (data) => {
-        console.log('接收到的数据:', data);
-
-        const {
-          scenario,
-          stormTime,
-          shiftTime,
-          anchorTime,
-          allMantras,
-          generatedDiaryContent
-        } = data;
-
-        // 优先使用上游已生成的日记内容；否则回退到本地拼接
-        const diaryContent = (generatedDiaryContent || '').trim()
-          ? generatedDiaryContent
-          : this.transformToDiary(allMantras, scenario);
-
-        this.setData({
-          scenario: scenario,
-          anchorTime: anchorTime || new Date(),
-          diaryContent: diaryContent,
-          userInfo: { nickName: '我' }
-        });
-
-        // 生成卡片
-        setTimeout(() => {
-          this.generateWarmCard();
-        }, 300);
+        this.applyCardPayload(data, userName);
       });
+    } else if (pendingPayload) {
+      this.applyCardPayload(pendingPayload, userName);
+      return;
     } else {
       // 直接使用默认数据
       const now = new Date();
@@ -70,7 +128,7 @@ Page({
         scenario: { title: '没忍住吼了', id: '001' },
         anchorTime: now,
         diaryContent: diaryContent,
-        userInfo: { nickName: '我' }
+        userInfo: { nickName: userName }
       });
 
       setTimeout(() => {
@@ -108,10 +166,78 @@ Page({
     this.saveToAlbum();
   },
 
+  getPendingCardPayload() {
+    try {
+      return wx.getStorageSync(PENDING_MINDFUL_CARD_KEY) || null;
+    } catch (error) {
+      console.warn('读取待生成卡片数据失败', error);
+      return null;
+    }
+  },
+
+  clearPendingCardPayload() {
+    try {
+      wx.removeStorageSync(PENDING_MINDFUL_CARD_KEY);
+    } catch (error) {
+      console.warn('清理待生成卡片数据失败', error);
+    }
+  },
+
+  applyCardPayload(data = {}, userName) {
+    console.log('接收到的数据:', data);
+
+    const {
+      scenario,
+      anchorTime,
+      allMantras,
+      generatedDiaryContent
+    } = data;
+
+    let diaryContent = (generatedDiaryContent || '').trim()
+      ? generatedDiaryContent
+      : this.transformToDiary(allMantras, scenario);
+
+    const currentDateStr = this.formatDateShort(new Date());
+    const now = new Date();
+
+    console.log('当前日期:', now);
+    console.log('格式化后的日期:', currentDateStr);
+    console.log('当前用户名:', userName);
+    console.log('日记内容（替换前）:', diaryContent);
+
+    diaryContent = diaryContent.replace(
+      /(——\s*)[^\n]+\n[^\n]+$/gm,
+      `$1${userName}\n${currentDateStr}`
+    );
+
+    console.log('日记内容（替换后）:', diaryContent);
+
+    this.clearPendingCardPayload();
+    this.setData({
+      scenario: scenario || null,
+      anchorTime: anchorTime || now,
+      diaryContent,
+      userInfo: { nickName: userName }
+    });
+
+    setTimeout(() => {
+      this.generateWarmCard();
+    }, 300);
+  },
+
   // 将5句话转换成连贯的日记
   transformToDiary(mantras, scenario) {
-    // 获取用户名
-    const userName = this.data.userInfo?.nickName || '小美';
+    // 获取用户名（优先使用真实用户名）
+    const userName = this.data.userInfo?.nickName || null;
+
+    // 如果没有用户名，返回错误提示
+    if (!userName) {
+      console.error('未获取到用户名，无法生成日记');
+      return '无法生成日记：请先登录';
+    }
+
+    // 获取当前日期
+    const dateStr = this.formatDateShort(new Date());
 
     // 如果没有5句话，返回默认日记
     if (!mantras || mantras.length < 5) {
@@ -127,7 +253,10 @@ Page({
 
 爱在流动，我们都在学着长大。
 
-—— ${userName}`;
+
+—— ${userName}
+${dateStr}`;
+
     }
 
     // 将5句话整合成日记格式
@@ -136,7 +265,7 @@ Page({
     const m2 = mantras && mantras.length > 2 ? mantras[2] : '';
     const m3 = mantras && mantras.length > 3 ? mantras[3] : '';
     const m4 = mantras && mantras.length > 4 ? mantras[4] : '';
-    
+
     const diary = `今天……还是没忍住，对他吼了。
 
 看到那一地狼藉，火气"噌"地一下就上来了。等我吼完，看到他那个被吓住的、怯生生的小眼神，我的心瞬间就后悔了。
@@ -155,14 +284,15 @@ Page({
 
 我们拉钩约定，下次我要爆炸前，先去阳台冷静一分钟。
 
-育儿真是一场修行啊，我又跌倒了一次。但庆幸的是，**${m3.replace(/^[（\(][^））]*[））][:：]?\s*/, '')}**
+育儿真是一场修行啊，我又跌倒了一次。但庆幸的是，**${m3.replace(/^[（\(][^））]*[？））][:：]?\s*/, '')}**
 
 **${m4.replace(/^[（\(][^））]*[））][:：]?\s*/, '')}**
 
 爱在流动，我们都在学着长大。
 
 
-—— ${userName}`;
+—— ${userName}
+${dateStr}`;
 
     return diary;
   },
@@ -303,7 +433,9 @@ Page({
     ctx.fill();
 
     // ============ 3. 顶部：日期与天气 ============
-    const dateInfo = this.formatDateInfo(anchorTime);
+    // 始终使用当前日期，不使用anchorTime（避免过期测试数据）
+    const currentDate = new Date();
+    const dateInfo = this.formatDateInfo(currentDate);
 
     // 日期（左上）
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
@@ -357,7 +489,7 @@ Page({
     this.drawDiaryContent(ctx, diaryContent, startX, startY, maxWidth);
 
     // ============ 6. 底部：优化版 ============
-    const footerY = height - 120; // 增加底部区域高度
+    const footerY = height - 140; // 增加底部区域高度，避免贴边
 
     // 分隔线（更精致）
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)';
@@ -368,57 +500,99 @@ Page({
     ctx.stroke();
 
     // 小程序码区域（居中布局）
-    const qrSize = 75; // 稍微加大二维码
-    const qrY = footerY + 25;
+    const qrSize = 95; // 缩小尺寸
+    const qrY = footerY + 20;
 
     // 计算整个组合的宽度，使其居中
-    const totalWidth = qrSize + 110;
+    const totalWidth = qrSize + 120;
     const footerStartX = width / 2 - totalWidth / 2;
 
-    // 小程序码背景（圆形白色 + 阴影效果）
+    // 小程序码背景（圆形白色）
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
     ctx.arc(footerStartX + qrSize/2, qrY + qrSize/2, qrSize/2, 0, Math.PI * 2);
     ctx.fill();
 
-    // 小程序码边框（双层，更精致）
+    // 小程序码圆形边框
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(footerStartX + qrSize/2, qrY + qrSize/2, qrSize/2, 0, Math.PI * 2);
     ctx.stroke();
 
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.15)'; // 淡金色边框
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(footerStartX + qrSize/2, qrY + qrSize/2, qrSize/2 + 2, 0, Math.PI * 2);
-    ctx.stroke();
+    // 绘制小程序码图片（异步加载）
+    const qrCodeImage = canvas.createImage();
 
-    // 右侧文字区域（优化排版和字体）
-    const textX = footerStartX + qrSize + 28;
+    qrCodeImage.onload = () => {
+      // 在圆形内绘制小程序码（裁剪成圆形）
+      ctx.save();
+
+      // 创建圆形裁剪区域
+      ctx.beginPath();
+      ctx.arc(footerStartX + qrSize/2, qrY + qrSize/2, qrSize/2 - 3, 0, Math.PI * 2);
+      ctx.clip();
+
+      // 使用高质量绘制参数
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      console.log('小程序码绘制参数:', {
+        qrSize,
+        footerStartX,
+        qrY,
+        shape: 'circle'
+      });
+
+      // 绘制小程序码（居中）
+      ctx.drawImage(
+        qrCodeImage,
+        footerStartX + 3,
+        qrY + 3,
+        qrSize - 6,
+        qrSize - 6
+      );
+      ctx.restore();
+
+      // 小程序码加载完成后，生成最终图片
+      this.outputCanvasToImage(canvas);
+    };
+
+    qrCodeImage.onerror = (err) => {
+      console.error('小程序码图片加载失败:', err);
+      // 如果图片加载失败，直接生成（不显示小程序码，只显示背景）
+      this.outputCanvasToImage(canvas);
+    };
+
+    // 开始加载小程序码图片
+    qrCodeImage.src = '/images/qrcode.png';
+
+    // 右侧文字区域（与二维码垂直居中对齐）
+    const textX = footerStartX + qrSize + 18;
+    const qrCenterY = qrY + qrSize / 2; // 二维码中心Y坐标
 
     // 第一行：扫码加入（手写风格）
     ctx.font = `400 20px ${DIARY_HANDWRITING_FONT}`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillText('扫码加入', textX, qrY + 8);
+    ctx.fillText('扫码加入', textX, qrCenterY - 10); // 往上挪，与二维码中心对齐
 
-    // 第二行：稳住· 正念育儿（英文副标题 + 中文）
-    ctx.font = `italic 400 13px ${DIARY_SERIF_FONT}`;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.fillText('Mindful Parenting', textX, qrY + 35);
-
+    // 第二行：稳住· 正念育儿（中文）
     ctx.font = `400 18px ${DIARY_HANDWRITING_FONT}`;
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillText('稳住· 正念育儿', textX, qrY + 55);
+    ctx.fillText('稳住· 正念育儿', textX, qrCenterY + 18); // 往下挪，形成合理间距
 
-    // 添加小装饰图标（叶子或星星）
+    // 添加小装饰图标（叶子）
     ctx.font = '16px sans-serif';
     ctx.fillStyle = 'rgba(212, 175, 55, 0.4)';
-    ctx.fillText('🌿', textX - 8, qrY + 38);
+    ctx.fillText('🌿', textX - 8, qrCenterY + 12); // 与第二行对齐
 
-    // ============ 生成图片 ============
+    // 注意：生成图片的逻辑移到了 outputCanvasToImage 函数
+    // 在小程序码图片加载完成后会调用
+  },
+
+  // 将Canvas输出为图片（分离出来以便异步调用）
+  outputCanvasToImage(canvas) {
     wx.canvasToTempFilePath({
       canvas: canvas,
       success: (res) => {
@@ -468,13 +642,28 @@ Page({
       const isSignature = paragraph.trim().startsWith('——');
 
       if (isSignature) {
-        // 落款居右显示（始终显示）- 使用手写字体
+        // 落款居右显示（信件格式：两行，用户名+日期）
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.font = `400 20px ${DIARY_HANDWRITING_FONT}`;
         ctx.textAlign = 'right';
-        ctx.fillText(paragraph.trim(), startX + maxWidth, currentY + lineHeight);
-        currentY += lineHeight;
-        totalLines += 1;
+
+        // 检查落款是否包含换行（用户名和日期分两行）
+        const signatureLines = paragraph.trim().split('\n');
+
+        if (signatureLines.length >= 2) {
+          // 信件格式：第一行用户名，第二行日期
+          ctx.fillText(signatureLines[0].trim(), startX + maxWidth, currentY + lineHeight);
+          currentY += lineHeight;
+
+          ctx.fillText(signatureLines[1].trim(), startX + maxWidth, currentY + lineHeight);
+          currentY += lineHeight;
+          totalLines += 2;
+        } else {
+          // 单行落款
+          ctx.fillText(paragraph.trim(), startX + maxWidth, currentY + lineHeight);
+          currentY += lineHeight;
+          totalLines += 1;
+        }
       } else {
         // 解析段落，识别涂改（~~text~~）、荧光笔高亮（**text**）
         const parts = this.parseDiaryText(paragraph);
@@ -878,6 +1067,20 @@ Page({
   // 绘制圆角矩形
   roundRect(ctx, x, y, width, height, radius) {
     ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  },
+
+  // 绘制圆角矩形路径（用于裁剪）
+  roundRectPath(ctx, x, y, width, height, radius) {
     ctx.moveTo(x + radius, y);
     ctx.lineTo(x + width - radius, y);
     ctx.quadraticCurveTo(x + width, y, x + width, y + radius);

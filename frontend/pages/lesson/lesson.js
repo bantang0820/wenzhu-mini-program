@@ -1,4 +1,16 @@
 // pages/lesson/lesson.js - 微课详情页
+const {
+  hasCustomCourse,
+  getCustomCourseChapterMeta,
+  getCustomCourseLessons
+} = require('../../data/adler-course.js');
+
+const ALBUM_PROGRESS_KEY = 'albumProgress';
+const LAST_READ_POSITION_KEY = 'last_read_position';
+const LAST_READ_LESSON_KEY = 'last_read_lesson';
+const LESSONS_PER_CHAPTER = 10;
+const LESSONS_PER_ALBUM = 100;
+
 Page({
   data: {
     lessonId: 0,
@@ -48,24 +60,222 @@ Page({
       const lesson = prevPage.data.lessons.find(l => l.id === parseInt(lessonId));
       if (lesson) {
         this.setData({ lesson });
+        this.markLessonVisited(parseInt(lessonId));
+        this.saveLastReadPosition(lesson);
+        this.ensureDailyPracticeCheckIn();
         console.log('从上一页加载微课:', lesson);
         return;
       }
     }
 
     // 如果从上一页获取失败，使用第一节的完整数据作为模拟数据
-    const mockLessons = this.getMockLessons();
+    const mockLessons = this.applySavedLessonProgress(
+      albumId,
+      chapterId,
+      this.getMockLessons()
+    );
     const lesson = mockLessons.find(l => l.id === parseInt(lessonId)) || (mockLessons && mockLessons.length > 0 ? mockLessons[0] : {});
 
     this.setData({ lesson });
+    this.markLessonVisited(parseInt(lessonId));
+    this.saveLastReadPosition(lesson);
+    this.ensureDailyPracticeCheckIn();
     console.log('使用模拟数据:', lesson);
+  },
+
+  getAlbumProgressMap() {
+    return wx.getStorageSync(ALBUM_PROGRESS_KEY) || {};
+  },
+
+  getChapterCompletedLessonIds(albumId, chapterId) {
+    const albumProgress = this.getAlbumProgressMap();
+    const chapterMap = albumProgress[albumId]?.completedLessonsByChapter || {};
+    const chapterKey = String(chapterId);
+    return this.normalizeIdList(chapterMap[chapterKey]);
+  },
+
+  applySavedLessonProgress(albumId, chapterId, lessons = []) {
+    const completedIds = new Set(this.getChapterCompletedLessonIds(albumId, chapterId));
+    return lessons.map((lesson) => ({
+      ...lesson,
+      completed: completedIds.has(Number(lesson.id))
+    }));
+  },
+
+  syncAlbumProgressByLesson(lessonId, completed) {
+    const { albumId, chapterId } = this.data;
+    if (!albumId) return;
+
+    const chapterKey = String(chapterId);
+    const albumProgress = this.getAlbumProgressMap();
+    const currentAlbumProgress = albumProgress[albumId] || {};
+    const completedLessonsByChapter = { ...(currentAlbumProgress.completedLessonsByChapter || {}) };
+    const chapterLessonIds = new Set((completedLessonsByChapter[chapterKey] || []).map((id) => Number(id)));
+
+    if (completed) {
+      chapterLessonIds.add(Number(lessonId));
+    } else {
+      chapterLessonIds.delete(Number(lessonId));
+    }
+
+    const updatedChapterIds = Array.from(chapterLessonIds).sort((a, b) => a - b);
+    if (updatedChapterIds.length > 0) {
+      completedLessonsByChapter[chapterKey] = updatedChapterIds;
+    } else {
+      delete completedLessonsByChapter[chapterKey];
+    }
+
+    const chapterKeys = Object.keys(completedLessonsByChapter);
+    const completedLessonCount = chapterKeys.reduce((sum, key) => {
+      const ids = this.normalizeIdList(completedLessonsByChapter[key]);
+      return sum + new Set(ids).size;
+    }, 0);
+    const completedChapters = chapterKeys.filter((key) => (completedLessonsByChapter[key] || []).length >= LESSONS_PER_CHAPTER);
+
+    albumProgress[albumId] = {
+      ...currentAlbumProgress,
+      completedLessonsByChapter,
+      completedLessonCount,
+      completedChapters,
+      totalLessons: LESSONS_PER_ALBUM,
+      lastUpdatedAt: Date.now()
+    };
+
+    wx.setStorageSync(ALBUM_PROGRESS_KEY, albumProgress);
+  },
+
+  markLessonVisited(lessonId) {
+    const { albumId, chapterId } = this.data;
+    if (!albumId || !chapterId || !lessonId) return;
+
+    const chapterKey = String(chapterId);
+    const albumProgress = this.getAlbumProgressMap();
+    const currentAlbumProgress = albumProgress[albumId] || {};
+    const visitedLessonsByChapter = { ...(currentAlbumProgress.visitedLessonsByChapter || {}) };
+    const chapterVisitedIds = new Set((visitedLessonsByChapter[chapterKey] || []).map((id) => Number(id)));
+
+    chapterVisitedIds.add(Number(lessonId));
+    visitedLessonsByChapter[chapterKey] = Array.from(chapterVisitedIds).sort((a, b) => a - b);
+
+    const visitedLessonCount = Object.keys(visitedLessonsByChapter).reduce((sum, key) => {
+      const ids = this.normalizeIdList(visitedLessonsByChapter[key]);
+      return sum + new Set(ids).size;
+    }, 0);
+
+    albumProgress[albumId] = {
+      ...currentAlbumProgress,
+      visitedLessonsByChapter,
+      visitedLessonCount,
+      totalLessons: currentAlbumProgress.totalLessons || LESSONS_PER_ALBUM,
+      lastUpdatedAt: Date.now()
+    };
+
+    wx.setStorageSync(ALBUM_PROGRESS_KEY, albumProgress);
+  },
+
+  saveLastReadPosition(lesson = {}) {
+    const { albumId, chapterId, lessonId } = this.data;
+    if (!albumId || !chapterId || !lessonId) return;
+
+    const chapterMeta = hasCustomCourse(albumId) ? getCustomCourseChapterMeta(albumId, chapterId) : null;
+    const chapterTitle = (chapterMeta && chapterMeta.title) || `第${chapterId}章`;
+    const lessonTitle = lesson.breakthrough || lesson.title || `第${lessonId}小节`;
+    const display = `${chapterTitle} · ${lessonTitle}`;
+
+    wx.setStorageSync(LAST_READ_POSITION_KEY, {
+      albumId,
+      chapterId: Number(chapterId),
+      lessonId: Number(lessonId),
+      display,
+      updatedAt: Date.now()
+    });
+    wx.setStorageSync(LAST_READ_LESSON_KEY, display);
+  },
+
+  getPracticeDateString(date = new Date()) {
+    const targetDate = date instanceof Date ? date : new Date(date);
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  },
+
+  calculateConsecutiveDays(checkInMap = {}) {
+    const today = this.getPracticeDateString();
+    if (!checkInMap[today]) {
+      return 0;
+    }
+
+    let streak = 0;
+    const cursor = new Date(`${today}T12:00:00`);
+
+    while (checkInMap[this.getPracticeDateString(cursor)]) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  },
+
+  normalizeIdList(rawValue) {
+    if (Array.isArray(rawValue)) {
+      return rawValue.map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+    }
+
+    if (rawValue === null || rawValue === undefined) {
+      return [];
+    }
+
+    if (typeof rawValue === 'number') {
+      return Number.isNaN(rawValue) ? [] : [rawValue];
+    }
+
+    if (typeof rawValue === 'string') {
+      return rawValue
+        .split(',')
+        .map((item) => Number(String(item).trim()))
+        .filter((id) => !Number.isNaN(id));
+    }
+
+    if (typeof rawValue === 'object') {
+      return Object.values(rawValue)
+        .map((id) => Number(id))
+        .filter((id) => !Number.isNaN(id));
+    }
+
+    return [];
+  },
+
+  ensureDailyPracticeCheckIn(practiceTime = new Date()) {
+    const dateStr = this.getPracticeDateString(practiceTime);
+    const checkInMap = wx.getStorageSync('checkInMap') || {};
+
+    if (!checkInMap[dateStr]) {
+      checkInMap[dateStr] = true;
+      wx.setStorageSync('checkInMap', checkInMap);
+    }
+
+    const currentStreak = this.calculateConsecutiveDays(checkInMap);
+    wx.setStorageSync('totalDays', Object.keys(checkInMap).length);
+    wx.setStorageSync('currentStreak', currentStreak);
+
+    const energyData = wx.getStorageSync('energyData') || {};
+    energyData.consecutiveDays = currentStreak;
+    energyData.lastCheckInDate = dateStr;
+    energyData.lastEnergyResetDate = energyData.lastEnergyResetDate || dateStr;
+    wx.setStorageSync('energyData', energyData);
   },
 
   // 获取模拟微课数据（与 chapter 页面保持一致）
   getMockLessons() {
     // 根据当前页面参数判断章节
     const currentPage = getCurrentPages().pop();
+    const albumId = currentPage.data.albumId;
     const chapterId = parseInt(currentPage.data.chapterId);
+
+    if (hasCustomCourse(albumId)) {
+      return getCustomCourseLessons(albumId, chapterId);
+    }
 
     // 第二章内容
     if (chapterId === 2) {
@@ -1054,6 +1264,12 @@ Page({
       prevPage.updateLessonStatus(this.data.lessonId, newStatus);
     }
 
+    this.syncAlbumProgressByLesson(this.data.lessonId, newStatus);
+    this.saveLastReadPosition({
+      ...lesson,
+      completed: newStatus
+    });
+
     if (newStatus) {
       this.updateCheckIn(lesson.title);
     }
@@ -1067,8 +1283,7 @@ Page({
   // 更新打卡记录
   updateCheckIn(lessonTitle) {
     try {
-      const now = new Date();
-      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const dateStr = this.getPracticeDateString();
       
       // 1. 更新打卡地图 (用于Stats页面日历显示)
       const checkInMap = wx.getStorageSync('checkInMap') || {};
@@ -1076,25 +1291,17 @@ Page({
         checkInMap[dateStr] = true;
         wx.setStorageSync('checkInMap', checkInMap);
       }
-
-      const sortedDates = Object.keys(checkInMap).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-      let currentStreak = 0;
-      let expectedDate = new Date(`${dateStr}T12:00:00`);
-
-      for (const practiceDate of sortedDates) {
-        const expectedDateStr = `${expectedDate.getFullYear()}-${String(expectedDate.getMonth() + 1).padStart(2, '0')}-${String(expectedDate.getDate()).padStart(2, '0')}`;
-
-        if (practiceDate === expectedDateStr) {
-          currentStreak += 1;
-          expectedDate.setDate(expectedDate.getDate() - 1);
-        } else {
-          break;
-        }
-      }
+      const currentStreak = this.calculateConsecutiveDays(checkInMap);
 
       // 2. 更新总天数与连续练习天数
       wx.setStorageSync('totalDays', Object.keys(checkInMap).length);
       wx.setStorageSync('currentStreak', currentStreak);
+
+      const energyData = wx.getStorageSync('energyData') || {};
+      energyData.consecutiveDays = currentStreak;
+      energyData.lastCheckInDate = dateStr;
+      energyData.lastEnergyResetDate = energyData.lastEnergyResetDate || dateStr;
+      wx.setStorageSync('energyData', energyData);
       
       // 3. 更新总次数
       const totalCount = wx.getStorageSync('totalCount') || 0;

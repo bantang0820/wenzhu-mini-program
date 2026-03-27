@@ -1,5 +1,14 @@
 // pages/content/content.js
 const { quotes: quotesData } = require('./quotes-data.js');
+const {
+  hasCustomCourse,
+  getCustomCourseChapterMeta
+} = require('../../data/adler-course.js');
+
+const ALBUM_PROGRESS_KEY = 'albumProgress';
+const LAST_READ_POSITION_KEY = 'last_read_position';
+const LAST_READ_LESSON_KEY = 'last_read_lesson';
+const LESSONS_PER_ALBUM = 100;
 
 Page({
   data: {
@@ -47,7 +56,8 @@ Page({
     ],
     dailyQuote: '',
     dailyDate: '',
-    lastReadLesson: ''
+    lastReadLesson: '',
+    lastReadPosition: null
   },
 
   onLoad: function() {
@@ -61,6 +71,7 @@ Page({
 
   onShow: function() {
     this.checkProStatus();
+    this.loadLastRead();
     this.loadAlbumProgress(); // 每次显示时更新进度
   },
 
@@ -105,10 +116,12 @@ Page({
   // 加载最近在读
   loadLastRead: function() {
     try {
-      const lastRead = wx.getStorageSync('last_read_lesson');
-      if (lastRead) {
+      const lastReadPosition = wx.getStorageSync(LAST_READ_POSITION_KEY) || null;
+      const lastReadLesson = wx.getStorageSync(LAST_READ_LESSON_KEY) || '';
+      if (lastReadPosition || lastReadLesson) {
         this.setData({
-          lastReadLesson: lastRead
+          lastReadPosition,
+          lastReadLesson: (lastReadPosition && lastReadPosition.display) || lastReadLesson
         });
       }
     } catch (e) {
@@ -119,22 +132,36 @@ Page({
   // 加载专辑学习进度
   loadAlbumProgress: function() {
     try {
-      const albumProgress = wx.getStorageSync('albumProgress') || {};
+      const albumProgress = wx.getStorageSync(ALBUM_PROGRESS_KEY) || {};
       const albums = this.data.albums.map(album => {
         const progressData = albumProgress[album.id];
+        if (!progressData) return album;
 
-        if (progressData && progressData.completedChapters) {
-          // 计算实际完成进度：已完成章节数 / 总章节数(10) * 100
-          const completedChapters = progressData.completedChapters.length;
-          const progress = Math.round((completedChapters / 10) * 100);
+        const chapterMap = progressData.completedLessonsByChapter || {};
+        const chapterKeys = Object.keys(chapterMap);
+        const chapterLessonCount = chapterKeys.reduce((sum, key) => {
+          const ids = this.normalizeIdList(chapterMap[key]);
+          return sum + new Set(ids).size;
+        }, 0);
+        const visitedMap = progressData.visitedLessonsByChapter || {};
+        const visitedKeys = Object.keys(visitedMap);
+        const visitedLessonCountFromMap = visitedKeys.reduce((sum, key) => {
+          const ids = this.normalizeIdList(visitedMap[key]);
+          return sum + new Set(ids).size;
+        }, 0);
+        const fallbackChapterCount = Array.isArray(progressData.completedChapters)
+          ? progressData.completedChapters.length
+          : 0;
+        const completedLessonCount = progressData.completedLessonCount || chapterLessonCount || (fallbackChapterCount * 10);
+        const visitedLessonCount = progressData.visitedLessonCount || visitedLessonCountFromMap;
+        const learnedLessonCount = Math.max(completedLessonCount, visitedLessonCount);
+        const totalLessons = progressData.totalLessons || LESSONS_PER_ALBUM;
+        const progress = Math.max(0, Math.min(100, Math.round((learnedLessonCount / totalLessons) * 100)));
 
-          return {
-            ...album,
-            progress: progress
-          };
-        }
-
-        return album;
+        return {
+          ...album,
+          progress
+        };
       });
 
       this.setData({
@@ -145,6 +172,35 @@ Page({
     } catch (e) {
       console.log('读取专辑进度失败', e);
     }
+  },
+
+  normalizeIdList(rawValue) {
+    if (Array.isArray(rawValue)) {
+      return rawValue.map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+    }
+
+    if (rawValue === null || rawValue === undefined) {
+      return [];
+    }
+
+    if (typeof rawValue === 'number') {
+      return Number.isNaN(rawValue) ? [] : [rawValue];
+    }
+
+    if (typeof rawValue === 'string') {
+      return rawValue
+        .split(',')
+        .map((item) => Number(String(item).trim()))
+        .filter((id) => !Number.isNaN(id));
+    }
+
+    if (typeof rawValue === 'object') {
+      return Object.values(rawValue)
+        .map((id) => Number(id))
+        .filter((id) => !Number.isNaN(id));
+    }
+
+    return [];
   },
 
   onAlbumTap: function(e) {
@@ -166,8 +222,12 @@ Page({
       return;
     }
 
-    // 保存最近在读记录
-    this.saveLastRead('第1章 · 区分观察与评论');
+    // 仅在首次进入时设置默认“最近在读”，避免覆盖真实阅读位置
+    const lastReadPosition = wx.getStorageSync(LAST_READ_POSITION_KEY);
+    const lastReadLesson = wx.getStorageSync(LAST_READ_LESSON_KEY);
+    if (!lastReadPosition && !lastReadLesson) {
+      this.saveLastRead(this.getDefaultLastReadLabel(id));
+    }
 
     // 跳转到专辑详情页（展示10个章节列表）
     this.openAlbumPage(id);
@@ -176,6 +236,34 @@ Page({
   openAlbumPage: function(id) {
     const url = `/pages/album/album?id=${encodeURIComponent(id)}`;
     this.safeNavigate(url);
+  },
+
+  onContinueRead: function() {
+    wx.vibrateShort();
+    const lastReadPosition = this.data.lastReadPosition || wx.getStorageSync(LAST_READ_POSITION_KEY);
+
+    if (!lastReadPosition || !lastReadPosition.albumId || !lastReadPosition.chapterId || !lastReadPosition.lessonId) {
+      this.openAlbumPage('nvc');
+      return;
+    }
+
+    const album = this.data.albums.find((item) => item.id === lastReadPosition.albumId);
+    if (album && album.isLocked) {
+      this.safeNavigate('/pages/pro/pro');
+      return;
+    }
+
+    const url = `/pages/lesson/lesson?id=${encodeURIComponent(lastReadPosition.lessonId)}&albumId=${encodeURIComponent(lastReadPosition.albumId)}&chapterId=${encodeURIComponent(lastReadPosition.chapterId)}`;
+    this.safeNavigate(url);
+  },
+
+  getDefaultLastReadLabel: function(albumId) {
+    if (hasCustomCourse(albumId)) {
+      const chapterMeta = getCustomCourseChapterMeta(albumId, 1);
+      return `第1章 · ${chapterMeta.title}`;
+    }
+
+    return '第1章 · 区分观察与评论';
   },
 
   safeNavigate: function(url) {
@@ -216,7 +304,7 @@ Page({
   // 保存最近在读
   saveLastRead: function(lessonTitle) {
     try {
-      wx.setStorageSync('last_read_lesson', lessonTitle);
+      wx.setStorageSync(LAST_READ_LESSON_KEY, lessonTitle);
       this.setData({
         lastReadLesson: lessonTitle
       });

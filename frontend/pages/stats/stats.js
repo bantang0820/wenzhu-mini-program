@@ -5,6 +5,7 @@ const {
   DEFAULT_GOOD_THING_PROMPT,
   getRandomGoodThingPrompt
 } = require('../../utils/goodThingPrompts.js');
+const GOOD_THINGS_STORAGE_KEY = 'goodThingsRecords';
 
 Page({
   data: {
@@ -143,8 +144,41 @@ Page({
     return streak;
   },
 
+  calculateBestContinuousDays(checkInMap = {}) {
+    const validDates = Object.keys(checkInMap)
+      .filter((dateStr) => !!checkInMap[dateStr])
+      .sort();
+
+    if (validDates.length === 0) {
+      return 0;
+    }
+
+    let best = 1;
+    let streak = 1;
+    let previous = new Date(`${validDates[0]}T12:00:00`);
+
+    for (let i = 1; i < validDates.length; i += 1) {
+      const current = new Date(`${validDates[i]}T12:00:00`);
+      const diffDays = Math.round((current.getTime() - previous.getTime()) / (24 * 60 * 60 * 1000));
+
+      if (diffDays === 1) {
+        streak += 1;
+      } else if (diffDays > 1) {
+        streak = 1;
+      }
+
+      if (streak > best) {
+        best = streak;
+      }
+
+      previous = current;
+    }
+
+    return best;
+  },
+
   getLocalPracticeStats() {
-    const checkInMap = wx.getStorageSync('checkInMap') || {};
+    const checkInMap = this.mergeGoodThingCheckIns(wx.getStorageSync('checkInMap') || {});
     const energyData = wx.getStorageSync('energyData') || {};
     const storedTotalDays = Number(wx.getStorageSync('totalDays') || 0);
     const totalDays = Math.max(Object.keys(checkInMap).length, storedTotalDays);
@@ -153,6 +187,7 @@ Page({
     );
     const continuousDays = Math.max(
       this.calculateLocalContinuousDays(checkInMap),
+      this.calculateBestContinuousDays(checkInMap),
       Number(wx.getStorageSync('currentStreak') || 0)
     );
 
@@ -162,6 +197,31 @@ Page({
       continuousDays,
       checkInMap
     };
+  },
+
+  mergeGoodThingCheckIns(baseCheckInMap = {}) {
+    const mergedCheckInMap = { ...baseCheckInMap };
+    const records = wx.getStorageSync(GOOD_THINGS_STORAGE_KEY) || [];
+
+    if (!Array.isArray(records) || records.length === 0) {
+      return mergedCheckInMap;
+    }
+
+    let hasPatched = false;
+    records.forEach((item) => {
+      if (!item || !item.createdAt) return;
+      const dateStr = this.getPracticeDateString(item.createdAt);
+      if (!mergedCheckInMap[dateStr]) {
+        mergedCheckInMap[dateStr] = true;
+        hasPatched = true;
+      }
+    });
+
+    if (hasPatched) {
+      wx.setStorageSync('checkInMap', mergedCheckInMap);
+    }
+
+    return mergedCheckInMap;
   },
 
   persistLocalPracticeStats(stats = {}) {
